@@ -957,7 +957,7 @@ class ion:
     def recombRate(self):
         '''Provides the total recombination rate coefficient.
 
-        Calls diRate and eaRate'''
+        Calls drRate and rrRate'''
         #
         if hasattr(self, 'Temperature'):
             temperature=self.Temperature
