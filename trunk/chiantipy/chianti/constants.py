@@ -32,6 +32,9 @@ hartreeEv = 27.21138505
 # derived constants
 hc = planck*light
 #
+# area of bohr orbit
+bohrCross = pi*bohr**2
+#
 std2fwhm = 2.*np.sqrt(2.*np.log(2.))
 #
 invCm2Erg = planck*light
