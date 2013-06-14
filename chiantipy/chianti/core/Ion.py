@@ -226,7 +226,6 @@ class ion:
                     print ' elvlc file NOT available - this is OK '
                 else:
                     print ' elvlc file available '
-
         #
         # ------------------------------------------------------------------------------
         #
@@ -356,11 +355,14 @@ class ion:
                 newcross=alpha*beta*np.exp(-x0)*(term1.sum()+x0*term2.sum())
                 rate[itemp]=newcross
         self.DiRate={'temperature':temperature, 'rate':rate}
-            #
-            #-----------------------------------------------------------
-            #
+        #
+        #-----------------------------------------------------------
+        #
     def eaDescale(self):
-        """Calculates the effective collision strengths (upsilon) for excitation-autoionization as a function of temperature."""
+        """
+        Calculates the effective collision strengths (upsilon)
+        for excitation-autoionization as a function of temperature.
+        """
         #
         #  xt=kt/de
         #
@@ -443,15 +445,18 @@ class ion:
         # -------------------------------------------------------------------------------------
         #
     def eaCross(self, energy=None, verbose=False):
-        '''Provide the excitation-autoionization cross section.
+        '''
+        Provide the excitation-autoionization cross section.
 
-        Energy is given in eV.'''
+        Energy is given in eV.
+        '''
         # get neaev from diparams file
         #
         try:
-            diparams=self.DiParams
+            diparams = self.DiParams
         except:
-            self.diRead()
+            self.DiParams = util.diRead(self.IonStr)
+            diparams = self.DiParams
         #
         if self.DiParams['info']['neaev'] == 0:
 #            print ' no EA rates'
@@ -462,27 +467,29 @@ class ion:
             try:
                 easplom=self.Easplom
             except:
-                self.splomRead()
-                easplom=self.Easplom
+#                self.splomRead()
+                self.Easplom = util.splomRead(self.IonStr, ea=1)
+                easplom =self.Easplom
             #
-#        q=np.ma.array(u, 'float32', mask=bu, fill_value=0.)
+            # multiplicity of ground level already included
+            #
+            omega = util.splomDescale(easplom, energy)
+            #
             #  need to replicate neaev
-            ntrans=len(easplom['de'])
+            ntrans=len(easplom['deryd'])
             nsplom=easplom['splom'].shape[1]
-            x=0.25*arange(nsplom)
+            x=0.25*np.arange(nsplom)
             eaev=self.DiParams['eaev']
             if len(eaev) ==1:
                 for itrans in range(ntrans):
                     eaev.append(eaev[0])
 
+            totalCross = np.zeros_like(energy)
+            ntrans = omega.shape[0]
             for itrans in range(ntrans):
-                x0=const.ev*eaparams['de'][itrans]
-                good = energy > x0
-
-                thisenergy=np.ma.array(energy, 'Float64', mask=good, fill_value=0.)
-
-                earate+=eaev[iups]*8.63e-6*eaparams['ups'][iups]*np.exp(-x0)/(np.sqrt(temperature))
-            self.EaRate={'rate':earate, 'temperature':temperature}
+                cross = eaev[itrans]*const.bohrCross*omega[itrans]/(energy/const.ryd2Ev)
+                totalCross += cross
+            self.EaCross = {'energy':energy, 'cross':totalCross}
             return
         #
         # -------------------------------------------------------------------------------------

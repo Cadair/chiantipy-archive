@@ -13,6 +13,7 @@ from ConfigParser import *
 import cPickle
 from datetime import date
 import numpy as np
+from scipy import interpolate
 from FortranFormat import *
 import chianti.constants as const
 import chianti
@@ -832,15 +833,97 @@ def easplomRead(ions, extension='.splom'):
 
     return
     #
+    #-----------------------------------------------------------
+    #
+def splomDescale(splom, energy):
+    """
+    Calculates the collision strength
+    for excitation-autoionization as a function of energy.
+    energy in eV
+    """
+    #
+    #
+    nenergy=energy.size
+    nsplom=len(splom['deryd'])
+    # for these files, there are 5 spline points
+    nspl = 5
+    if nenergy > 1:
+        omega = np.zeros((nsplom,nenergy),"float64")
+    else:
+        omega = np.zeros(nsplom,"float64")
+    #
+    dx = 1./(float(nspl)-1.)
+    sxint = dx*np.arange(nspl)
+    for isplom in range(0,nsplom):
+        #
+        sx1 = energy/(splom['deryd'][isplom]*const.ryd2Ev)
+        good = sx1 > 1.
+        nbad = nenergy - good.sum()
+        c_curr = splom['c'][isplom]
+        #
+        if splom['ttype'][isplom] == 1:
+            sx = 1. - np.log(c_curr)/np.log(sx1[good] - 1. + c_curr)
+#            sx = np.log(sx1)/np.log(sx1 + splom['c'][isplom])
+            y2 = interpolate.splrep(sxint,splom['splom'][:, isplom],s=0)  #allow smoothing,s=0)
+            som = interpolate.splev(sx,y2,der=0)
+            #  idl> omega(gen(ige),isplom)=som_int(ige)*alog(x_int(ige)-1.+exp(1.))
+            omega[isplom, nbad:] = som*np.log(sx -1. + np.exp(1.))
+#            omega[isplom, nbad:] = som*np.log(sx1[good] + np.exp(1.))
+        #
+        elif splom['ttype'][isplom] == 2:
+#          idl >   sx_int=(x_int-1.)/(x_int-1.+c_curr)
+            sx =(sx1[good] - 1.)/(sx1[good] -1. + c_curr)
+#            sx = sx1/(sx1 + splom['c'][isplom])
+            #sx_int=(x_int-1.)/(x_int-1.+c_curr)
+            y2 = interpolate.splrep(sxint,splom['splom'][:, isplom],s=0)  #allow smoothing,s=0)
+            som=interpolate.splev(sx,y2,der=0)
+#            omega[isplom, nbad:] = som
+#           idl >  omega(gen(ige),isplom)=nr_splint(sx,som,som2,sx_int(ige))
+            omega[isplom, nbad:] = som
+        #
+        elif splom['ttype'][isplom] == 3:
+#          idl >   sx_int=(x_int-1.)/(x_int-1.+c_curr)
+            sx = (sx1[good] - 1.)/(sx1[good] -1. + c_curr)
+#            sx = sx1/(sx1 + splom['c'][isplom])
+            y2 = interpolate.splrep(sxint,splom['splom'][:, isplom],s=0)  #allow smoothing,s=0)
+            som = interpolate.splev(sx,y2,der=0)
+            omega[isplom, nbad:] = som/sx1[good]**2
+#           idl >  omega(gen(ige),isplom)=som_int/x_int(ige)^2
+#            omega[isplom, nbad:] =som/(sx1[good] + 1.)**2
+        #
+        elif splom['ttype'][isplom] == 4:
+            sx = 1. - np.log(c_curr)/np.log(sx1[good] -1. + c_curr)
+#            idl > sx_int=1.-alog(c_curr)/alog(x_int-1.+c_curr)
+#            sx = np.log(sx1)/np.log(sx1 + splom['c'][isplom])
+            y2 = interpolate.splrep(sxint,splom['splom'][:, isplom],s=0)  #allow smoothing,s=0)
+            som=interpolate.splev(sx,y2,der=0)
+#           idl >  omega(gen(ige),isplom)=som_int(ige)*alog(x_int(ige)-1.+c_curr)
+            omega[isplom, nbad:] = som*np.log(sx1[good] -1. + c_curr)
+        #
+        #
+        #
+        elif ttype > 4:
+            print(' splom t_type ne 1,2,3,4 = %4i %4i %4i'%(ttype,l1,l2))
+    #
+    #
+    omega=np.where(omega > 0.,omega,0.)
+    #
+    return omega
+    #
     # --------------------------------------------------
     #
-def splomRead(ions, filename=None):
-    """read chianti .splom files and return
-    {"lvl1":lvl1,"lvl2":lvl2,"ttype":ttype,"gf":gf,"deryd":de,"f":f,"splom":splomout,"ref":hdr} not tested """
+def splomRead(ions, ea=0, filename=None):
+    """
+    read chianti .splom files and return
+    {"lvl1":lvl1,"lvl2":lvl2,"ttype":ttype,"gf":gf,"deryd":de,"c":c,"splom":splomout,"ref":hdr} not tested
+    """
     #
     if type(filename) == NoneType:
         fname=ion2filename(ions)
-        splomname=fname+'.splom'
+        if ea:
+            splomname=fname+'.easplom'
+        else:
+            splomname=fname+'.splom'
     else:
         splomname = filename
     input=open(splomname,'r')
@@ -887,7 +970,7 @@ def splomRead(ions, filename=None):
     splomout=np.transpose(splomout)
     input.close()
     # note:  de is in Rydbergs
-    splom={"lvl1":lvl1,"lvl2":lvl2,"ttype":ttype,"gf":gf,"deryd":de,"f":f
+    splom={"lvl1":lvl1,"lvl2":lvl2,"ttype":ttype,"gf":gf,"deryd":de,"c":f
         ,"splom":splomout,"ref":hdr}
     return  splom
     #
@@ -1068,27 +1151,113 @@ def cireclvlRead(ions, filename=0, cilvl=0, reclvl=0, rrlvl=0):
         idat += 1
     return {'temperature':temp, 'ntemp':ntemp,'lvl1':lvl1, 'lvl2':lvl2, 'rate':ci,'ref':lines[ndata+1:-1], 'ionS':ions}
     #
+    # ----------------------------------------------------------
+    #
 def dilute(radius):
-    ''' to calculate the dilution factor as a function distance from the center of a star in units of the stellar radius
-    a radius of less than 1.0 (incorrect) results in a dilution factor of 0.'''
+    '''
+    to calculate the dilution factor as a function distance from
+    the center of a star in units of the stellar radius
+    a radius of less than 1.0 (incorrect) results in a dilution factor of 0.
+    '''
     if radius >= 1.:
         d = 0.5*(1. - np.sqrt(1. - 1./radius**2))
     else:
         d = 0.
     return d
     #
-def diRead(ions):
-    """read chianti direct ionization .params files and return
+    #
+    # ------------------------------------------------------------------------------
+    #
+def diCross(diParams, energy=0, verbose=0):
+    '''
+    Calculate the direct ionization cross section.
+    diParams obtained by util.diRead with the following keys:
+    ['info', 'ysplom', 'xsplom', 'btf', 'ev1', 'ref', 'eaev']
+    Given as a function of the incident electron energy in eV
+    returns a dictionary - {'energy':energy, 'cross':cross}
+    '''
+    iso=diParams['info']['iz'] - diParams['info']['ion'] + 1
+    energy = np.array(energy, 'float64')
+    if not energy.any():
+        btenergy=0.1*np.arange(10)
+        btenergy[0]=0.01
+        dum=np.ones(len(btenergy))
+        [energy, dum] = descale_bti(btenergy, dum, 2., diParams['ev1'][0])
+        energy=np.asarray(energy, 'float64')
+    #
+    if iso == 1 and self.Z >= 6:
+        #  hydrogenic sequence
+        ryd=27.2113845/2.
+        u=energy/self.Ip
+        ev1ryd=self.Ip/ryd
+        a0=0.5291772108e-8
+        a_bohr=const.pi*a0**2   # area of bohr orbit
+        if self.Z >= 20:
+            ff = (140.+(self.Z/20.)**3.2)/141.
+        else:
+            ff = 1.
+        qr = util.qrp(self.Z,u)*ff
+        bb = 1.  # hydrogenic
+        qh = bb*a_bohr*qr/ev1ryd**2
+        diCross = {'energy':energy, 'cross':qh}
+    elif iso == 2 and self.Z >= 10:
+        #  use
+        ryd=27.2113845/2.
+        u=energy/self.Ip
+        ev1ryd=self.Ip/ryd
+        a0=0.5291772108e-8
+        a_bohr=const.pi*a0**2   # area of bohr orbit
+        if self.Z >= 20:
+            ff=(140.+(self.Z/20.)**3.2)/141.
+        else:
+            ff=1.
+        qr=util.qrp(self.Z,u)*ff
+        bb=2.  # helium-like
+        qh=bb*a_bohr*qr/ev1ryd**2
+        diCross={'energy':energy, 'cross':qh}
+    else:
+        cross=np.zeros(len(energy), 'Float64')
+
+        for ifac in range(diParams['info']['nfac']):
+            # prob. better to do this with masked arrays
+            goode=energy > diParams['ev1'][ifac]
+            if goode.sum() > 0:
+                dum=np.ones(len(energy))
+                btenergy, btdum = scale_bti(energy[goode],dum[goode], diParams['btf'][ifac], diParams['ev1'][ifac])
+                # these interpolations were made with the scipy routine used here
+                y2=interpolate.splrep(diParams['xsplom'][ifac], diParams['ysplom'][ifac], s=0)
+                btcross=interpolate.splev(btenergy, y2, der=0)
+                energy1, cross1 = descale_bti(btenergy, btcross, diParams['btf'][ifac], diParams['ev1'][ifac] )
+                offset=len(energy)-goode.sum()
+                if verbose:
+                    pl.plot(diParams['xsplom'][ifac], diParams['ysplom'][ifac])
+                    pl.plot(btenergy, btcross)
+                if offset > 0:
+                    seq=[np.zeros(offset, 'Float64'), cross1]
+                    cross1=np.hstack(seq)
+                cross+=cross1*1.e-14
+        return {'energy':energy, 'cross':cross}
+    #
+    #-----------------------------------------------------------
+    #
+def diRead(ions, filename=0):
+    """
+    read chianti direct ionization .params files and return
         {"info":info,"btf":btf,"ev1":ev1,"xsplom":xsplom,"ysplom":ysplom,"ref":hdr}
-        info={"iz":iz,"ion":ion,"nspl":nspl,"neaev":neaev}"""
+        info={"iz":iz,"ion":ion,"nspl":nspl,"neaev":neaev}
+    """
     #
-    zion=convertName(ions)
-    if zion['Z'] < zion['Ion']:
-        print ' this is a bare nucleus that has no ionization rate'
-        return
+    if filename:
+        paramname = filename
+    else:
+        zion=convertName(ions)
+        if zion['Z'] < zion['Ion']:
+            print ' this is a bare nucleus that has no ionization rate'
+            return
+        #
+        fname=ion2filename(ions)
+        paramname=fname+'.diparams'
     #
-    fname=ion2filename(ions)
-    paramname=fname+'.diparams'
     input=open(paramname,'r')
     #  need to read first line and see how many elements
     line1=input.readline()
@@ -1132,19 +1301,61 @@ def diRead(ions):
     hdr=input.readlines()
     input.close()
     info={"iz":iz,"ion":ion,"nspl":nspl,"neaev":neaev, 'nfac':nfac}
+    if neaev:
+        info['eaev'] = eaev
     DiParams={"info":info,"btf":btf,"ev1":ev1,"xsplom":xsplom,"ysplom":ysplom, 'eaev':eaev,"ref":hdr}
     return DiParams
     #
     # -------------------------------------------------------------------------------------
     #
-def eaRead(ions):
+def eaCross(diparams, easplom, energy=None, verbose=False):
+    '''
+    Provide the excitation-autoionization cross section.
+
+    Energy is given in eV.
+    '''
+    energy = np.asarray(energy, 'float64')
+    if not energy.any():
+        btenergy=0.1*np.arange(10)
+        btenergy[0]=0.01
+        dum=np.ones(len(btenergy))
+        [energy, dum] = descale_bti(btenergy, dum, 2., min(easplom['deryd']))
+        energy=np.asarray(energy, 'float64')
+    #
+    omega = splomDescale(easplom, energy)
+    #
+    #  need to replicate neaev
+
+    if diparams['info']['neaev'] > 0:
+        f1 = np.ones(omega.shape[0])
+    else:
+        f1 = diparams['info']['eaev']
+
+    totalCross = np.zeros_like(energy)
+    ntrans = omega.shape[0]
+    for itrans in range(ntrans):
+        cross = f1[itrans]*const.bohrCross*omega[itrans]/(energy/const.ryd2Ev)
+        totalCross += cross
+    return {'energy':energy, 'cross':totalCross}
+    #
+    # -------------------------------------------------------------------------------------
+    #
+def eaRead(ions, filename=0):
     '''
     read a chianti excitation-autoionization file and return the EA ionization rate data
     derived from splupsRead
     {"lvl1":lvl1,"lvl2":lvl2,"ttype":ttype,"gf":gf,"de":de,"cups":cups,"bsplups":bsplups,"ref":ref}
     '''
-    fname=ion2filename(ions)
-    splupsname=fname+'.easplups'
+    if filename:
+        splupsname = filename
+    else:
+        zion=convertName(ions)
+        if zion['Z'] < zion['Ion']:
+            print ' this is a bare nucleus that has no ionization rate'
+            return
+        #
+        fname=ion2filename(ions)
+        splupsname=fname+'.easplups'
     if not os.path.exists(splupsname):
         print ' could not find file:  ', splupsname
         self.Splups={"lvl1":-1}
