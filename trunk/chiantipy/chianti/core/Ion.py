@@ -539,6 +539,30 @@ class ion:
         #
         # -------------------------------------------------------------------------------------
         #
+    def ionizCross(self, energy=0):
+        '''
+        Provides the total ionization cross section.
+
+        uses diCross  and eaCross.
+        '''
+        if self.Z < self.Ion:
+#            print ' this is a bare nucleus and has no ionization rate'
+            self.IonizRate = {'rate':np.zeros_like(self.Temperature), 'temperature':self.Temperature}
+            return
+        if not energy:
+            energy = self.Ip*10.**(0.025*arange(401))
+        #
+        self.diCross(energy)
+        self.eaCross(energy)
+        if self.DiParams['info']['neaev'] == 0:
+            ionizCross=self.DiCross['cross']
+        else:
+            ionizrate=self.DiCross['cross']+self.EaCross['cross']
+        self.IonizRate = {'cross':ionizCross, 'energy':energy}
+        return
+        #
+        # -------------------------------------------------------------------------------------
+        #
     def ionizRate(self):
         '''Provides the total ionization rate.
 
