@@ -1308,7 +1308,7 @@ def diRead(ions, filename=0):
     #
     # -------------------------------------------------------------------------------------
     #
-def eaCross(diparams, easplom, energy=None, verbose=False):
+def eaCross(diparams, easplom, elvlc, energy=None, verbose=False):
     '''
     Provide the excitation-autoionization cross section.
 
@@ -1334,7 +1334,9 @@ def eaCross(diparams, easplom, energy=None, verbose=False):
     totalCross = np.zeros_like(energy)
     ntrans = omega.shape[0]
     for itrans in range(ntrans):
-        cross = f1[itrans]*const.bohrCross*omega[itrans]/(energy/const.ryd2Ev)
+        lvl1 = easplom['lvl1'][itrans]
+        mult = 2.*elvlc['j'][lvl1 - 1] + 1.
+        cross = f1[itrans]*const.bohrCross*omega[itrans]/(mult.energy/const.ryd2Ev)
         totalCross += cross
     return {'energy':energy, 'cross':totalCross}
     #

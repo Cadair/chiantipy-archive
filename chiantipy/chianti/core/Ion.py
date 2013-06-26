@@ -444,7 +444,7 @@ class ion:
         #
         # -------------------------------------------------------------------------------------
         #
-    def eaCross(self, energy=None, verbose=False):
+    def eaCross(self, energy=0, verbose=False):
         '''
         Provide the excitation-autoionization cross section.
 
@@ -462,7 +462,7 @@ class ion:
 #            print ' no EA rates'
             return
         else:
-            if type(energy) == types.NoneType:
+            if not energy:
                 energy=self.Ip*10.**(0.05*arange(31))
             try:
                 easplom=self.Easplom
@@ -472,6 +472,8 @@ class ion:
                 easplom =self.Easplom
             #
             # multiplicity of ground level already included
+            #
+            #  splomDescale takes care of when energy < threshold
             #
             omega = util.splomDescale(easplom, energy)
             #
@@ -487,6 +489,9 @@ class ion:
             totalCross = np.zeros_like(energy)
             ntrans = omega.shape[0]
             for itrans in range(ntrans):
+                lvl1 = self.Easplom['lvl1'][itrans]
+                #  the collision strengths have already by divided by the
+                #   statistical weight of the ground level 2j+1
                 cross = eaev[itrans]*const.bohrCross*omega[itrans]/(energy/const.ryd2Ev)
                 totalCross += cross
             self.EaCross = {'energy':energy, 'cross':totalCross}
@@ -533,6 +538,8 @@ class ion:
 
             for iups in range(nups):
                 x0=const.ryd2Ev*eaparams['de'][iups]/tev
+                #  upsilon has already been divided by the statistical weight of the
+                #  ground level 2j+1
                 earate+=eaev[iups]*8.63e-6*eaparams['ups'][iups]*np.exp(-x0)/(np.sqrt(temperature))
             self.EaRate={'rate':earate, 'temperature':temperature}
             return
