@@ -462,7 +462,7 @@ class ion:
 #            print ' no EA rates'
             return
         else:
-            if not energy:
+            if not energy.all():
                 energy=self.Ip*10.**(0.05*arange(31))
             try:
                 easplom=self.Easplom
