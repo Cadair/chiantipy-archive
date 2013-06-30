@@ -7,8 +7,7 @@ class blackStar:
         self.Radius = radius
     def incident(self, distance, energy):
         ''' distance in cm and energy in erg'''
-        print distance
-        print energy
+        print(' distance %10.2e  energy '%(energy))
         bb = blackbody(self.Temperature, energy)
         out = const.pi*(self.Radius/distance)**2*bb['photons']
         self.Incident = bb

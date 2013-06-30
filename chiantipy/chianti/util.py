@@ -50,7 +50,7 @@ def ipRead(verbose=False):
         if int(s2[0]) > maxz:
             maxz=int(s2[0])
     if verbose:
-        print ' maxz = ', maxz
+        print(' maxz = %5i'%(maxz))
     nip=nip-1
     ip=np.zeros((maxz, maxz), 'Float64')
     for aline in data[0:nip]:

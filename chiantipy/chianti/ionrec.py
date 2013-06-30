@@ -164,7 +164,7 @@ class ioneq(ch.ion):
 #        diff = np.abs((np.ones(z+1,'float64') - self.Evolver.diagonal()).max())
         new = np.dot(self.Evolver,self.Ioneq)
         diff = np.where(self.Ioneq > 0.,np.abs(new - self.Ioneq)/self.Ioneq,100.)
-        print ' diff = ',diff
+        print(' diff = %10.2e'%(diff))
         dt = maxDiff/diff.min()
         print ' dt = ',dt
         self.getEvolver(temperature,density,dt)

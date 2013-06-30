@@ -87,7 +87,7 @@ class spectrum:
                 em = np.asarray(em, 'float64')
                 nEm = em.size
                 if nEm != nTempDen:
-                    print ' the emission measure array must be the same size as the temperature/density array'
+                    print(' the emission measure array must be the same size as the temperature/density array')
                     return
         self.AbundanceName = defaults['abundfile']
         self.AbundanceAll = chdata.AbundanceAll
