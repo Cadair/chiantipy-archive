@@ -1,5 +1,5 @@
 import os
-from FortranFormat import *
+from .FortranFormat import *
 import chianti.constants as const
     #
     # -------------------------------------------------------------------------------------
@@ -23,7 +23,7 @@ def elvlcRead(ions, filename = 0, verbose=0,  useTh=0):
         fname=ion2filename(ions)
         elvlname=fname+'.elvlc'
     if not os.path.isfile(elvlname):
-        print ' elvlc file does not exist:  ',elvlname
+        print((' elvlc file does not exist:  %s'%(elvlname)))
         return {'status':0}
     status = 1
     input=open(elvlname,'r')
@@ -38,7 +38,7 @@ def elvlcRead(ions, filename = 0, verbose=0,  useTh=0):
         nlvls=nlvls+1
     nlvls-=1
     if verbose:
-        print ' nlvls = ', nlvls
+        print((' nlvls = %i'%(nlvls)))
     lvl=[0]*nlvls
     conf=[0]*nlvls
     term=[0]*nlvls
@@ -54,7 +54,7 @@ def elvlcRead(ions, filename = 0, verbose=0,  useTh=0):
     pretty=[0]*nlvls
     for i in range(0,nlvls):
         if verbose:
-            print s1[i][0:115]
+            print((s1[i][0:115]))
         inpt=FortranLine(s1[i][0:115],elvlcFormat)
         lvl[i]=inpt[0]
         conf[i]=inpt[1]
@@ -108,7 +108,7 @@ def elvlcWrite(info, outfile=0, addLvl=0):
         elvlcName = outfile
     else:
         elvlcName = gname + '.elvlc'
-    print ' elvlc file name = ', elvlcName
+    print((' elvlc file name = %s'%(elvlcName)))
     out = open(elvlcName, 'w')
     for i,  conf in enumerate(info['conf']):
         mult = int(2.*info['j'][i]+1.)

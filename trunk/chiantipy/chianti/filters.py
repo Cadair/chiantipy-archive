@@ -14,7 +14,7 @@ def gaussianR(wvl,wvl0, factor=1000.):
     if factor:
         std = wvl0/factor
     else:
-        print ' the resolving power of the gaussianR filter is undefined'
+        print(' the resolving power of the gaussianR filter is undefined')
         return None
     wvl = np.asarray(wvl, 'float64')
     return np.exp(-0.5*((wvl - wvl0)/std)**2)/(np.sqrt(2.*np.pi)*std)
@@ -26,7 +26,7 @@ def gaussian(wvl,wvl0, factor=0):
     if factor:
         std = factor
     else:
-        print ' the width of the gaussian filter is undefined'
+        print(' the width of the gaussian filter is undefined')
         return None
     wvl = np.asarray(wvl, 'float64')
     dwvl = wvl - np.roll(wvl, 1)
@@ -43,9 +43,9 @@ def boxcar(wvl, wvl0, factor=0):
     if factor:
         # width must be at least equal to the wavelength step
         width = max(factor, dwvl.min())
-        print ' width = ', width
+        print((' width = %10.2e'%(width)))
     else:
-        print ' the width of the box filter is undefined'
+        print(' the width of the box filter is undefined')
         return None
     good1 = (wvl > wvl0 - width/2.)
     good2 = (wvl < wvl0 + width/2.)
@@ -59,7 +59,7 @@ def lorentz(wvl, wvl0, factor=0):
     if factor:
         gamma = factor
     else:
-        print ' the factor gamma of the lorentz filter is undefined'
+        print(' the factor gamma of the lorentz filter is undefined')
         return None
     wvl = np.asarray(wvl, 'float64')
     dwvl = wvl - np.roll(wvl, 1)
