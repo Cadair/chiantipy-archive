@@ -10,7 +10,7 @@ rStar is the distance of the plasma from the source in units of the sources radi
 distance is the distance from the central source
 '''
 import os
-import util
+from  . import util
 #import constants
 #import filters
 #import mputil

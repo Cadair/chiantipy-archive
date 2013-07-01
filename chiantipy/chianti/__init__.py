@@ -35,25 +35,25 @@ if pl.rcParams['backend'].lower() == 'qt4agg':
 elif pl.rcParams['backend'].lower() == 'wxagg':
     import gui_wx.gui as gui
 elif pl.rcParams['backend'].lower() == 'gtkagg':
-    import gui_cl.gui as gui
+    import  gui_cl.gui as gui
 elif pl.rcParams['backend'].lower() == 'agg':
-    import gui_cl.gui as gui
+    import  gui_cl.gui as gui
 elif pl.rcParams['backend'].lower() == 'agg':
-    import gui_cl.gui as gui
+    import  gui_cl.gui as gui
 elif pl.rcParams['backend'].lower() == 'macosx':
-    import gui_cl.gui as gui
+    import  gui_cl.gui as gui
 else:
-    print(' - Warning - \n' \
+    print((' - Warning - \n' \
           + ' - in order to use the various gui dialogs, the matlpotlib/pylab backend needs \n' \
           +' - to be either Qt4Agg or WXAgg - \n' \
          +' - in order to use the command line dialogs, the matlpotlib/pylab backend needs \n' \
          +' - to be GTKAgg or MacOSX - \n' \
-        + ' - current backend is %s \n '%(pl.rcParams['backend']))
-    print(' - the full functionality of the chianti.core.ion class may not be available \n')
-    print(' - it would probably be better to set your matplotlib backend to either \n')
-    print(' - Qt4Agg, WXAgg, GTKAgg, or MacOSX \n')
-    print(' - using the command line dialogs for now but there could be problems - \n')
-    import gui_cl.gui as gui
+        + ' - current backend is %s \n '%(pl.rcParams['backend'])))
+    print((' - the full functionality of the chianti.core.ion class may not be available \n'))
+    print((' - it would probably be better to set your matplotlib backend to either \n'))
+    print((' - Qt4Agg, WXAgg, GTKAgg, or MacOSX \n'))
+    print((' - using the command line dialogs for now but there could be problems - \n'))
+    import  gui_cl.gui as gui
 #
 # placed here because util needs gui
 import util

@@ -80,7 +80,7 @@ class FortranLine:
          take more space, instead of being replaced by stars according
          to Fortran conventions.
     """
-    
+
     def __init__(self, line, format, length = 80):
         """
         @param data: either a sequence of Python objects, or a string
@@ -170,7 +170,7 @@ class FortranLine:
                     value = 0
                 else:
                     # by AP
-                    # sometimes a line does not match to expected format, 
+                    # sometimes a line does not match to expected format,
                     # e.g.: pdb2myd.ent.Z chain: - model: 0 : CONECT*****
                     # catch this and set value to None
                     try:
@@ -212,17 +212,17 @@ class FortranLine:
                     if value is None:
                         s = ''
                     elif type == 'I':
-                        s = `value`
+                        s = repr(value)
                     elif type == 'D':
-                        s = ('%'+`length`+'.'+`fraction`+'e') % value
+                        s = ('%'+repr(length)+'.'+repr(fraction)+'e') % value
                         n = string.find(s, 'e')
                         s = s[:n] + 'D' + s[n+1:]
                     elif type == 'E':
-                        s = ('%'+`length`+'.'+`fraction`+'e') % value
+                        s = ('%'+repr(length)+'.'+ repr(fraction)+'e') % value
                     elif type == 'F':
-                        s = ('%'+`length`+'.'+`fraction`+'f') % value
+                        s = ('%'+repr(length)+'.'+repr(fraction)+'f') % value
                     elif type == 'G':
-                        s = ('%'+`length`+'.'+`fraction`+'g') % value
+                        s = ('%'+repr(length)+'.'+repr(fraction)+'g') % value
                     else:
                         raise ValueError('Not yet implemented')
                     s = string.upper(s)
@@ -317,7 +317,7 @@ class FortranFormat:
 if __name__ == '__main__':
     f = FortranFormat("'!!',D10.3,F10.3,G10.3,'!!'")
     l = FortranLine([1.5707963, 3.14159265358, 2.71828], f)
-    print str(l)
+    print((str(l)))
     f = FortranFormat("F12.0")
     l = FortranLine('2.1D2', f)
-    print l[0]
+    print((l[0]))
