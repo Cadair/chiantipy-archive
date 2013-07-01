@@ -1,10 +1,16 @@
-'''the ChiantiPy - CHIANTI Python package
+'''
+the ChiantiPy - CHIANTI Python package
 calculates various aspects of emission line and continua from the
-CHIANTI atomic database for astrophysical spectroscopy'''
+CHIANTI atomic database for astrophysical spectroscopy
+'''
+#from __future__ import absolute_import
 import os
-import constants
-import filters
-import mputil
+#import constants
+#import filters
+#import mputil
+from . import constants
+from . import filters
+from . import mputil
 #
 #try:
 #    chInteractive = int(os.environ['CHIANTIPY_INTERACTIVE'])
@@ -56,5 +62,5 @@ else:
     import  gui_cl.gui as gui
 #
 # placed here because util needs gui
-import util
+from . import util
 
