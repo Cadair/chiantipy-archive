@@ -10,7 +10,7 @@ that is found in the LICENSE file
 import os, fnmatch
 from types import *
 from ConfigParser import *
-import cPickle
+import pickle
 from datetime import date
 import numpy as np
 from scipy import interpolate
@@ -33,7 +33,9 @@ def between(array,limits):
     # -------------------------------------------------------------------------------------
     #
 def ipRead(verbose=False):
-    """ reads the ionization potential file, returns ip array in eV"""
+    """
+    reads the ionization potential file, returns ip array in eV
+    """
     topdir=os.environ["XUVTOP"]
     ipname=os.path.join(topdir, 'ip','chianti.ip')
     ipfile=open(ipname)
@@ -50,7 +52,7 @@ def ipRead(verbose=False):
         if int(s2[0]) > maxz:
             maxz=int(s2[0])
     if verbose:
-        print(' maxz = %5i'%(maxz))
+        print((' maxz = %5i'%(maxz)))
     nip=nip-1
     ip=np.zeros((maxz, maxz), 'Float64')
     for aline in data[0:nip]:
@@ -58,7 +60,7 @@ def ipRead(verbose=False):
         iz=int(s2[0])
         ion=int(s2[1])
         ip[iz-1, ion-1]=float(s2[2])
-    return ip*1.239841875e-4
+    return ip*const.invCm2Ev
     #
     # -------------------------------------------------------------------------------------
     #
@@ -80,12 +82,12 @@ def masterListInfo(force=0):
     if not makeNew:
 #       print ' file exists - ',  infoName
         pfile = open(infoName, 'r')
-        masterListInfo = cPickle.load(pfile)
+        masterListInfo = pickle.load(pfile)
         pfile.close
     elif os.access(infoPath, os.W_OK):
         # the file does not exist but we have write access and will create it
         defaults = defaultsRead()
-        print ' defaults = ', defaults
+        print((' defaults = %s'%(str(defaults))))
         ioneqName = defaults['ioneqfile']
         ioneq = ioneqRead(ioneqname = ioneqName)
         masterList = masterListRead()
@@ -137,7 +139,7 @@ def masterListInfo(force=0):
             wmax = 1.e+30
             masterListInfo[ions] = {'wmin':wmin, 'wmax':wmax, 'tmin':tmin, 'tmax':tmax}
         pfile = open(infoName, 'w')
-        cPickle.dump(masterListInfo, pfile)
+        pickle.dump(masterListInfo, pfile)
         pfile.close
     else:
         # the file does not exist and we do NOT have write access to creat it
@@ -159,7 +161,7 @@ def masterListInfo(force=0):
             wmax = 1.e+30
             masterListInfo[ions] = {'wmin':wmin, 'wmax':wmax, 'tmin':1.e+4, 'tmax':1.e+9}
         pfile = open(infoName, 'w')
-        cPickle.dump(masterListInfo, pfile)
+        pickle.dump(masterListInfo, pfile)
         pfile.close
         masterListInfo = {'noInfo':'none'}
     return masterListInfo
@@ -189,7 +191,7 @@ def photoxRead(ions):
     #
     zion=convertName(ions)
     if zion['Z'] < zion['Ion']:
-        print ' this is a bare nucleus that has no ionization rate'
+        print((' this is a bare nucleus that has no ionization rate'))
         return
     #
     fname=ion2filename(ions)
@@ -216,8 +218,8 @@ def photoxRead(ions):
         ind0 = int(lines[icounter][8:15])
         if irsl != lvl11 or ind0 != lvl21:
             # this only happens if the file was written incorrectly
-            print ' lvl1, lvl2 = ', lvl11, lvl21
-            print ' irsl, indo = ', irsl,  ind0
+            print((' lvl1, lvl2 = %7i %7i'%(lvl11, lvl21)))
+            print((' irsl, indo = %7i %7i'%(irsl,  ind0)))
             return
         crs = lines[icounter][15:].split()
         cross1 = np.asarray(crs, 'float64')
@@ -372,7 +374,7 @@ def defaultsRead(verbose=0):
     initDefaults={'abundfile': 'sun_photospheric_1998_grevesse','ioneqfile': 'chianti', 'wavelength': 'angstrom', 'flux': 'energy','gui':False}
     rcfile=os.path.join(os.environ['HOME'],'.chianti/chiantirc')
     if os.path.isfile(rcfile):
-        print ' reading chiantirc file'
+        print((' reading chiantirc file'))
         config = RawConfigParser(initDefaults)
         config.read(rcfile)
         defaults = {}
@@ -385,10 +387,10 @@ def defaultsRead(verbose=0):
     else:
         defaults = initDefaults
         if verbose:
-            print ' chiantirc file (/HOME/.chianti/chiantirc) does not exist'
-            print ' using the following defaults'
-            for akey in defaults.keys():
-                print akey, ' = ', defaults[akey]
+            print((' chiantirc file (/HOME/.chianti/chiantirc) does not exist'))
+            print((' using the following defaults'))
+            for akey in list(defaults.keys()):
+                print((' %s = %s'%(akey, defaults[akey])))
     return defaults
     #
     # -------------------------------------------------------------------------------------
@@ -423,7 +425,7 @@ def abundanceRead(abundancename=''):
         abundlabel = 'ChiantiPy - Select an abundance file'
         fname = chianti.gui.chpicker(abundir, filter='*.abund', label=abundlabel)
         if fname == None:
-            print' no abundance file selected'
+            print((' no abundance file selected'))
             return 0
         else:
             abundancefilename=os.path.basename(fname)
@@ -513,7 +515,7 @@ def elvlcRead(ions, filename=0, getExtended=0, verbose=0,  useTh=1):
         fname=ion2filename(ions)
         elvlname=fname+'.elvlc'
     if not os.path.isfile(elvlname):
-        print ' elvlc file does not exist:  ',elvlname
+        print((' elvlc file does not exist:  %s'%(elvlname)))
         return {'status':0}
     status = 1
     input=open(elvlname,'r')
@@ -528,7 +530,7 @@ def elvlcRead(ions, filename=0, getExtended=0, verbose=0,  useTh=1):
         nlvls=nlvls+1
     nlvls-=1
     if verbose:
-        print ' nlvls = ', nlvls
+        print((' nlvls = %i'%(nlvls)))
     lvl=[0]*nlvls
     conf = [0]*nlvls
     term=[0]*nlvls
@@ -545,7 +547,7 @@ def elvlcRead(ions, filename=0, getExtended=0, verbose=0,  useTh=1):
         extended = [' ']*nlvls
     for i in range(0,nlvls):
         if verbose:
-            print s1[i][0:115]
+            print((s1[i][0:115]))
         inpt = FortranLine(s1[i][0:115],elvlcFormat)
         lvl[i]=inpt[0]
         term[i]=inpt[1].strip()
@@ -567,8 +569,8 @@ def elvlcRead(ions, filename=0, getExtended=0, verbose=0,  useTh=1):
             if cnt > 0:
                 idx = s1[i].index(',')
                 extended[i] = s1[i][idx+1:]
-    eryd = map(lambda x: x*const.invCm2ryd, ecm)
-    erydth = map(lambda x: x*const.invCm2ryd, ecmth)
+    eryd = [x*const.invCm2ryd for x in ecm]
+    erydth = [x*const.invCm2ryd for x in ecmth]
     ref=[]
     for i in range(nlvls+1,len(s1)-1):
         s1a=s1[i][:-1]
@@ -610,19 +612,19 @@ def elvlcWrite(info, outfile=0, addLvl=0, includeRyd=0):
         elvlcName = outfile
     else:
         elvlcName = gname + '.elvlc'
-    print ' elvlc file name = ', elvlcName
+    print((' elvlc file name = ', elvlcName))
     #
 #    if not info.has_key('ecmx'):
 #        info['ecmx'] = np.zeros_like(info['ecm'])
 #    if not info.has_key('erydx'):
 #        info['erydx'] = np.zeros_like(info['eryd'])
-    if not info.has_key('label'):
+    if 'label' not in info:
         nlvl = len(info['ecm'])
         info['label'] = [' ']*nlvl
-    if not info.has_key('eryd'):
-        info['eryd'] = map(lambda x: x*const.invCm2ryd, info['ecm'])
-    if not info.has_key('erydth'):
-        info['erydth'] = map(lambda x: x*const.invCm2ryd, info['ecmth'])
+    if 'eryd' not in info:
+        info['eryd'] = [x*const.invCm2ryd for x in info['ecm']]
+    if 'erydth 'not in info:
+        info['erydth'] = [x*const.invCm2ryd for x in info['ecmth']]
    #
     out = open(elvlcName, 'w')
     for i,  aterm in enumerate(info['term']):
@@ -738,14 +740,14 @@ def wgfaWrite(info, outfile = 0, minBranch = 0.):
         wgfaname = outfile
     else:
         wgfaname = gname + '.wgfa'
-    print ' wgfa file name = ', wgfaname
+    print((' wgfa file name = ', wgfaname))
     if minBranch > 0.:
         info['ref'].append(' minimum branching ratio = %10.2e'%(minBranch))
     out = open(wgfaname, 'w')
     ntrans = len(info['lvl1'])
     nlvl = max(info['lvl2'])
     totalAvalue = np.zeros(nlvl, 'float64')
-    if info.has_key('pretty1'):
+    if 'pretty1' in info:
         pformat = '%5i%5i%15.4f%15.3e%15.3e%30s - %30s'
     else:
         pformat = '%5i%5i%15.4f%15.3e%15.3e'
@@ -760,9 +762,9 @@ def wgfaWrite(info, outfile = 0, minBranch = 0.):
         else:
             branch = 0.
         if branch > minBranch and abs(info['lvl1'][itrans]) > 0 and info['lvl2'][itrans] > 0:
-            if info.has_key('pretty1'):
+            if 'pretty1' in info:
                 # generally only useful with NIST data
-                if info.has_key('transType'):
+                if 'transType' in info:
                     if info['transType'][itrans] != '':
                         lbl2 = info['pretty2']+'  ' + info['transType'][itrans]
                 else:
@@ -903,7 +905,7 @@ def splomDescale(splom, energy):
         #
         #
         elif ttype > 4:
-            print(' splom t_type ne 1,2,3,4 = %4i %4i %4i'%(ttype,l1,l2))
+            print((' splom t_type ne 1,2,3,4 = %4i %4i %4i'%(ttype,l1,l2)))
     #
     #
     omega=np.where(omega > 0.,omega,0.)
@@ -1093,7 +1095,7 @@ def cireclvlRead(ions, filename=0, cilvl=0, reclvl=0, rrlvl=0):
         lines = input.readlines()
         input.close()
     else:
-        print 'file does not exist:  ', paramname
+        print(('file does not exist:  ', paramname))
         return {'error':'file does not exist: ' + paramname}
     #
     iline = 0
@@ -1252,7 +1254,7 @@ def diRead(ions, filename=0):
     else:
         zion=convertName(ions)
         if zion['Z'] < zion['Ion']:
-            print ' this is a bare nucleus that has no ionization rate'
+            print(' this is a bare nucleus that has no ionization rate')
             return
         #
         fname=ion2filename(ions)
@@ -1353,13 +1355,13 @@ def eaRead(ions, filename=0):
     else:
         zion=convertName(ions)
         if zion['Z'] < zion['Ion']:
-            print ' this is a bare nucleus that has no ionization rate'
+            print(' this is a bare nucleus that has no ionization rate')
             return
         #
         fname=ion2filename(ions)
         splupsname=fname+'.easplups'
     if not os.path.exists(splupsname):
-        print ' could not find file:  ', splupsname
+        print((' could not find file:  ', splupsname))
         self.Splups={"lvl1":-1}
         return {"lvl1":-1}
     # there is splups/psplups data
@@ -1447,7 +1449,7 @@ def rrRead(ions):
             RrParams={'rrtype':rrtype, 'params':params, 'ref':ref}
         else:
             RrParams=None
-            print ' for ion %5s unknown RR type = %5i' %(ions, rrtype)
+            print((' for ion %5s unknown RR type = %5i' %(ions, rrtype)))
         return RrParams
     else:
         return {'rrtype':-1}
@@ -1483,7 +1485,7 @@ def drRead(ions):
             DrParams={'drtype':drtype, 'params':params, 'ref':ref}
         else:
             DrParams = None
-            print ' for ion %5s unknown DR type = %5i' %(ions, drtype)
+            print((' for ion %5s unknown DR type = %5i' %(ions, drtype)))
     else:
         DrParams=None
     return DrParams
@@ -1502,7 +1504,7 @@ def ioneqRead(ioneqname='', verbose=0):
         # the user will select an ioneq file
         fname = chianti.gui.chpicker(ioneqdir,filter='*.ioneq',label = 'Select an Ionization Equilibrium file')
         if fname == None:
-            print' no ioneq file selected'
+            print(' no ioneq file selected')
             return False
         else:
             ioneqfilename=os.path.basename(fname)
@@ -1527,18 +1529,18 @@ def ioneqRead(ioneqname='', verbose=0):
             baselist.append(os.path.basename(one))
         cnt = baselist.count(ioneqname+'.ioneq')
         if cnt == 0:
-            print ' ioneq file not found:  ', fname
-            print ' the following files do exist: '
+            print((' ioneq file not found:  ', fname))
+            print(' the following files do exist: ')
             for one in newlist:
-                print os.path.basename(one)
+                print((os.path.basename(one)))
             return
         elif cnt == 1:
             idx = baselist.index(ioneqname+'.ioneq')
             if verbose:
-                print ' file exists:  ', newlist[idx]
+                print((' file exists:  ', newlist[idx]))
             fname = newlist[idx]
         elif cnt > 1:
-            print ' found more than one ioneq file', fname
+            print((' found more than one ioneq file', fname))
             return
     #
     input=open(fname,'r')
@@ -1546,7 +1548,7 @@ def ioneqRead(ioneqname='', verbose=0):
     input.close()
     ntemp,nele=s1[0].split()
     if verbose:
-        print ' ntemp, nele = ', ntemp, nele
+        print((' ntemp, nele = %5i %5i'%(ntemp, nele)))
     nTemperature=int(ntemp)
     nElement=int(nele)
     #
@@ -1692,7 +1694,7 @@ def listFiles(path):
     walks the path and subdirectories to return a list of files
     '''
     alist=os.walk(path)
-    print ' getting file list'
+    print(' getting file list')
     listname=[]
     for (dirpath,dirnames,filenames) in alist:
         if len(dirnames) == 0:
@@ -1730,7 +1732,7 @@ def fblvlRead(filename, verbose=False):
             nlvls=nlvls+1
         nlvls-=1
         if verbose:
-            print ' nlvls = ', nlvls
+            print((' nlvls = %5i'%(nlvls)))
         lvl=[0]*nlvls
         conf=[0]*nlvls
         pqn=[0]*nlvls
@@ -1741,7 +1743,7 @@ def fblvlRead(filename, verbose=False):
         ecmth=[0]*nlvls
         for i in range(0,nlvls):
             if verbose:
-                print s1[i]
+                print((s1[i]))
             inpt=FortranLine(s1[i],elvlcFormat)
             lvl[i]=inpt[0]
             conf[i]=inpt[1].strip()
