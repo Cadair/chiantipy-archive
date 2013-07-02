@@ -1,4 +1,4 @@
-import types
+#import types
 import numpy as np
 import chianti.core as ch
 from chianti import util
@@ -27,7 +27,7 @@ class ioneq(ch.ion):
         ioneq=np.zeros((z+1), 'float64')
         factor=[]
         for anIon in chIons:
-            if type(anIon.IonizRate) != types.NoneType and type(anIon.RecombRate) != types.NoneType:
+            if type(anIon.IonizRate) != type(None) and type(anIon.RecombRate) != type(None):
                 rat=anIon.IonizRate['rate']/anIon.RecombRate['rate']
                 factor.append(rat**2 + rat**(-2))
             else:
@@ -164,12 +164,12 @@ class ioneq(ch.ion):
 #        diff = np.abs((np.ones(z+1,'float64') - self.Evolver.diagonal()).max())
         new = np.dot(self.Evolver,self.Ioneq)
         diff = np.where(self.Ioneq > 0.,np.abs(new - self.Ioneq)/self.Ioneq,100.)
-        print(' diff = %10.2e'%(diff))
+        print((' diff = %10.2e'%(diff)))
         dt = maxDiff/diff.min()
-        print ' dt = ',dt
+        print((' dt = %12.2e'%(dt)))
         self.getEvolver(temperature,density,dt)
         niter = int(10.*maxDiff/diff.min())+1
-        print ' niter = ',niter
+        print((' niter = %i'%(niter)))
         state = np.zeros((niter+1,z+1),'float64')
         stateTot = np.zeros(niter+1,'float64')
         stateDiff = np.zeros((niter,z+1,z+1),'float64')
@@ -200,7 +200,7 @@ class ioneq(ch.ion):
             dChange = deltaChange[iter]
             previousChange = change[iter]
             iter+=1
-        print ' # of iterations = ',iter
+        print((' # of iterations = %i'%(iter)))
         self.Temperature = self.finalTemperature
         self.getIoneq()
         state[iter] = self.Ioneq
