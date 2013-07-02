@@ -35,9 +35,6 @@ MasterList = util.masterListRead()
 AbundanceAll = util.abundanceRead(abundancename = Defaults['abundfile'])
 IoneqAll = util.ioneqRead(ioneqname = Defaults['ioneqfile'])
 # gets the ChianitPy version
-import version
-__version__ = version.__version__
-__version_info__ = version.__version_info__
 # gets the version of the CHIANTI database
-Version = util.versionRead()
+ChiantiVersion = util.versionRead()
 keywordArgs = ['temperature','eDensity','hDensity', 'pDensity','radTemperature', 'rStar', 'distance']
