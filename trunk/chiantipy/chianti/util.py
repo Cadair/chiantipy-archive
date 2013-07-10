@@ -490,7 +490,7 @@ def qrp(z,u):
     #
 def elvlcRead(ions, filename=0, getExtended=0, verbose=0,  useTh=1):
     """
-    a future utility - reads .elvl3 files
+    reads the new format elvlc files
     read a chianti energy level file that has 6 energy columns
     and returns
     {"lvl":lvl,"conf":conf,"term":term,"spin":spin,"l":l,"spd":spd,"j":j
@@ -859,53 +859,43 @@ def splomDescale(splom, energy):
     for isplom in range(0,nsplom):
         #
         sx1 = energy/(splom['deryd'][isplom]*const.ryd2Ev)
-        good = sx1 > 1.
-        nbad = nenergy - good.sum()
-        c_curr = splom['c'][isplom]
-        #
-        if splom['ttype'][isplom] == 1:
-            sx = 1. - np.log(c_curr)/np.log(sx1[good] - 1. + c_curr)
-#            sx = np.log(sx1)/np.log(sx1 + splom['c'][isplom])
-            y2 = interpolate.splrep(sxint,splom['splom'][:, isplom],s=0)  #allow smoothing,s=0)
-            som = interpolate.splev(sx,y2,der=0)
-            #  idl> omega(gen(ige),isplom)=som_int(ige)*alog(x_int(ige)-1.+exp(1.))
-            omega[isplom, nbad:] = som*np.log(sx -1. + np.exp(1.))
-#            omega[isplom, nbad:] = som*np.log(sx1[good] + np.exp(1.))
-        #
-        elif splom['ttype'][isplom] == 2:
-#          idl >   sx_int=(x_int-1.)/(x_int-1.+c_curr)
-            sx =(sx1[good] - 1.)/(sx1[good] -1. + c_curr)
-#            sx = sx1/(sx1 + splom['c'][isplom])
-            #sx_int=(x_int-1.)/(x_int-1.+c_curr)
-            y2 = interpolate.splrep(sxint,splom['splom'][:, isplom],s=0)  #allow smoothing,s=0)
-            som=interpolate.splev(sx,y2,der=0)
-#            omega[isplom, nbad:] = som
-#           idl >  omega(gen(ige),isplom)=nr_splint(sx,som,som2,sx_int(ige))
-            omega[isplom, nbad:] = som
-        #
-        elif splom['ttype'][isplom] == 3:
-#          idl >   sx_int=(x_int-1.)/(x_int-1.+c_curr)
-            sx = (sx1[good] - 1.)/(sx1[good] -1. + c_curr)
-#            sx = sx1/(sx1 + splom['c'][isplom])
-            y2 = interpolate.splrep(sxint,splom['splom'][:, isplom],s=0)  #allow smoothing,s=0)
-            som = interpolate.splev(sx,y2,der=0)
-            omega[isplom, nbad:] = som/sx1[good]**2
-#           idl >  omega(gen(ige),isplom)=som_int/x_int(ige)^2
-#            omega[isplom, nbad:] =som/(sx1[good] + 1.)**2
-        #
-        elif splom['ttype'][isplom] == 4:
-            sx = 1. - np.log(c_curr)/np.log(sx1[good] -1. + c_curr)
-#            idl > sx_int=1.-alog(c_curr)/alog(x_int-1.+c_curr)
-#            sx = np.log(sx1)/np.log(sx1 + splom['c'][isplom])
-            y2 = interpolate.splrep(sxint,splom['splom'][:, isplom],s=0)  #allow smoothing,s=0)
-            som=interpolate.splev(sx,y2,der=0)
-#           idl >  omega(gen(ige),isplom)=som_int(ige)*alog(x_int(ige)-1.+c_curr)
-            omega[isplom, nbad:] = som*np.log(sx1[good] -1. + c_curr)
-        #
-        #
-        #
-        elif ttype > 4:
-            print((' splom t_type ne 1,2,3,4 = %4i %4i %4i'%(ttype,l1,l2)))
+        good = sx1 >= 1.
+        # make sure there are some valid energies above the threshold
+        if good.sum():
+            nbad = nenergy - good.sum()
+            c_curr = splom['c'][isplom]
+            #
+            if splom['ttype'][isplom] == 1:
+                sx = 1. - np.log(c_curr)/np.log(sx1[good] - 1. + c_curr)
+                y2 = interpolate.splrep(sxint,splom['splom'][:, isplom],s=0)  #allow smoothing,s=0)
+                som = interpolate.splev(sx,y2,der=0)
+                omega[isplom, nbad:] = som*np.log(sx -1. + np.exp(1.))
+            #
+            elif splom['ttype'][isplom] == 2:
+                sx =(sx1[good] - 1.)/(sx1[good] -1. + c_curr)
+                y2 = interpolate.splrep(sxint,splom['splom'][:, isplom],s=0)  #allow smoothing,s=0)
+                som=interpolate.splev(sx,y2,der=0)
+                omega[isplom, nbad:] = som
+            #
+            elif splom['ttype'][isplom] == 3:
+                sx = (sx1[good] - 1.)/(sx1[good] -1. + c_curr)
+                y2 = interpolate.splrep(sxint,splom['splom'][:, isplom],s=0)  #allow smoothing,s=0)
+                som = interpolate.splev(sx,y2,der=0)
+                omega[isplom, nbad:] = som/sx1[good]**2
+            #
+            elif splom['ttype'][isplom] == 4:
+                sx = 1. - np.log(c_curr)/np.log(sx1[good] -1. + c_curr)
+                y2 = interpolate.splrep(sxint,splom['splom'][:, isplom],s=0)  #allow smoothing,s=0)
+                som=interpolate.splev(sx,y2,der=0)
+                omega[isplom, nbad:] = som*np.log(sx1[good] -1. + c_curr)
+            #
+            #
+            #
+            elif ttype > 4:
+                print((' splom t_type ne 1,2,3,4 = %4i %4i %4i'%(ttype,l1,l2)))
+        else:
+            # there are no energies above the threshold
+            pass
     #
     #
     omega=np.where(omega > 0.,omega,0.)

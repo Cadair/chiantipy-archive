@@ -75,7 +75,3 @@ def moffat(wvl, wvl0, factor=2.5):
     dwvl = np.abs(wvl[1] - wvl[0])
     moffat = 1./(1.+((wvl - wvl0)/0.0275)**2)**factor
     return moffat/(dwvl*moffat.sum())
-
-
-
-

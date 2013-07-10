@@ -19,6 +19,7 @@
 # With contributions from Andreas Prlic <andreas@came.sbg.ac.at>
 # last revision: 2006-6-23
 #
+#  revision by Ken Dere to make compatible with Python 3
 
 """
 Fortran-style formatted input/output
