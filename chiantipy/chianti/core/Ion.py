@@ -303,7 +303,9 @@ class ion:
         #-----------------------------------------------------------
         #
     def diRate(self):
-        '''Calculate the direct ionization rate coefficient as a function of temperature (K).'''
+        '''
+        Calculate the direct ionization rate coefficient as a function of temperature (K)
+        '''
         if hasattr(self, 'DiParams'):
             DiParams = self.DiParams
         else:
@@ -557,7 +559,7 @@ class ion:
 #            print ' this is a bare nucleus and has no ionization rate'
             self.IonizRate = {'rate':np.zeros_like(self.Temperature), 'temperature':self.Temperature}
             return
-        if not energy:
+        if not energy.all():
             energy = self.Ip*10.**(0.025*arange(401))
         #
         self.diCross(energy)
@@ -565,16 +567,18 @@ class ion:
         if self.DiParams['info']['neaev'] == 0:
             ionizCross=self.DiCross['cross']
         else:
-            ionizrate=self.DiCross['cross']+self.EaCross['cross']
-        self.IonizRate = {'cross':ionizCross, 'energy':energy}
+            ionizCross=self.DiCross['cross']+self.EaCross['cross']
+        self.IonizCross = {'cross':ionizCross, 'energy':energy}
         return
         #
         # -------------------------------------------------------------------------------------
         #
     def ionizRate(self):
-        '''Provides the total ionization rate.
+        '''
+        Provides the total ionization rate.
 
-        Calls diRate and eaRate.'''
+        Calls diRate and eaRate.
+        '''
         if self.Z < self.Ion:
 #            print ' this is a bare nucleus and has no ionization rate'
             self.IonizRate = {'rate':np.zeros_like(self.Temperature), 'temperature':self.Temperature}
