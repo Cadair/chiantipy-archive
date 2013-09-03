@@ -2805,12 +2805,18 @@ class ion:
         #
         # -------------------------------------------------------------------------------------
         #
-    def popPlot(self,top=10, plotFile=0, outFile=0):
-        """Plots populations vs temperature or eDensity.
+    def popPlot(self,top=10, plotFile=0, outFile=0, pub=0):
+        """
+        Plots populations vs temperature or eDensity.
 
-        top specifies the number of the most highly populated levels to plot."""
+        top specifies the number of the most highly populated levels to plot
+        if pub is set, the want publication plots (bw, lw=2).
+        """
         #self.Population={"temperature":temperature,"eDensity":eDensity,"population":pop}
-        fontsize=14
+        if pub:
+            fontsize=16
+        else:
+            fontsize=14
         #
         if hasattr(self, 'Population'):
             temperature=self.Population["temperature"]
@@ -2874,7 +2880,10 @@ class ion:
             for lvl in toplvl:
                 # for some low temperature, populations can not be calculated
                 good = pop[:, lvl-1] > 0
-                pl.loglog(temperature[good],pop[good,lvl-1])
+                if pub:
+                    pl.loglog(temperature[good],pop[good,lvl-1], 'k',lw=2)
+                else:
+                    pl.loglog(temperature[good],pop[good,lvl-1])
                 skip=3
                 if good.sum() == ntemp:
                     start=divmod(lvl,ntemp)[1]
@@ -2913,7 +2922,10 @@ class ion:
             for lvl in toplvl:
                 # for some low temperature, populations can not be calculated
                 good = pop[:, lvl-1] > 0
-                pl.loglog(eDensity[good],pop[good,lvl-1])
+                if pub:
+                    pl.loglog(eDensity[good],pop[good,lvl-1], 'k', lw=2)
+                else:
+                    pl.loglog(eDensity[good],pop[good,lvl-1])
                 skip=3
                 if good.sum() == ndens:
                     start=divmod(lvl,ndens)[1]
@@ -2951,7 +2963,10 @@ class ion:
             for lvl in toplvl:
                 # for some low temperature, populations can not be calculated
                 good = pop[:, lvl-1] > 0
-                pl.loglog(temperature[good],pop[good,lvl-1])
+                if pub:
+                    pl.loglog(temperature[good],pop[good,lvl-1], 'k', lw=2)
+                else:
+                    pl.loglog(temperature[good],pop[good,lvl-1])
                 skip=3
                 if good.sum() == ntemp:
                     start=divmod(lvl,ntemp)[1]
