@@ -231,9 +231,11 @@ class ion:
         # ------------------------------------------------------------------------------
         #
     def diCross(self, energy=None, verbose=False):
-        '''Calculate the direct ionization cross section.
+        '''
+        Calculate the direct ionization cross section.
 
-        Given as a function of the incident electron energy in eV, puts values into DiCross'''
+        Given as a function of the incident electron energy in eV, puts values into DiCross
+        '''
         iso=self.Z - self.Ion + 1
         if type(energy) == types.NoneType:
             btenergy=0.1*np.arange(10)
@@ -4073,12 +4075,16 @@ class ion:
         #
         gAbund=self.Abundance
         #
-        if verbose:
-            print ' abundance, ioneq = ',gAbund,thisIoneq
         try:
             thisIoneq=self.IoneqOne
         except:
             self.ioneqOne()
+            thisIoneq=self.IoneqOne
+        if verbose:
+            print(' abundance = %10.2e '%(gAbund))
+            print(' index  temperature  ion fraction')
+            for it,  anioneq in enumerate(thisIoneq):
+                print (' %5i %10.2e %10.2e '%(it, outTemperature[it], anioneq))
         #        gioneq=np.where(thisIoneq > 0.)
         #        y2=interpolate.splrep(np.log(self.IoneqAll['ioneqTemperature'][gioneq]),np.log(thisIoneq[gioneq]),s=0)  #allow smoothing,s=0)
         #        gIoneq=interpolate.splev(np.log(temperature),y2)   #,der=0)
