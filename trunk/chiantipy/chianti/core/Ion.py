@@ -1420,7 +1420,6 @@ class ion:
             self.Nwgfa=len(self.Wgfa['lvl1'])
             nlvlWgfa = max(self.Wgfa['lvl2'])
             nlvlList =[nlvlWgfa]
-#                print 'fileName = ', fileName
             splupsfile = fileName + '.splups'
             if os.path.isfile(splupsfile):
                 # happens the case of fe_3 and prob. a few others
@@ -2381,14 +2380,12 @@ class ion:
             for iauto, avalue in enumerate(self.Auto['avalue']):
                 l1 = self.Auto["lvl1"][iauto] -1
                 l2 = self.Auto["lvl2"][iauto] -1
+                # for now only consider a single level for upper/higher ion
                 if l1 == 0:
-#                    rad[l1 + ci + nlvls, l2 + ci] += avalue
-#                    rad[l2 + ci,  l2 + ci] -= avalue
-                    rad[l2 + ci, l1 + ci + nlvls] += avalue
-                    rad[l1 + ci + nlvls,  l1 + ci + nlvls] -= avalue
+                    rad[l1 + ci + nlvls, l2 + ci] += avalue
+                    rad[l2 + ci,  l2 + ci] -= avalue
 
         #
-        self.rad=rad
         #
         if self.Nsplups:
             self.upsilonDescale()
@@ -2503,9 +2500,12 @@ class ion:
             if rec:
                 norm[nlvls+ci+rec-1] = 0.
             popmata = np.copy(popmat)
-            popmata[nlvls+ci+rec-1]=norm
+            normRow = (nlvls+ci+rec-1)/2
+            #popmata[nlvls+ci+rec-1]=norm
+            popmata[normRow]=norm
             b=np.zeros(nlvls+ci+rec,'float64')
-            b[nlvls+ci+rec-1]=1.
+            #b[nlvls+ci+rec-1]=1.
+            b[normRow] = 1.
             try:
                 fullpop=np.linalg.solve(popmata,b)
                 pop = fullpop[ci:ci+nlvls]
@@ -2518,7 +2518,7 @@ class ion:
                 popHigher = 0.
 #                print ' error in matrix inversion, setting populations to zero at T = ', ('%8.2e')%(temperature)
         #
-        # ------------------------------------------------------------------------
+        # ------------- ntemp = 1 ---------------------------------------------------------
         #
         elif ndens == 1:
             pop = np.zeros((ntemp, nlvls),"float64")
@@ -2570,6 +2570,7 @@ class ion:
                             popmat[l2 + ci, -1] += self.EDensity*rate[itemp]
                             popmat[-1, -1] -= self.EDensity*rate[itemp]
                             #
+                        # DrRateLvl['totalRate'] includes the branching ratio
                         dielTot = self.DrRateLvl['totalRate'][itemp]
                     else:
                         dielTot = 0.
@@ -2604,9 +2605,15 @@ class ion:
                 if rec:
                     norm[-1] = 0.
                 popmata = np.copy(popmat)
-                popmata[nlvls+ci+rec-1]=norm
+                normRow = (nlvls+ci+rec-1)/2
+                #popmata[nlvls+ci+rec-1]=norm
+                popmata[normRow]=norm
                 b=np.zeros(nlvls+ci+rec,'float64')
-                b[nlvls+ci+rec-1] = 1.
+                #b[nlvls+ci+rec-1]=1.
+                b[normRow] = 1.
+                #popmata[nlvls+ci+rec-1]=norm
+                #b=np.zeros(nlvls+ci+rec,'float64')
+                #b[nlvls+ci+rec-1] = 1.
 #                b[-1] = 1.
                 try:
                     thispop=np.linalg.solve(popmata,b)
@@ -2675,10 +2682,11 @@ class ion:
                     #
                     popmat[-1,  ci] += self.EDensity[idens]*self.IonizRate['rate']
                     popmat[ci, ci] -= self.EDensity[idens]*self.IonizRate['rate']
-                    netRec = self.EDensity[idens]*(self.Higher.RecombRate['rate'] - recTot - dielTot)
-                    if netRec > 0.:
-                        popmat[ci, -1] += netRec
-                        popmat[-1, -1] -= netRec
+                    #
+                    netRecomb = self.EDensity[idens]*(self.Higher.RecombRate['rate'] - recTot - dielTot)
+                    if netRecomb > 0.:
+                        popmat[ci, -1] += netRecomb
+                        popmat[-1, -1] -= netRecomb
                     #
 #                    for itrans in range(len(rrlvl['lvl1'])):
                     for itrans in range(self.Nrrlvl):
@@ -2769,10 +2777,11 @@ class ion:
                     #
                     popmat[-1,  ci] += self.EDensity[itemp]*self.IonizRate['rate'][itemp]
                     popmat[ci, ci] -= self.EDensity[itemp]*self.IonizRate['rate'][itemp]
-                    netRec = self.EDensity[itemp]*(self.Higher.RecombRate['rate'][itemp] - recTot - dielTot)
-                    if netRec > 0.:
-                        popmat[ci, -1] += netRec
-                        popmat[-1, -1] -= netRec
+                    #
+                    netRecomb = self.EDensity[itemp]*(self.Higher.RecombRate['rate'][itemp] - recTot - dielTot)
+                    if netRecomb > 0.:
+                        popmat[ci, -1] += netRecomb
+                        popmat[-1, -1] -= netRecomb
                     #
                     for itrans in range(self.Nrrlvl):
                         lvl1 = rrlvl['lvl1'][itrans]-1
@@ -2801,7 +2810,7 @@ class ion:
 #                    print ' error in matrix inversion, setting populations to zero at T = ', ('%8.2e')%(temperature[itemp])
             #
         pop=np.where(pop >0., pop,0.)
-        self.Population={"temperature":temperature, "eDensity":eDensity, "population":pop, "protonDensity":protonDensity, "ci":ci, "rec":rec, 'popmat':popmata, 'b':b, 'popHigher':popHigher, 'rad':rad}
+        self.Population={"temperature":temperature, "eDensity":eDensity, "population":pop, "protonDensity":protonDensity, "ci":ci, "rec":rec, 'popmat':popmata, 'b':b, 'popHigher':popHigher, 'rad':rad, 'higher':self.Higher, 'recTot':recTot, 'dielTot':dielTot, 'netRecomb':netRecomb}
         #
         return
         #

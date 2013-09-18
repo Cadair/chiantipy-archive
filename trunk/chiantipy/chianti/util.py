@@ -658,7 +658,7 @@ def wgfaRead(ions, filename=0, elvlcname=0, total=0):
     #
     if filename:
         wgfaname = filename
-        if not filename:
+        if not elvlcname:
             elvlcname = os.path.splitext(wgfaname)[0] + '.elvlc'
     else:
         fname=ion2filename(ions)
