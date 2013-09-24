@@ -958,6 +958,8 @@ class ion:
         effRate = []
         de = []
         lvl = []
+        branch = []
+        dekt = []
         totalRate = np.zeros(nt, 'float64')
         lvlformat = '%7i%7i%10.2e%10.2e'
         for i, avalue in enumerate(self.Auto['avalue']):
@@ -965,14 +967,19 @@ class ion:
             gLower = float(self.Higher.Elvlc['mult'][self.Auto['lvl1'][i] - 1])
     #        print i, autoa['lvl2'][i], gLower, gUpper, avalue
             ecm2 = self.Elvlc['ecm'][self.Auto['lvl2'][i] -1]
-            if ecm2 == 0.:
+            if ecm2 < 0.:
                 ecm2 = self.Elvlc['ecmth'][self.Auto['lvl2'][i] -1]
             de1 = ecm2*const.invCm2Erg - self.Ip*const.ev2Erg
+            #de1 = ecm2*const.invCm2Ev - self.Ip
             de.append(de1)
-            dekt = de1/(const.boltzmann*self.Temperature)
-            expkt = np.exp(-de1/(const.boltzmann*self.Temperature))
+            dekt1 = de1/(const.boltzmann*self.Temperature)
+            dekt.append(dekt1)
+            #dekt = de1/(const.boltzmannEv*self.Temperature)
+            #expkt = np.exp(-de1/(const.boltzmann*self.Temperature))
+            expkt = np.exp(-dekt1)
             rate = coef*gUpper*expkt*avalue/(2.*gLower)
-            branch = self.Wgfa['avalueLvl'][self.Auto['lvl2'][i] -1]/(avalue + self.Wgfa['avalueLvl'][self.Auto['lvl2'][i] -1])
+            branch1 = self.Wgfa['avalueLvl'][self.Auto['lvl2'][i] -1]/(avalue + self.Wgfa['avalueLvl'][self.Auto['lvl2'][i] -1])
+            branch.append(branch1)
             lvl.append(self.Auto['lvl2'][i])
 #            print i, self.Auto['lvl2'][i], cnt
 #                print i, j, self.Wgfa['lvl1'][idx[-1 ]], self.Wgfa['lvl2'][idx[-1]], self.Auto['lvl2'][i]
@@ -991,11 +998,11 @@ class ion:
 #                print tstr
 #                print rstr
             allRate.append(rate)
-            effRate.append(rate*branch)
-            totalRate += rate*branch
+            effRate.append(rate*branch1)
+            totalRate += rate*branch1
 #            outpt.write(tstr +'\n')
 #            outpt.write(rstr + '\n')
-        self.DrRateLvl = {'rate':allRate, 'effRate':effRate, 'totalRate':totalRate,  'de':de, 'avalue':self.Auto['avalue'], 'lvl':lvl}   #, 'lvl1':lvl1, 'lvl2':lvl2} - in self.Auto
+        self.DrRateLvl = {'rate':allRate, 'effRate':effRate, 'totalRate':totalRate,  'de':de, 'avalue':self.Auto['avalue'], 'lvl':lvl, 'branch':branch, 'dekt':dekt}   #, 'lvl1':lvl1, 'lvl2':lvl2} - in self.Auto
         #
         # -------------------------------------------------------------------------------------
         #
@@ -1151,7 +1158,7 @@ class ion:
         #  need to make sure elvl is >0, except for ground level
         eryd=np.asarray(self.Elvlc["eryd"])
         erydth=np.asarray(self.Elvlc["erydth"])
-        elvlc=np.where(eryd > 0.,eryd,erydth)
+        elvlc=np.where(eryd >= 0.,eryd,erydth)
 ##        de=self.Elvlc["de"]
         temp=np.asarray(temperature)
         ntemp=temp.size
@@ -2364,7 +2371,16 @@ class ion:
                     dilute = util.dilute(self.RStar)
                 # next - don't include autoionization lines
                 if abs(self.Wgfa['wvl'][iwgfa]) > 0.:
-                    de = const.invCm2Erg*(self.Elvlc['ecm'][l2] - self.Elvlc['ecm'][l1])
+                    if self.Elvlc['ecm'][l2] >= 0.:
+                        ecm2 = self.Elvlc['ecm'][l2]
+                    else:
+                        ecm2 = self.Elvlc['ecmth'][l2]
+                    #
+                    if self.Elvlc['ecm'][l1] >= 0.:
+                        ecm1 = self.Elvlc['ecm'][l1]
+                    else:
+                        ecm1 = self.Elvlc['ecmth'][l1]
+                    de = const.invCm2Erg*(ecm2 - ecm1)
                     dekt = de/(const.boltzmann*self.RadTemperature)
                     # photoexcitation
                     phexFactor = dilute*(float(self.Elvlc['mult'][l2])/float(self.Elvlc['mult'][l1]))/(np.exp(dekt) -1.)
