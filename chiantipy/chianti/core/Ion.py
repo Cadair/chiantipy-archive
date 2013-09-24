@@ -957,7 +957,7 @@ class ion:
         allRate = []
         effRate = []
         de = []
-        lvl2 = []
+        lvl = []
         totalRate = np.zeros(nt, 'float64')
         lvlformat = '%7i%7i%10.2e%10.2e'
         for i, avalue in enumerate(self.Auto['avalue']):
@@ -973,7 +973,7 @@ class ion:
             expkt = np.exp(-de1/(const.boltzmann*self.Temperature))
             rate = coef*gUpper*expkt*avalue/(2.*gLower)
             branch = self.Wgfa['avalueLvl'][self.Auto['lvl2'][i] -1]/(avalue + self.Wgfa['avalueLvl'][self.Auto['lvl2'][i] -1])
-#            lvl2.append(self.Auto['lvl2'][i])
+            lvl.append(self.Auto['lvl2'][i])
 #            print i, self.Auto['lvl2'][i], cnt
 #                print i, j, self.Wgfa['lvl1'][idx[-1 ]], self.Wgfa['lvl2'][idx[-1]], self.Auto['lvl2'][i]
     #        print ' lvl2, rate = ', autoa['lvl2'][i], rate
@@ -995,7 +995,7 @@ class ion:
             totalRate += rate*branch
 #            outpt.write(tstr +'\n')
 #            outpt.write(rstr + '\n')
-        self.DrRateLvl = {'rate':allRate, 'effRate':effRate, 'totalRate':totalRate,  'de':de, 'avalue':self.Auto['avalue']}   #, 'lvl1':lvl1, 'lvl2':lvl2} - in self.Auto
+        self.DrRateLvl = {'rate':allRate, 'effRate':effRate, 'totalRate':totalRate,  'de':de, 'avalue':self.Auto['avalue'], 'lvl':lvl}   #, 'lvl1':lvl1, 'lvl2':lvl2} - in self.Auto
         #
         # -------------------------------------------------------------------------------------
         #
