@@ -2,6 +2,7 @@ import os
 import types
 import numpy as np
 from scipy import interpolate
+import matplotlib as mpl
 import time
 #
 import chianti.data as chdata
@@ -5227,7 +5228,7 @@ class ioneq(ion):
                 ioneq[:, it]=ioneq[:, it]/ionsum
             self.Ioneq=ioneq
 #
-    def plot(self, stages=0, xr=0, yr=0, oplot=0, label=1, title=1,  bw=0):
+    def plot(self, stages=0, xr=0, yr=0, oplot=0, label=1, title=1,  bw=0, semilogx = 0):
         '''
         Plots the ionization equilibria.
 
@@ -5241,8 +5242,11 @@ class ioneq(ion):
         '''
         if bw:
             linestyle=['k-','k--', 'k-.', 'k:']
+            mpl.rcParams['font.size'] = 16
+            lw = 2
         else:
             linestyle=['b-','r--', 'g-.', 'm:']
+            lw = 1
         #
         if not stages:
             stages=range(1, self.Z+2)
@@ -5256,7 +5260,10 @@ class ioneq(ion):
         xyr.extend(list(yr))
         #
         iz=stages[0]
-        pl.loglog(self.Temperature, self.Ioneq[iz-1], linestyle[0])
+        if semilogx:
+            pl.semilogx(self.Temperature, self.Ioneq[iz-1], linestyle[0], lw=lw)
+        else:
+            pl.loglog(self.Temperature, self.Ioneq[iz-1], linestyle[0], lw=lw)
         if label:
             idx=self.Ioneq[iz-1] == self.Ioneq[iz-1].max()
             if idx.sum() > 1:
@@ -5307,6 +5314,8 @@ class ioneq(ion):
         if title:
             pl.title(atitle)
         pl.axis(xyr)
+        if bw:
+            mpl.rcParams['font.size'] = mpl.rcParamsDefault['font.size']
     #
     # -------------------------------------------------------------------------
     #
