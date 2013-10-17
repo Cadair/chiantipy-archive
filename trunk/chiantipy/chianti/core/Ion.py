@@ -2,7 +2,6 @@ import os
 import types
 import numpy as np
 from scipy import interpolate
-import matplotlib as mpl
 import time
 #
 import chianti.data as chdata
@@ -5244,7 +5243,7 @@ class ioneq(ion):
         '''
         if bw:
             linestyle=['k-','k--', 'k-.', 'k:']
-            mpl.rcParams['font.size'] = 16
+            pl.rcParams['font.size'] = 16.
             lw = 2
         else:
             linestyle=['b-','r--', 'g-.', 'm:']
@@ -5274,7 +5273,10 @@ class ioneq(ion):
             ann=const.Ionstage[iz-1]
             pl.annotate(ann, [self.Temperature[idx], 0.7*self.Ioneq[iz-1, idx]], ha='center')
         for iz in stages[1:]:
-            pl.plot(self.Temperature, self.Ioneq[iz-1], linestyle[0])
+            if semilogx:
+                pl.semilogx(self.Temperature, self.Ioneq[iz-1], linestyle[0], lw=lw)
+            else:
+                pl.loglog(self.Temperature, self.Ioneq[iz-1], linestyle[0], lw=lw)
             if label:
                 idx=self.Ioneq[iz-1] == self.Ioneq[iz-1].max()
                 if idx.sum() > 1:
@@ -5294,7 +5296,7 @@ class ioneq(ion):
                     atitle+='  & '+result['ioneqname'].replace('.ioneq', '')
                     atitle+=' '+linestyle[0]
                     for iz in stages:
-                        pl.plot(result['ioneqTemperature'], result['ioneqAll'][self.Z-1, iz-1],linestyle[1])
+                        pl.plot(result['ioneqTemperature'], result['ioneqAll'][self.Z-1, iz-1],linestyle[1], lw=lw)
             elif type(oplot) == types.StringType:
                 atitle+='  & ' + oplot
                 result = util.ioneqRead(ioneqname=oplot)
@@ -5302,7 +5304,7 @@ class ioneq(ion):
 #                print result
                 if result != False:
                     for iz in stages:
-                        pl.plot(result['ioneqTemperature'], result['ioneqAll'][self.Z-1, iz-1],linestyle[1])
+                        pl.plot(result['ioneqTemperature'], result['ioneqAll'][self.Z-1, iz-1],linestyle[1], lw=lw)
             elif type(oplot) == types.ListType:
                 for iplot in range(len(oplot)):
                     result = util.ioneqRead(ioneqname=oplot[iplot])
@@ -5310,14 +5312,14 @@ class ioneq(ion):
                     if result != False:
                         atitle+='  & '+oplot[iplot]+' '+linestyle[iplot%3]
                         for iz in stages:
-                            pl.plot(result['ioneqTemperature'], result['ioneqAll'][self.Z-1, iz-1],linestyle[1])
+                            pl.plot(result['ioneqTemperature'], result['ioneqAll'][self.Z-1, iz-1],linestyle[1], lw=lw)
             else:
-                print ' oplot not understood ', oplot
+                print ' oplot file not understood ', oplot
         if title:
             pl.title(atitle)
         pl.axis(xyr)
-        if bw:
-            mpl.rcParams['font.size'] = mpl.rcParamsDefault['font.size']
+#        if bw:
+#            pl.rcParams['font.size'] = pl.rcParamsDefault['font.size']
     #
     # -------------------------------------------------------------------------
     #
