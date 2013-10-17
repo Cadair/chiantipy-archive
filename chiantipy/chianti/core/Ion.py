@@ -5227,7 +5227,9 @@ class ioneq(ion):
     #            print ' ionsum = ', ionsum
                 ioneq[:, it]=ioneq[:, it]/ionsum
             self.Ioneq=ioneq
-#
+    #
+    # ------------------------------------------------------------
+    #
     def plot(self, stages=0, xr=0, yr=0, oplot=0, label=1, title=1,  bw=0, semilogx = 0):
         '''
         Plots the ionization equilibria.
