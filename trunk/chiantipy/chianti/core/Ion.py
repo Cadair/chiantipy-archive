@@ -1841,7 +1841,7 @@ class ion:
             popmat[nlvls+ci+rec-1]=norm
 #            popmata = np.copy(popmat)
 #            popmata[nlvls+ci+rec-1]=norm
-            popmata[nlvls+ci+rec-1]=norm
+            #popmata[nlvls+ci+rec-1]=norm
             b=np.zeros(nlvls+ci+rec,'float64')
             b[nlvls+ci+rec-1]=1.
 #            print ' norm = ', norm
