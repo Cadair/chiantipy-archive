@@ -1,5 +1,5 @@
 import os
-import types
+#import types
 import numpy as np
 from scipy import interpolate
 import time
@@ -103,7 +103,7 @@ class ion:
             if self.Dielectronic:
                 self.UpperIp=chdata.Ip[self.Z-1, self.Ion-1]
         #
-        if type(temperature) != types.NoneType:
+        if type(temperature) != type(None):
             self.Temperature = np.array(temperature,'float64')
         #
         #
@@ -120,7 +120,7 @@ class ion:
         if pDensity == 'default':
             self.p2eRatio()
         #
-        if type(eDensity) != types.NoneType:
+        if type(eDensity) != type(Non):
             self.EDensity = np.asarray(eDensity,'float64')
             ndens = self.EDensity.size
             ntemp = self.Temperature.size
@@ -236,8 +236,8 @@ class ion:
 
         Given as a function of the incident electron energy in eV, puts values into DiCross
         '''
-        iso=self.Z - self.Ion + 1
-        if type(energy) == types.NoneType:
+        iso = self.Z - self.Ion + 1
+        if type(energy) == type(None):
             btenergy=0.1*np.arange(10)
             btenergy[0]=0.01
             dum=np.ones(len(btenergy))
@@ -279,7 +279,7 @@ class ion:
                 diparams = self.DiParams
             except:
                 self.DiParams = util.diRead(self.IonStr)
-                diparmas = self.DiParams
+                diparams = self.DiParams
             cross=np.zeros(len(energy), 'Float64')
 
             for ifac in range(self.DiParams['info']['nfac']):
@@ -299,7 +299,7 @@ class ion:
                     if offset > 0:
                         seq=[np.zeros(offset, 'Float64'), cross1]
                         cross1=np.hstack(seq)
-                    cross+=cross1*1.e-14
+                    cross += cross1*1.e-14
             self.DiCross={'energy':energy, 'cross':cross}
         #
         #-----------------------------------------------------------
@@ -1114,7 +1114,7 @@ class ion:
                 nsplups=len(self.Psplups["lvl1"])
             except:
                 self.Psplups=util.splupsRead(self.IonStr,prot=1)
-                if type(self.Psplups) == types.NoneType:
+                if type(self.Psplups) == type(None):
                     self.PUpsilon = None
                     return
                 else:
@@ -1125,7 +1125,7 @@ class ion:
                 nsplups = len(self.DielSplups["lvl1"])
             except:
                 self.DielSplups = util.splupsRead(self.IonStr,diel=1)
-                if type(self.DielSplups) == types.NoneType:
+                if type(self.DielSplups) == type(None):
                     self.DielUpsilon = None
                     return
                 else:
@@ -1136,7 +1136,7 @@ class ion:
                 nsplups=len(self.Splups["lvl1"])
             except:
                 self.Splups = util.splupsRead(self.IonStr)
-                if type(self.Splups) == types.NoneType:
+                if type(self.Splups) == type(None):
                     self.Upsilon = None
                     return
                 else:
@@ -1658,7 +1658,7 @@ class ion:
 #                self.Reclvl = util.cireclvlRead(self.IonStr,'reclvl' )
 #                reclvl = self.Reclvl
 #                self.reclvlDescale()
-#                if type(self.Reclvl) != types.NoneType:
+#                if type(self.Reclvl) != type(None):
 #                    rec = 1
 #                    self.ionizRate()
 #                    #  get the higher ionization stage
@@ -3360,7 +3360,7 @@ class ion:
             dstr = ' -  Density = %10.2e (cm$^{-3}$)' %(eDensity)
             tstr = ' -  T = %10.2e (K)' %(temperature)
         elif ndens == 1 and ntemp > 1:
-            if type(index) == types.NoneType:
+            if type(index) == type(None):
                 index = ntemp/2
                 print 'using index = %5i specifying temperature =  %10.2e'%(index, temperature[index])
                 self.Message = 'using index = %5i specifying temperature =  %10.2e'%(index, temperature[index])
@@ -3372,7 +3372,7 @@ class ion:
             dstr=' -  Density = %10.2e (cm$^{-3}$)' % eDensity
             tstr=' -  T = %10.2e (K)' % temperature[index]
         elif ndens > 1 and ntemp == 1:
-            if type(index) == types.NoneType:
+            if type(index) == type(None):
                 index = ndens/2
                 print 'using index =%5i specifying eDensity = %10.2e'%(index, eDensity[index])
                 self.Message = 'using index =%5i specifying eDensity = %10.2e'%(index, eDensity[index])
@@ -3384,7 +3384,7 @@ class ion:
             dstr=' -  Density = %10.2e (cm$^{-3}$)' % eDensity[index]
             tstr=' -  T = %10.2e (K)' % temperature
         elif ndens > 1 and ntemp > 1:
-            if type(index) == types.NoneType:
+            if type(index) == type(None):
                 index = ntemp/2
                 print 'using index = %5i specifying temperature = %10.2e, eDensity =  %10.2e'%(index, temperature[index], eDensity[index])
                 self.Message = 'using index = %5i specifying temperature = %10.2e, eDensity =  %10.2e'%(index, temperature[index], eDensity[index])
@@ -3395,7 +3395,7 @@ class ion:
             emiss=emiss[:, index]
             dstr=' -  Density = %10.2e (cm$^{-3}$)' % eDensity[index]
             tstr=' -  T = %10.2e (K)' % temperature[index]
-        if type(wvlRange) != types.NoneType:
+        if type(wvlRange) != type(None):
             wvlIndex = util.between(wvl, wvlRange)
         else:
             wvlIndex = range(wvl.size)
@@ -5202,7 +5202,7 @@ class ioneq(ion):
             for it in range(ntemp):
                 factor=[]
                 for anIon in chIons:
-                    if type(anIon.IonizRate) != types.NoneType and type(anIon.RecombRate) != types.NoneType:
+                    if type(anIon.IonizRate) != type(None) and type(anIon.RecombRate) != type(None):
                         rat=anIon.IonizRate['rate'][it]/anIon.RecombRate['rate'][it]
                         factor.append(rat**2 + rat**(-2))
                     else:
@@ -5289,7 +5289,7 @@ class ioneq(ion):
         atitle='Chianti Ionization Equilibrium for '+const.El[self.Z-1].capitalize()
         #
         if oplot:
-            if type(oplot) == types.BooleanType:
+            if oplot == 0:
                 result=util.ioneqRead(ioneqname='')
                 print 'keys = ', result.keys()
                 if result != False:
@@ -5297,7 +5297,7 @@ class ioneq(ion):
                     atitle+=' '+linestyle[0]
                     for iz in stages:
                         pl.plot(result['ioneqTemperature'], result['ioneqAll'][self.Z-1, iz-1],linestyle[1], lw=lw)
-            elif type(oplot) == types.StringType:
+            elif type(oplot) == type('string'):
                 atitle+='  & ' + oplot
                 result = util.ioneqRead(ioneqname=oplot)
                 print 'keys = ', result.keys()
@@ -5305,7 +5305,7 @@ class ioneq(ion):
                 if result != False:
                     for iz in stages:
                         pl.plot(result['ioneqTemperature'], result['ioneqAll'][self.Z-1, iz-1],linestyle[1], lw=lw)
-            elif type(oplot) == types.ListType:
+            elif type(oplot) == type([]):
                 for iplot in range(len(oplot)):
                     result = util.ioneqRead(ioneqname=oplot[iplot])
                     print 'keys = ', result.keys()
