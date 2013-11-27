@@ -8,7 +8,7 @@ that is found in the LICENSE file
 
 '''
 import os, fnmatch
-from types import *
+#from types import *
 from ConfigParser import *
 import pickle
 from datetime import date
@@ -910,7 +910,7 @@ def splomRead(ions, ea=0, filename=None):
     {"lvl1":lvl1,"lvl2":lvl2,"ttype":ttype,"gf":gf,"deryd":de,"c":c,"splom":splomout,"ref":hdr} not tested
     """
     #
-    if type(filename) == NoneType:
+    if type(filename) == type(None):
         fname=ion2filename(ions)
         if ea:
             splomname=fname+'.easplom'
