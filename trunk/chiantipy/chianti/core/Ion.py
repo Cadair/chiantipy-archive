@@ -120,7 +120,7 @@ class ion:
         if pDensity == 'default':
             self.p2eRatio()
         #
-        if type(eDensity) != type(Non):
+        if type(eDensity) != type(None):
             self.EDensity = np.asarray(eDensity,'float64')
             ndens = self.EDensity.size
             ntemp = self.Temperature.size
