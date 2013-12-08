@@ -784,15 +784,21 @@ def wgfaWrite(info, outfile = 0, minBranch = 0.):
     #
     # -------------------------------------------------------------------------------------
     #
-def easplomRead(ions, extension='.splom'):
-    """read chianti splom files and returns
+def easplomRead(ions, filename=0, extension='.splom'):
+    """
+    read chianti splom files and returns
     {"lvl1":lvl1,"lvl2":lvl2,"deryd":de,"gf":gf,"eryd":eout,"omega":omout}
-    currently only works for 5 point spline fit files"""
+    currently only works for 5 point spline fit files
+    splomRead probably does just as good a job - this function may be redundant
+    """
     #
     #
-    fname=ion2filename(ions)
-    omname=fname+extension
-    input=open(omname,'r')
+    if filename:
+        input = open(filename)
+    else:
+        fname=ion2filename(ions)
+        omname=fname+extension
+        input=open(omname,'r')
     lines=input.readlines()
     input.close()
     format=FortranFormat('5i3,8e10.3')
@@ -827,12 +833,14 @@ def easplomRead(ions, extension='.splom'):
     omout=np.asarray(om,'Float64')
     ref=lines[iline:-1]
 #        omout=np.transpose(omout)
-    if extension == '.omdat':
-        Splom={"lvl1":lvl1,"lvl2":lvl2,'ttype':ttype,"gf":gf, "deryd":de,"omega":omout, 'ref':ref}
-        return Splom
-    elif  extension == '.easplom':
-        Easplom={"lvl1":lvl1,"lvl2":lvl2,'ttype':ttype,"gf":gf, "deryd":de,"omega":omout, 'ref':ref}
-        return Easplom
+#    if extension == '.omdat':
+#        Splom={"lvl1":lvl1,"lvl2":lvl2,'ttype':ttype,"gf":gf, "deryd":de,"omega":omout, 'ref':ref}
+#        return Splom
+#    elif  extension == '.easplom':
+#        Easplom={"lvl1":lvl1,"lvl2":lvl2,'ttype':ttype,"gf":gf, "deryd":de,"omega":omout, 'ref':ref}
+#        return Easplom
+    Splom={"lvl1":lvl1,"lvl2":lvl2,'ttype':ttype,"gf":gf, "deryd":de,"omega":omout, 'ref':ref}
+    return Splom
 
     return
     #
@@ -1312,6 +1320,7 @@ def diRead(ions, filename=0):
     read chianti direct ionization .params files and return
         {"info":info,"btf":btf,"ev1":ev1,"xsplom":xsplom,"ysplom":ysplom,"ref":hdr}
         info={"iz":iz,"ion":ion,"nspl":nspl,"neaev":neaev}
+    cannot read dilvlparams files
     """
     #
     if filename:
@@ -1406,6 +1415,82 @@ def eaCross(diparams, easplom, elvlc, energy=None, verbose=False):
         cross = f1[itrans]*const.bohrCross*omega[itrans]/(mult.energy/const.ryd2Ev)
         totalCross += cross
     return {'energy':energy, 'cross':totalCross}
+    #
+    #-----------------------------------------------------------
+    #
+def eaDescale(easplups, temperature):
+    """
+    Calculates the effective collision strengths (upsilon)
+    for excitation-autoionization as a function of temperature.
+    a duplicate of ion.eaDescale()
+    """
+    #
+    #  xt=kt/de
+    #
+    #  need to make sure elvl is >0, except for ground level
+    #
+    ntemp=temperature.size
+    nsplups=len(easplups['de'])
+    if ntemp > 1:
+        ups=np.zeros((nsplups,ntemp),"Float64")
+    else:
+        ups=np.zeros(nsplups,"Float64")
+    #
+    for isplups in range(0,nsplups):
+        l1=easplups["lvl1"][isplups]-1
+        l2=easplups["lvl2"][isplups]-1
+        ttype=easplups["ttype"][isplups]
+        cups=easplups["cups"][isplups]
+        nspl=easplups["nspl"][isplups]
+        de=easplups["de"][isplups]
+        dx=1./(float(nspl)-1.)
+##                print easplups["easplups"][l1,l2]
+        splups=easplups["splups"][isplups,0:nspl]
+        kte=const.boltzmannEv*temperature/(const.ryd2Ev*de)
+        #
+        if ttype ==1:
+            st=1.-np.log(cups)/np.log(kte+cups)
+            xs=dx*np.arange(nspl)
+            y2=interpolate.splrep(xs,splups,s=0)  #allow smoothing,s=0)
+            sups=interpolate.splev(st,y2,der=0)
+            ups[isplups]=sups*np.log(kte+np.exp(1.))
+        #
+        if ttype == 2:
+            st=kte/(kte+cups)
+            xs=dx*np.arange(nspl)
+            y2=interpolate.splrep(xs,splups,s=0)
+            sups=interpolate.splev(st,y2,der=0)
+            ups[isplups]=sups
+        #
+        if ttype == 3:
+            st=kte/(kte+cups)
+            xs=dx*np.arange(nspl)
+            y2=interpolate.splrep(xs,splups,s=0)
+            sups=interpolate.splev(st,y2,der=0)
+            ups[isplups]=sups/(kte+1.)
+        #
+        if ttype == 4:
+            st=1.-np.log(cups)/np.log(kte+cups)
+            xs=dx*np.arange(nspl)
+            y2=interpolate.splrep(xs,splups,s=0)
+            sups=interpolate.splev(st,y2,der=0)
+            ups[isplups]=sups*np.log(kte+cups)
+        #
+        if ttype == 5:
+            st=kte/(kte+cups)
+            xs=dx*np.arange(nspl)
+            y2=interpolate.splrep(xs,splups,s=0)  #allow smoothing,s=0)
+            sups=interpolate.splev(st,y2,der=0)
+            ups[isplups]=sups/(kte+0.)
+        #
+        #
+        elif ttype > 5:  print ' t_type ne 1,2,3,4,5=',ttype,l1,l2
+    #
+    #
+    ups=np.where(ups > 0.,ups,0.)
+    #
+#    easplups['ups'] = ups
+    return ups
     #
     # -------------------------------------------------------------------------------------
     #
