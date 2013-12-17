@@ -650,7 +650,7 @@ def elvlcWrite(info, outfile=0, addLvl=0, includeRyd=0):
     #
     # -------------------------------------------------------------------------------------
     #
-def wgfaRead(ions, filename=0, elvlcname=0, total=0):
+def wgfaRead(ions, filename=0, elvlcname=0, total=0, verbose=0):
     """
     reads chianti wgfa file and returns
     {"lvl1":lvl1,"lvl2":lvl2,"wvl":wvl,"gf":gf,"avalue":avalue,"ref":ref}
@@ -661,15 +661,20 @@ def wgfaRead(ions, filename=0, elvlcname=0, total=0):
         wgfaname = filename
         if not elvlcname:
             elvlcname = os.path.splitext(wgfaname)[0] + '.elvlc'
+            if os.path.isfile(elvlcname):
+                elvlc = elvlcRead('', elvlcname)
+            else:
+                elvlc = 0
+
     else:
         fname=ion2filename(ions)
         wgfaname=fname+'.wgfa'
         elvlcname = fname + '.elvlc'
+        if os.path.isfile(elvlcname):
+            elvlc = elvlcRead('', elvlcname)
+        else:
+            elvlc = 0
     #
-    if os.path.isfile(elvlcname):
-        elvlc = elvlcRead('', elvlcname)
-    else:
-        elvlc = 0
     input=open(wgfaname,'r')
     s1=input.readlines()
     dum=input.close()
@@ -681,6 +686,8 @@ def wgfaRead(ions, filename=0, elvlcname=0, total=0):
         ndata=len(s2)
         nwvl=nwvl+1
     nwvl=nwvl-1
+    if verbose:
+        print(' nwvl = %i7'%(nwvl))
     lvl1=[0]*nwvl
     lvl2=[0]*nwvl
     wvl=[0.]*nwvl
@@ -698,7 +705,7 @@ def wgfaRead(ions, filename=0, elvlcname=0, total=0):
         wvl[i]=inpt[2]
         gf[i]=inpt[3]
         avalue[i]=inpt[4]
-        if elvlcname:
+        if elvlc:
             pretty1[i] = elvlc['pretty'][inpt[0] - 1]
             pretty2[i] = elvlc['pretty'][inpt[1] - 1]
 
