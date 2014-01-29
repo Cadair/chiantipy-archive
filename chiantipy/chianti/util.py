@@ -643,8 +643,8 @@ def elvlcWrite(info, outfile=0, addLvl=0, includeRyd=0):
 #    info['ref'].append(' K. Dere (GMU) - ' + today.strftime('%Y %B %d'))
 #    for one in info['ref']:
 #        out.write(one+'\n')
-    for aref in inof['ref']:
-        out.writelines(aref + '\n')
+    for aref in info['ref']:
+        out.write(aref + '\n')
 #    out.write(' -1\n')
     out.close()
     return
