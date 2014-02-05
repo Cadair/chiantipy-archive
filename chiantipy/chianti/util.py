@@ -666,6 +666,8 @@ def wgfaRead(ions, filename=0, elvlcname=0, total=0, verbose=0):
                 elvlc = elvlcRead('', elvlcname)
             else:
                 elvlc = 0
+        else:
+            elvlc = elvlcRead('',elvlcname)
 
     else:
         fname=ion2filename(ions)
