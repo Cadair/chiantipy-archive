@@ -5145,6 +5145,10 @@ class ioneq(ion):
         # ---------------------------------------------------
         #
     def calculate(self, temperature):
+        '''
+        returns with the ionization balance as self.Ioneq and
+        temperature as self.Temperature
+        '''
         self.Temperature = np.array(temperature, 'float64')
         ionList=[]
         chIons=[]
