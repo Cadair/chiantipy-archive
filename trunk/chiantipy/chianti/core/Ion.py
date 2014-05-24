@@ -46,6 +46,7 @@ else:
 #    #
 import chianti.filters as chfilters
 import chianti.util as util
+import chianti.io as io
 import chianti.constants as const
 #import chianti.pl as pl
 #
@@ -1503,6 +1504,107 @@ class ion:
 #                nlvlWgfa = max(self.Wgfa['lvl2'])
             #  elvlc file can have more levels than the rate level files
             self.Nlvls = min([nlvlElvlc, max(nlvlList)])
+        #
+        # -------------------------------------------------------------------------
+        #
+    def setupScups(self, dir=0, verbose=0):
+        '''
+        if ion is initiated with setup=0, this allows the setup to be done at a later point
+        perhaps, more importantly,  by setting dir to a directory cotaining the necessary files
+        for a ChiantiPy ion, it allows one to setup an ion with files not in the current
+        Chianti directory
+        '''
+        #
+        # read in all data if in masterlist
+        #  if not, there should still be ionization and recombination rates
+        #
+        MasterList = chdata.MasterList
+        #
+        if dir:
+            fileName = os.path.join(dir, self.IonStr)
+        else:
+            fileName = util.ion2filename(self.IonStr)
+        if self.IonStr in MasterList:
+            self.Elvlc = util.elvlcRead('', filename=fileName+'.elvlc',  verbose=verbose)
+            self.Wgfa = util.wgfaRead('', filename=fileName+'.wgfa')
+            self.Nwgfa=len(self.Wgfa['lvl1'])
+            nlvlWgfa = max(self.Wgfa['lvl2'])
+            nlvlList =[nlvlWgfa]
+#                print 'fileName = ', fileName
+            scupsfile = fileName + '.scups'
+            if os.path.isfile(scupsfile):
+                # happens the case of fe_3 and prob. a few others
+                self.Scups = io.scupsRead('', filename=fileName+'.scups')
+                self.Nsplups=len(self.Scups['lvl1'])
+                nlvlSplups = max(self.Scups['lvl2'])
+                nlvlList.append(nlvlScups)
+            else:
+                self.Nscups = 0
+                nlvlScups = 0
+##                self.Nlvls = nlvlElvlc
+            #
+            file = fileName +'.cilvl'
+            if os.path.isfile(file):
+                self.Cilvl = util.cireclvlRead('',filename = fileName, cilvl=1)
+                self.Ncilvl=len(self.Cilvl['lvl1'])
+                nlvlCilvl = max(self.Cilvl['lvl2'])
+                nlvlList.append(nlvlCilvl)
+            else:
+                self.Ncilvl = 0
+            #  .reclvl file may not exist
+            reclvlfile = fileName +'.reclvl'
+            if os.path.isfile(reclvlfile):
+                self.Reclvl = util.cireclvlRead('',filename=fileName, reclvl=1)
+                self.Nreclvl = len(self.Reclvl['lvl1'])
+                nlvlReclvl = max(self.Reclvl['lvl2'])
+                nlvlList.append(nlvlReclvl)
+            else:
+                self.Nreclvl = 0
+            #  .dielsplups file may not exist
+            dielsplupsfile = fileName +'.dielsplups'
+            if os.path.isfile(dielsplupsfile):
+                self.DielSplups = util.splupsRead('', filename=dielsplupsfile, diel=1)
+                self.Ndielsplups=len(self.DielSplups["lvl1"])
+                nlvlDielSplups = max(self.DielSplups['lvl2'])
+                nlvlList.append(nlvlDielSplups)
+            else:
+                self.Ndielsplups = 0
+            #
+            #  psplups file may not exist
+            psplupsfile = fileName +'.psplups'
+            if os.path.isfile(psplupsfile):
+                self.Psplups = util.splupsRead('', filename=psplupsfile,  prot=True)
+                self.Npsplups=len(self.Psplups["lvl1"])
+            else:
+                self.Npsplups = 0
+            #
+            drparamsFile = fileName +'.drparams'
+            if os.path.isfile(drparamsFile):
+                self.DrParams = util.drRead(self.IonStr)
+            #
+            rrparamsFile = fileName +'.rrparams'
+            if os.path.isfile(rrparamsFile):
+                self.RrParams = util.rrRead(self.IonStr)
+
+            #  not needed for ion, only phion
+#                photoxfile = util.ion2filename(self.IonStr)+'.photox'
+#                if os.path.isfile(photoxfile):
+#                    self.Photox = util.photoxRead(self.IonStr)
+            #
+            # need to determine the number of levels that can be populated
+            nlvlElvlc = len(self.Elvlc['lvl'])
+#                print ' nlvlElvlc = ', nlvlElvlc
+#                print ' other nlvls = ',  nlvlList
+#                nlvlWgfa = max(self.Wgfa['lvl2'])
+            #  elvlc file can have more levels than the rate level files
+            self.Nlvls = min([nlvlElvlc, max(nlvlList)])
+        else:
+            print ' the ion ' + self.IonStr + ' is not in the CHIANTI masterlist '
+            try:
+                self.Elvlc = util.elvlcRead(self.IonStr, verbose=verbose)
+                print ' elvlc file available '
+            except:
+                print ' elvlc file NOT available '
         #
         # -------------------------------------------------------------------------
         #
