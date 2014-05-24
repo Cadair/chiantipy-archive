@@ -1102,9 +1102,11 @@ class ion:
         # -------------------------------------------------------------------------------------
         #
     def upsilonDescale(self, prot=0, diel=0):
-        """Provides the temperatures and effective collision strengths (upsilons)
+        """
+        Provides the temperatures and effective collision strengths (upsilons)
         set prot for proton rates
-        otherwise, ce will be set for electron collision rates"""
+        otherwise, ce will be set for electron collision rates
+        """
         #
         #  xt=kt/de
         #
@@ -1535,8 +1537,8 @@ class ion:
             if os.path.isfile(scupsfile):
                 # happens the case of fe_3 and prob. a few others
                 self.Scups = io.scupsRead('', filename=fileName+'.scups')
-                self.Nsplups=len(self.Scups['lvl1'])
-                nlvlSplups = max(self.Scups['lvl2'])
+                self.Nscups=len(self.Scups['lvl1'])
+                nlvlScups = max(self.Scups['lvl2'])
                 nlvlList.append(nlvlScups)
             else:
                 self.Nscups = 0

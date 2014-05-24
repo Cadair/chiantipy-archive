@@ -1,6 +1,8 @@
 '''
 a collection of reading and writing functions
 '''
+import os, fnmatch
+import numpy as np
     #
     # -------------------------------------------------------------------------------------
     #
@@ -39,7 +41,7 @@ def scupsRead(ions, filename=0, verbose=0):
         else:
             counter += 1
     ntrans = (counter)/3
-    print(' counter %i4 ntrans %i4'%(counter, ntrans))
+    #print(' counter %i4 ntrans %i4'%(counter, ntrans))
     lvl1 = []
     lvl2 = []
     de = []
