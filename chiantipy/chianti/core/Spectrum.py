@@ -47,7 +47,7 @@ class spectrum:
     em [for emission measure], can be a float or an array of the same length as the
     temperature/density
     '''
-    def __init__(self, temperature, density, wavelength, filter=(chfilters.gaussianR, 1000.), elementList = 0, ionList = 0, minAbund=0, doContinuum=1, em = None,  verbose=0, allLines=1):
+    def __init__(self, temperature, density, wavelength, filter=(chfilters.gaussianR, 1000.), elementList = 0, ionList = 0, minAbund=0, doContinuum=1, em = None, abund=0, verbose=0, allLines=1):
         t1 = datetime.now()
         masterlist = chdata.MasterList
         # use the ionList but make sure the ions are in the database
@@ -89,9 +89,14 @@ class spectrum:
                 if nEm != nTempDen:
                     print(' the emission measure array must be the same size as the temperature/density array')
                     return
-        self.AbundanceName = defaults['abundfile']
-        self.AbundanceAll = chdata.AbundanceAll
-        abundAll = self.AbundanceAll['abundance']
+
+        #self.AbundanceName = defaults['abundfile']
+        #self.AbundanceAll = chdata.AbundanceAll
+        if not abund:
+            self.AbundanceName = self.Defaults['abundfile']
+        else:
+            self.AbundanceName = abund
+        abundAll = chdata.Abundance[self.AbundanceName]['abundance']
         nonzed = abundAll > 0.
         minAbundAll = abundAll[nonzed].min()
         if minAbund < minAbundAll:
@@ -111,7 +116,7 @@ class spectrum:
         ionsCalculated = []
         #
         for iz in range(31):
-            abundance = self.AbundanceAll['abundance'][iz-1]
+            abundance = chdata.Abundance[self.AbundanceName]['abundance'][iz-1]
             if abundance >= minAbund:
                 print ' %5i %5s abundance = %10.2e '%(iz, const.El[iz-1],  abundance)
                 #
@@ -136,7 +141,7 @@ class spectrum:
                     if ionstageTest and ioneqTest and doContinuum:
                         # ionS is the target ion, cannot be the neutral for the continuum
                         print ' calculating continuum for :  ',  ionS
-                        cont = chianti.core.continuum(ionS, temperature)
+                        cont = chianti.core.continuum(ionS, temperature, abund=abund)
                         cont.freeFree(wavelength)
     #                   print dir(thisIon)
     #                   print ' wvl = ', thisIon.FreeFree['wvl']
@@ -156,7 +161,7 @@ class spectrum:
                                     freeBound[iTempDen] += cont.FreeBound['rate'][iTempDen]
                     if masterListTest and wvlTestMin and wvlTestMax and ioneqTest:
                         print ' calculating spectrum for  :  ', ionS
-                        thisIon = chianti.core.ion(ionS, temperature, density)
+                        thisIon = chianti.core.ion(ionS, temperature, density, abund=abund)
                         ionsCalculated.append(ionS)
 #                       print ' dir = ', dir(thisIon)
 #                        thisIon.emiss(wvlRange = wvlRange, allLines=allLines)
@@ -177,7 +182,7 @@ class spectrum:
                     # get dielectronic lines
                     if masterListTestD and wvlTestMinD and wvlTestMaxD and ioneqTestD:
                         print ' calculating spectrum for  :  ', ionSd
-                        thisIon = chianti.core.ion(ionSd, temperature, density)
+                        thisIon = chianti.core.ion(ionSd, temperature, density, abund=abund)
                         ionsCalculated.append(ionSd)
 #                       print ' dir = ', dir(thisIon)
 #                       have to do all lines for the dielectronic satellites
@@ -207,9 +212,9 @@ class spectrum:
                 integrated = np.zeros_like(wavelength)
                 for iTempDen in range(nTempDen):
                     integrated += total[iTempDen]*em[iTempDen]
-            self.Spectrum ={'wavelength':wavelength, 'intensity':total.squeeze(), 'filter':filter[0].__name__,   'width':filter[1], 'integrated':integrated, 'em':em, 'ions':ionsCalculated}
+            self.Spectrum ={'wavelength':wavelength, 'intensity':total.squeeze(), 'filter':filter[0].__name__,   'width':filter[1], 'integrated':integrated, 'em':em, 'ions':ionsCalculated, 'Abundance':self.AbundanceName}
         else:
-            self.Spectrum ={'wavelength':wavelength, 'intensity':total.squeeze(), 'filter':filter[0].__name__,   'width':filter[1], 'ions':ionsCalculated}
+            self.Spectrum ={'wavelength':wavelength, 'intensity':total.squeeze(), 'filter':filter[0].__name__,   'width':filter[1], 'ions':ionsCalculated, 'Abundance':self.AbundanceName}
     #
     # -------------------------------------------------------------------------
     #
