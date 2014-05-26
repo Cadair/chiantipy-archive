@@ -16,14 +16,20 @@ class continuum:
     '''The top level class for continuum calculations.
 
     includes methods for the calculation of the free-free and free-bound continua.'''
-    def __init__(self, ionStr,  temperature=None,  density=None):
+    def __init__(self, ionStr,  temperature=None,  density=None, abund=0):
         nameDict = util.convertName(ionStr)
         self.Z = nameDict['Z']
         self.Ion = nameDict['Ion']
         self.IonStr = ionStr
         self.Dielectronic = 0
         self.Defaults = chdata.Defaults
-        self.AbundanceName = self.Defaults['abundfile']
+        #
+        if not abund:
+            self.AbundanceName = self.Defaults['abundfile']
+        else:
+            self.AbundanceName = abund
+        self.Abundance = chdata.Abundance[self.AbundanceName]['abundance'][self.Z-1]
+        #
         self.IoneqName = self.Defaults['ioneqfile']
         #
         #  ip in eV, reading Ip of next lower level, needed for freeBound
@@ -292,12 +298,12 @@ class continuum:
         if not np.any(gIoneq) > 0:
             self.FreeBound = {'errorMessage':' no non-zero values of ioneq'}
             return
-        try:
-            abund = self.Abundance
-        except:
-            self.AbundanceAll = util.abundanceRead(abundancename = self.AbundanceName)
-            self.Abundance = self.AbundanceAll['abundance'][self.Z-1]
-            abund = self.Abundance
+        #try:
+            #abund = self.Abundance
+        #except:
+            #self.AbundanceAll = util.abundanceRead(abundancename = self.AbundanceName)
+            #self.Abundance = self.AbundanceAll['abundance'][self.Z-1]
+        abund = chdata.Abundance[self.AbundanceName]['abundance'][self.Z-1]
         #
         ipcm = self.Ip/const.invCm2Ev
         iperg = self.Ip*const.ev2Erg
@@ -510,12 +516,12 @@ class continuum:
             self.ioneqOne()
             gIoneq = self.IoneqOne
         #
-        if hasattr(self, 'Abundance'):
-            abund = self.Abundance
-        else:
-            self.AbundanceAll = util.abundanceRead(abundancename = self.AbundanceName)
-            self.Abundance = self.AbundanceAll['abundance'][self.Z-1]
-            abund = self.Abundance
+        #if hasattr(self, 'Abundance'):
+            #abund = self.Abundance
+        #else:
+            #self.AbundanceAll = util.abundanceRead(abundancename = self.AbundanceName)
+            #self.Abundance = self.AbundanceAll['abundance'][self.Z-1]
+        abund = chdata.Abundance[self.AbundanceName]['abundance'][self.Z-1]
         #
         #ipcm = self.Ip/const.invCm2Ev
         # get log of photon energy relative to the ionization potential
@@ -637,13 +643,14 @@ class continuum:
 #       print ' gIoneq = ', gIoneq
         if wvl.size > 1:
             gIoneq = gIoneq.repeat(wvl.size).reshape(self.Temperature.size,wvl.size)
+            abund = chdata.Abundance[self.AbundanceName]['abundance'][self.Z-1]
             #
-            try:
-                abund = self.Abundance
-            except:
-                self.AbundanceAll = util.abundanceRead(abundancename = self.AbundanceName)
-                self.Abundance = self.AbundanceAll['abundance'][self.Z-1]
-                abund = self.Abundance
+            #try:
+                #abund = self.Abundance
+            #except:
+                #self.AbundanceAll = util.abundanceRead(abundancename = self.AbundanceName)
+                #self.Abundance = self.AbundanceAll['abundance'][self.Z-1]
+                #abund = self.Abundance
                 #
             ffRate = (const.freeFree*(self.Z)**2*abund*gIoneq*ff).squeeze()
             self.FreeFree = {'rate':ffRate, 'temperature':self.Temperature,'wvl':wvl}
@@ -705,12 +712,13 @@ class continuum:
                 self.ioneqOne()
                 gIoneq = self.IoneqOne
             #
-            if hasattr(self, 'Abundance'):
-                abund = self.Abundance
-            else:
-                self.AbundanceAll = util.abundanceRead(abundancename = self.AbundanceName)
-                self.Abundance = self.AbundanceAll['abundance'][self.Z-1]
-                abund = self.Abundance
+            abund = chdata.Abundance[self.AbundanceName]['abundance'][self.Z-1]
+            #if hasattr(self, 'Abundance'):
+                #abund = self.Abundance
+            #else:
+                #self.AbundanceAll = util.abundanceRead(abundancename = self.AbundanceName)
+                #self.Abundance = self.AbundanceAll['abundance'][self.Z-1]
+                #abund = self.Abundance
                 #
             ffRate = const.freeFreeLoss*(self.Z)**2*abund*gIoneq*gff*np.sqrt(temperature)
             self.FreeFreeLoss = {'rate':ffRate, 'temperature':temperature}

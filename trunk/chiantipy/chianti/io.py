@@ -51,7 +51,7 @@ def scupsRead(ions, filename=0, verbose=0):
     cups = []
     ntemp = []
     btemp = []
-    bsplups = []
+    bscups = []
     counter = 0
     for itrans in range(ntrans):
         if verbose:
@@ -72,10 +72,10 @@ def scupsRead(ions, filename=0, verbose=0):
 #        print ' ll2 = ', ll2
 #        print ' gf = ', ll2[2]
         btemp.append(np.asarray(ll2, 'float64'))
-        bsplups.append(np.asarray(ll3, 'float64'))
+        bscups.append(np.asarray(ll3, 'float64'))
         counter += 3
     counter += 1
     ref = []
     for aline in lines[counter:]:
         ref.append(aline.strip('\n'))
-    return {'lvl1':lvl1, 'lvl2':lvl2, 'de':de, 'gf':gf, 'lim':lim, 'ttype':ttype,'cups':cups,'ntemp':ntemp, 'btemp':btemp, 'bsplups':bsplups, 'ntrans':ntrans, 'ref':ref}
+    return {'lvl1':lvl1, 'lvl2':lvl2, 'de':de, 'gf':gf, 'lim':lim, 'ttype':ttype,'cups':cups,'ntemp':ntemp, 'btemp':btemp, 'bscups':bscups, 'ntrans':ntrans, 'ref':ref}

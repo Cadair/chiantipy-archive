@@ -48,7 +48,7 @@ class radLoss:
     em [for emission measure], can be a float or an array of the same length as the
     temperature/density.
     '''
-    def __init__(self, temperature, density, ionList = 0, minAbund=0, doContinuum=1, verbose=0, allLines=1):
+    def __init__(self, temperature, density, ionList = 0, minAbund=0, doContinuum=1, abund=0, verbose=0, allLines=1):
         t1 = datetime.now()
         masterlist = chdata.MasterList
         # use the ionList but make sure the ions are in the database
@@ -68,9 +68,11 @@ class radLoss:
         self.Density = np.asarray(density, 'float64')
         nDen = self.Density.size
         nTempDen = max([nTemp, nDen])
-        self.AbundanceName = defaults['abundfile']
-        self.AbundanceAll = chdata.AbundanceAll
-        abundAll = self.AbundanceAll['abundance']
+        if not abund:
+            self.AbundanceName = self.Defaults['abundfile']
+        else:
+            self.AbundanceName = abund
+        abundAll = chdata.Abundance['self.AbundanceName']['abundance']
         nonzed = abundAll > 0.
         minAbundAll = abundAll[nonzed].min()
         if minAbund < minAbundAll:
@@ -86,7 +88,7 @@ class radLoss:
         #
         #
         for iz in range(31):
-            abundance = self.AbundanceAll['abundance'][iz-1]
+            abundance = chdata.Abundance['abundance'][iz-1]
             if abundance >= minAbund:
                 print ' %5i %5s abundance = %10.2e '%(iz, const.El[iz-1],  abundance)
                 #
@@ -107,7 +109,7 @@ class radLoss:
                     if ionstageTest and ioneqTest and doContinuum:
                         # ionS is the target ion, cannot be the neutral for the continuum
                         print ' calculating continuum for :  ',  ionS
-                        cont = chianti.core.continuum(ionS, temperature)
+                        cont = chianti.core.continuum(ionS, temperature, abund=abund)
                         cont.freeFreeLoss()
     #                   print dir(thisIon)
     #                   print ' wvl = ', thisIon.FreeFree['wvl']
@@ -126,7 +128,7 @@ class radLoss:
 #                                freeBound[iTempDen] += cont.FreeBound['rate'][iTempDen]
                     if masterListTest and ioneqTest:
                         print ' calculating spectrum for  :  ', ionS
-                        thisIon = chianti.core.ion(ionS, temperature, density)
+                        thisIon = chianti.core.ion(ionS, temperature, density, abund=abund)
 #                       print ' dir = ', dir(thisIon)
 #                        thisIon.emiss(wvlRange = wvlRange, allLines=allLines)
                         thisIon.boundBoundLoss( allLines=allLines)
@@ -146,7 +148,7 @@ class radLoss:
                     # get dielectronic lines
                     if masterListTestD and ioneqTestD:
                         print ' calculating spectrum for  :  ', ionSd
-                        thisIon = chianti.core.ion(ionSd, temperature, density)
+                        thisIon = chianti.core.ion(ionSd, temperature, density, abund=abund)
 #                       print ' dir = ', dir(thisIon)
 #                       have to do all lines for the dielectronic satellites
 #                        thisIon.emiss(allLines=1)

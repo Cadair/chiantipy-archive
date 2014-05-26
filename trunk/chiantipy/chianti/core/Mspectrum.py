@@ -25,7 +25,6 @@ except:
     print ' your version of Python does not support multiprocessing \n you will not be able to use mspectrum'
 #
 defaults = chdata.Defaults
-Abundanceall = chdata.AbundanceAll
 #
 # the following is necessary to make chiantipy non interactive for the web
 #try:
@@ -75,7 +74,7 @@ class mspectrum:
     proc = the number of processors to use
     timeout - a small but non-zero value seems to be necessary
     '''
-    def __init__(self, temperature, density, wavelength, filter=(chfilters.gaussianR, 1000.), elementList = 0, ionList = 0, minAbund=0., doContinuum=1, allLines = 1, em = None,  proc=3,  verbose = 0,  timeout=0.1):
+    def __init__(self, temperature, density, wavelength, filter=(chfilters.gaussianR, 1000.), elementList = 0, ionList = 0, minAbund=0., doContinuum=1, allLines = 1, em = None,  proc=3,  abund=0, verbose = 0,  timeout=0.1):
         t1 = datetime.now()
         masterlist = chdata.MasterList
         # use the ionList but make sure the ions are in the database
@@ -119,12 +118,17 @@ class mspectrum:
                     return
             self.Em = em
         self.AllLines = allLines
-        self.AbundanceName = self.Defaults['abundfile']
+        #
+        if not abund:
+            self.AbundanceName = self.Defaults['abundfile']
+        else:
+            self.AbundanceName = abund
+        self.Abundance = chdata.Abundance[self.AbundanceName]['abundance']
 #        self.AbundanceAll = util.abundanceRead(abundancename = self.AbundanceName)
-        self.AbundanceAll = chdata.AbundanceAll
-        abundAll = self.AbundanceAll['abundance']
-        nonzed = abundAll > 0.
-        minAbundAll = abundAll[nonzed].min()
+        #self.AbundanceAll = chdata.Abundance
+        #abundAll = self.AbundanceAll['abundance']
+        nonzed = self.Abundance['abundance'] > 0.
+        minAbundAll = self.Abundance[nonzed].min()
         if minAbund < minAbundAll:
             minAbund = minAbundAll
         ionInfo = util.masterListInfo()
@@ -183,14 +187,14 @@ class mspectrum:
                         # ionS is the target ion, cannot be the neutral for the continuum
                         if verbose:
                             print ' setting up continuum calculation for :  ',  ionS
-                        ffWorkerQ.put((ionS, temperature, wavelength))
-                        fbWorkerQ.put((ionS, temperature, wavelength))
+                        ffWorkerQ.put((ionS, temperature, wavelength, abund))
+                        fbWorkerQ.put((ionS, temperature, wavelength, abund))
 #                        fbInputs.append([ionS, temperature, wavelength])
                         #
                     if masterListTest and wvlTestMin and wvlTestMax and ioneqTest:
                         if verbose:
                             print ' setting up spectrum calculation for  :  ', ionS
-                        ionWorkerQ.put((ionS, temperature, density, wavelength, filter, allLines))
+                        ionWorkerQ.put((ionS, temperature, density, wavelength, filter, allLines, abund))
                         self.Todo.append(ionS)
                         ionsCalculated.append(ionS)
                     # get dielectronic lines
@@ -199,7 +203,7 @@ class mspectrum:
                             print ' setting up  spectrum calculation for  :  ', ionSd
 #                        dielWorkerQ.put((ionSd, temperature, density, wavelength, filter))
                         # set allLines fo dielectronic
-                        ionWorkerQ.put((ionSd, temperature, density, wavelength, filter, 1))
+                        ionWorkerQ.put((ionSd, temperature, density, wavelength, filter, 1, abund))
                         self.Todo.append(ionSd)
                         ionsCalculated.append(ionS)
         #
@@ -317,9 +321,9 @@ class mspectrum:
                 integrated = np.zeros_like(wavelength)
                 for iTempDen in range(nTempDen):
                     integrated += total[iTempDen]*em[iTempDen]
-            self.Spectrum ={'temperature':temperature, 'density':density, 'wavelength':wavelength, 'intensity':total.squeeze(), 'filter':filter[0].__name__,   'width':filter[1], 'integrated':integrated, 'em':em, 'minAbund':minAbund, 'masterlist':masterlist, 'ions':ionsCalculated}
+            self.Spectrum ={'temperature':temperature, 'density':density, 'wavelength':wavelength, 'intensity':total.squeeze(), 'filter':filter[0].__name__,   'width':filter[1], 'integrated':integrated, 'em':em, 'minAbund':minAbund, 'masterlist':masterlist, 'ions':ionsCalculated, 'Abundance':self.AbundanceName}
         else:
-            self.Spectrum ={'temperature':temperature, 'density':density, 'wavelength':wavelength, 'intensity':total.squeeze(), 'filter':filter[0].__name__,   'width':filter[1], 'minAbund':minAbund, 'masterlist':masterlist, 'ions':ionsCalculated}
+            self.Spectrum ={'temperature':temperature, 'density':density, 'wavelength':wavelength, 'intensity':total.squeeze(), 'filter':filter[0].__name__,   'width':filter[1], 'minAbund':minAbund, 'masterlist':masterlist, 'ions':ionsCalculated, 'Abundance':self.AbundanceName}
     #
     # -------------------------------------------------------------------------
     #
