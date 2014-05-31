@@ -292,13 +292,20 @@ def z2element(z):
     # -------------------------------------------------------------------------------------
     #
 def zion2name(z,ion, dielectronic=False):
-    """ convert Z, ion to generic name  26, 13 -> fe_13 """
-    if (z-1 < len(const.El)) and (ion <= z+1):
+    """
+    convert Z, ion to generic name  26, 13 -> fe_13
+    """
+    if ion == 0:
+        thisone = 0
+    elif ion == z+2:
+        thisone = 0
+    elif (z-1 < len(const.El)) and (ion <= z+1):
         thisone=const.El[z-1]+'_'+str(ion)
         if dielectronic:
             thisone+='d'
     else:
-        thisone=''
+        # this should not actually happen
+        thisone = 0
     return thisone
     #
     # -------------------------------------------------------------------------------------
@@ -363,7 +370,9 @@ def convertName(name):
         dielectronic=True
         ions=ions.replace('d','')
     else: dielectronic=False
-    return {'Z':int(i1),'Ion':int(ions),'Dielectronic':dielectronic, 'Element':els}
+    higher = zion2name(int(i1), int(ions)+1)
+    lower = zion2name(int(i1), int(ions)-1)
+    return {'Z':int(i1),'Ion':int(ions),'Dielectronic':dielectronic, 'Element':els, 'higher':higher, 'lower':lower}
     #
     # -------------------------------------------------------------------------------------
     #

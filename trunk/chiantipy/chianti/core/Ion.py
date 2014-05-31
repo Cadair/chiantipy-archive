@@ -86,21 +86,24 @@ class ion:
         #
 #        self.__version__ = chianti.__version__
         self.IonStr=ionStr
-        self.Defaults=chdata.Defaults
-        if not abund:
-            self.AbundanceName = self.Defaults['abundfile']
-        else:
-            self.AbundanceName = abund
-            #
-            #
-        self.IoneqName = self.Defaults['ioneqfile']
-        MasterList = chdata.MasterList
-        #
         self.Z=util.convertName(ionStr)['Z']
         self.Ion=util.convertName(ionStr)['Ion']
         self.Dielectronic=util.convertName(ionStr)['Dielectronic']
         self.Spectroscopic=util.zion2spectroscopic(self.Z,self.Ion)
         self.FileName=util.zion2filename(self.Z, self.Ion,dielectronic=self.Dielectronic )
+        #
+        self.Defaults=chdata.Defaults
+        #
+        if not abund:
+            self.AbundanceName = self.Defaults['abundfile']
+        else:
+            self.AbundanceName = abund
+        self.Abundance = chdata.Abundance[self.AbundanceName]['abundance'][self.Z-1]
+        #
+        #
+        self.IoneqName = self.Defaults['ioneqfile']
+        MasterList = chdata.MasterList
+        #
         #
         self.RadTemperature = radTemperature
         self.RStar = rStar
@@ -115,9 +118,6 @@ class ion:
             self.Temperature = np.array(temperature,'float64')
         #
         #
-#        self.AbundanceAll = util.abundanceRead(abundancename = self.AbundanceName)
-        #self.AbundanceAll = chdata.AbundanceAll
-        self.Abundance = chdata.Abundance[self.AbundanceName]['abundance'][self.Z-1]
         #
 #        self.IoneqAll = util.ioneqRead(ioneqname = self.Defaults['ioneqfile'])
 #        if chInteractive:
@@ -149,92 +149,93 @@ class ion:
             else:
                 self.PDensity = pDensity
         if setup:
-            #
-            # read in all data if in masterlist
-            #  if not, there should still be ionization and recombination rates
-            #
-            if self.IonStr in MasterList:
-                self.Elvlc = util.elvlcRead(self.IonStr, verbose=verbose)
-                self.Wgfa = util.wgfaRead(self.IonStr)
-                self.Nwgfa=len(self.Wgfa['lvl1'])
-                nlvlWgfa = max(self.Wgfa['lvl2'])
-                nlvlList =[nlvlWgfa]
-                fileName = util.ion2filename(self.IonStr)
-#                print 'fileName = ', fileName
-                splupsfile = fileName + '.splups'
-                if os.path.isfile(splupsfile):
-                    # happens the case of fe_3 and prob. a few others
-                    self.Scups = util.splupsRead(self.IonStr)
-                    self.Nsplups=len(self.Scups['lvl1'])
-                    nlvlSplups = max(self.Scups['lvl2'])
-                    nlvlList.append(nlvlSplups)
-                else:
-                    self.Nsplups = 0
-                    nlvlSplups = 0
-##                self.Nlvls = nlvlElvlc
-                #
-                file = fileName +'.cilvl'
-                if os.path.isfile(file):
-                    self.Cilvl = util.cireclvlRead(self.IonStr, cilvl=1)
-                    self.Ncilvl=len(self.Cilvl['lvl1'])
-                    nlvlCilvl = max(self.Cilvl['lvl2'])
-                    nlvlList.append(nlvlCilvl)
-                else:
-                    self.Ncilvl = 0
-                #  .reclvl file may not exist
-                reclvlfile = fileName +'.reclvl'
-                if os.path.isfile(reclvlfile):
-                    self.Reclvl = util.cireclvlRead(self.IonStr, reclvl=1)
-                    self.Nreclvl = len(self.Reclvl['lvl1'])
-                    nlvlReclvl = max(self.Reclvl['lvl2'])
-                    nlvlList.append(nlvlReclvl)
-                else:
-                    self.Nreclvl = 0
-                #  .dielsplups file may not exist
-                dielsplupsfile = fileName +'.dielsplups'
-                if os.path.isfile(dielsplupsfile):
-                    self.DielSplups = util.splupsRead(self.IonStr, diel=1)
-                    self.Ndielsplups=len(self.DielSplups["lvl1"])
-                    nlvlDielSplups = max(self.DielSplups['lvl2'])
-                    nlvlList.append(nlvlDielSplups)
-                else:
-                    self.Ndielsplups = 0
-                #
-                #  psplups file may not exist
-                psplupsfile = fileName +'.psplups'
-                if os.path.isfile(psplupsfile):
-                    self.Psplups = util.splupsRead(self.IonStr, prot=True)
-                    self.Npsplups=len(self.Psplups["lvl1"])
-                else:
-                    self.Npsplups = 0
-                #
-                drparamsFile = fileName +'.drparams'
-                if os.path.isfile(drparamsFile):
-                    self.DrParams = util.drRead(self.IonStr)
-                #
-                rrparamsFile = fileName +'.rrparams'
-                if os.path.isfile(rrparamsFile):
-                    self.RrParams = util.rrRead(self.IonStr)
-
-                #  not needed for ion, only phion
-#                photoxfile = util.ion2filename(self.IonStr)+'.photox'
-#                if os.path.isfile(photoxfile):
-#                    self.Photox = util.photoxRead(self.IonStr)
-                #
-                # need to determine the number of levels that can be populated
-                nlvlElvlc = len(self.Elvlc['lvl'])
-#                print ' nlvlElvlc = ', nlvlElvlc
-#                print ' other nlvls = ',  nlvlList
-#                nlvlWgfa = max(self.Wgfa['lvl2'])
-                #  elvlc file can have more levels than the rate level files
-                self.Nlvls = min([nlvlElvlc, max(nlvlList)])
-            else:
-                print ' the ion ' + self.IonStr + ' is not in the CHIANTI masterlist '
-                self.Elvlc = util.elvlcRead(self.IonStr, verbose=verbose)
-                if self.Elvlc['status'] == 0:
-                    print ' elvlc file NOT available - this is OK '
-                else:
-                    print ' elvlc file available '
+            self.setup()
+            ##
+            ## read in all data if in masterlist
+            ##  if not, there should still be ionization and recombination rates
+            ##
+            #if self.IonStr in MasterList:
+                #self.Elvlc = util.elvlcRead(self.IonStr, verbose=verbose)
+                #self.Wgfa = util.wgfaRead(self.IonStr)
+                #self.Nwgfa=len(self.Wgfa['lvl1'])
+                #nlvlWgfa = max(self.Wgfa['lvl2'])
+                #nlvlList =[nlvlWgfa]
+                #fileName = util.ion2filename(self.IonStr)
+##                print 'fileName = ', fileName
+                #splupsfile = fileName + '.splups'
+                #if os.path.isfile(splupsfile):
+                    ## happens the case of fe_3 and prob. a few others
+                    #self.Scups = util.splupsRead(self.IonStr)
+                    #self.Nsplups=len(self.Scups['lvl1'])
+                    #nlvlSplups = max(self.Scups['lvl2'])
+                    #nlvlList.append(nlvlSplups)
+                #else:
+                    #self.Nsplups = 0
+                    #nlvlSplups = 0
+###                self.Nlvls = nlvlElvlc
+                ##
+                #file = fileName +'.cilvl'
+                #if os.path.isfile(file):
+                    #self.Cilvl = util.cireclvlRead(self.IonStr, cilvl=1)
+                    #self.Ncilvl=len(self.Cilvl['lvl1'])
+                    #nlvlCilvl = max(self.Cilvl['lvl2'])
+                    #nlvlList.append(nlvlCilvl)
+                #else:
+                    #self.Ncilvl = 0
+                ##  .reclvl file may not exist
+                #reclvlfile = fileName +'.reclvl'
+                #if os.path.isfile(reclvlfile):
+                    #self.Reclvl = util.cireclvlRead(self.IonStr, reclvl=1)
+                    #self.Nreclvl = len(self.Reclvl['lvl1'])
+                    #nlvlReclvl = max(self.Reclvl['lvl2'])
+                    #nlvlList.append(nlvlReclvl)
+                #else:
+                    #self.Nreclvl = 0
+                ##  .dielsplups file may not exist
+                #dielsplupsfile = fileName +'.dielsplups'
+                #if os.path.isfile(dielsplupsfile):
+                    #self.DielSplups = util.splupsRead(self.IonStr, diel=1)
+                    #self.Ndielsplups=len(self.DielSplups["lvl1"])
+                    #nlvlDielSplups = max(self.DielSplups['lvl2'])
+                    #nlvlList.append(nlvlDielSplups)
+                #else:
+                    #self.Ndielsplups = 0
+                ##
+                ##  psplups file may not exist
+                #psplupsfile = fileName +'.psplups'
+                #if os.path.isfile(psplupsfile):
+                    #self.Psplups = util.splupsRead(self.IonStr, prot=True)
+                    #self.Npsplups=len(self.Psplups["lvl1"])
+                #else:
+                    #self.Npsplups = 0
+                ##
+                #drparamsFile = fileName +'.drparams'
+                #if os.path.isfile(drparamsFile):
+                    #self.DrParams = util.drRead(self.IonStr)
+                ##
+                #rrparamsFile = fileName +'.rrparams'
+                #if os.path.isfile(rrparamsFile):
+                    #self.RrParams = util.rrRead(self.IonStr)
+#
+                ##  not needed for ion, only phion
+##                photoxfile = util.ion2filename(self.IonStr)+'.photox'
+##                if os.path.isfile(photoxfile):
+##                    self.Photox = util.photoxRead(self.IonStr)
+                ##
+                ## need to determine the number of levels that can be populated
+                #nlvlElvlc = len(self.Elvlc['lvl'])
+##                print ' nlvlElvlc = ', nlvlElvlc
+##                print ' other nlvls = ',  nlvlList
+##                nlvlWgfa = max(self.Wgfa['lvl2'])
+                ##  elvlc file can have more levels than the rate level files
+                #self.Nlvls = min([nlvlElvlc, max(nlvlList)])
+            #else:
+                #print ' the ion ' + self.IonStr + ' is not in the CHIANTI masterlist '
+                #self.Elvlc = util.elvlcRead(self.IonStr, verbose=verbose)
+                #if self.Elvlc['status'] == 0:
+                    #print ' elvlc file NOT available - this is OK '
+                #else:
+                    #print ' elvlc file available '
         #
         # ------------------------------------------------------------------------------
         #
@@ -1309,7 +1310,7 @@ class ion:
         #
         # -------------------------------------------------------------------------
         #
-    def setup(self, dir=0, verbose=0):
+    def setupSplups(self, dir=0, verbose=0):
         '''
         if ion is initiated with setup=0, this allows the setup to be done at a later point
         perhaps, more importantly,  by setting dir to a directory cotaining the necessary files
@@ -1513,7 +1514,7 @@ class ion:
         #
         # -------------------------------------------------------------------------
         #
-    def setupScups(self, dir=0, verbose=0):
+    def setup(self, dir=0, verbose=0):
         '''
         if ion is initiated with setup=0, this allows the setup to be done at a later point
         perhaps, more importantly,  by setting dir to a directory cotaining the necessary files
@@ -1661,7 +1662,7 @@ class ion:
         #
         # -------------------------------------------------------------------------------------
         #
-    def populate(self, popCorrect=1, verbose=0, **kwargs):
+    def populateSplups(self, popCorrect=1, verbose=0, **kwargs):
         """
         Calculate level populations for specified ion.  This is a new version that will enable the calculation
         of dielectronic satellite lines without resorting to the dielectronic ions, such as c_5d
@@ -2940,7 +2941,7 @@ class ion:
         #
         # -------------------------------------------------------------------------------------
         #
-    def populateScups(self, popCorrect=1, verbose=0, **kwargs):
+    def populate(self, popCorrect=1, verbose=0, **kwargs):
         """
         Calculate level populations for specified ion.  This is a new version that will enable the calculation
         of dielectronic satellite lines without resorting to the dielectronic ions, such as c_5d
