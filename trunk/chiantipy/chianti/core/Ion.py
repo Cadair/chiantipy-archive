@@ -4265,6 +4265,246 @@ class ion:
         self.Emiss['wvlTop'] = wvl[idx]
         self.Emiss['emissTop'] = emiss[idx]
         #
+        # -------------------------------------------------------------------------------------
+        #
+    def emissRatio(self,wvlRange=None, wvlRanges=None,top=10):
+        """
+        Plot the ratio of 2 lines or sums of lines.
+        Shown as a function of density and/or temperature.
+        For a single wavelength range, set wvlRange = [wMin, wMax]
+        For multiple wavelength ranges, set wvlRanges = [[wMin1,wMax1],[wMin2,wMax2], ...]
+        A plot of relative emissivities is shown and then a dialog appears for the user to
+        choose a set of lines.
+        """
+        #
+        #        self.Emiss={"temperature":temperature,"density":density,"wvl":wvl,"emiss":em,
+        #        "plotLabels":plotLabels}
+        #
+        if hasattr(self, 'Emiss'):
+            doEmiss = False
+            em = self.Emiss
+        else:
+            doEmiss = True
+        #
+        #
+        if doEmiss:
+            # new values of temperature or eDensity
+            self.emiss()
+            em = self.Emiss
+        #
+        #
+        fontsize=14
+        #
+        temperature = self.Temperature
+        eDensity = self.EDensity
+        emiss = em['emiss']
+        ionS = em['ionS']
+        wvl = em["wvl"]
+        lineLabel = []
+        for iline,  ions in enumerate(ionS):
+            lineLabel.append(ions+' '+str(wvl[iline]))
+        #
+        plotLabels = em["plotLabels"]
+        xLabel = plotLabels["xLabel"]
+        yLabel = plotLabels["yLabel"]
+        #
+        # find which lines are in the wavelength range if it is set
+        #
+        #
+        if wvlRange:
+            igvl=util.between(wvl,wvlRange)
+        elif wvlRanges:
+            igvl = []
+            for awvlRange in wvlRanges:
+                igvl.extend(util.between(wvl,awvlRange))
+        else:
+            igvl=range(len(wvl))
+        #
+        nlines=len(igvl)
+        #
+#        print ' nlines = ',nlines
+#        print ' iglv = ',igvl
+        igvl=np.take(igvl,wvl[igvl].argsort())
+        # find the top most intense lines
+        #
+        if top > nlines:
+            top=nlines
+            #
+        maxEmiss = np.zeros(nlines,'Float64')
+        print(' maxEmiss.shape = %s'%(str(maxEmiss.shape)))
+        for iline in range(nlines):
+            maxEmiss[iline] = emiss[igvl[iline]].max()
+        for iline in range(nlines):
+            if maxEmiss[iline] == maxEmiss.max():
+                maxAll = emiss[igvl[iline]]
+        line=range(nlines)
+        igvlsort=np.take(igvl,np.argsort(maxEmiss))
+#        print 'igvlsort = ', igvlsort
+        topLines=igvlsort[-top:]
+#        print ' topLines = ', topLines
+        maxWvl='%5.3f' % wvl[topLines[-1]]
+        maxline=topLines[-1]
+        #
+        topLines=topLines[wvl[topLines].argsort()]
+        #
+        #
+        # need to make sure there are no negative values before plotting
+        good = np.where(emiss > 0.)
+        emissMin=emiss[good].min()
+        bad=np.where(emiss <= 0.)
+        emiss[bad]=emissMin
+        #
+        #
+        ntemp=self.Temperature.size
+        #
+        ndens=self.EDensity.size
+        #
+        ylabel='Emissivity relative to '+maxWvl
+        title=self.Spectroscopic
+        #
+        #
+        if ndens==1 and ntemp==1:
+            print ' only a single temperature and eDensity'
+            return
+        elif ndens == 1:
+            xlabel='Temperature (K)'
+            xvalues=self.Temperature
+            outTemperature=self.Temperature
+            outDensity=np.zeros(ntemp,'Float64')
+            outDensity.fill(self.EDensity)
+            desc_str=' at  Density = %10.2e (cm)$^{-3}$' % self.EDensity
+        elif ntemp == 1:
+            xvalues=self.EDensity
+            outTemperature=np.zeros(ndens,'Float64')
+            outTemperature.fill(self.Temperature)
+            outDensity=self.EDensity
+            xlabel=r'$\rm{Electron Density (cm)^{-3}}$'
+            desc_str=' at Temp = %10.2e (K)' % self.Temperature
+        else:
+            outTemperature=self.Temperature
+            outDensity=self.EDensity
+            xlabel='Temperature (K)'
+            xvalues=self.Temperature
+            desc_str=' for variable Density'
+        #
+        # put all actual plotting here
+        #
+        pl.ion()
+#        if chInteractive:
+#            pl.ion()
+#        else:
+#            pl.ioff()
+        #
+        #  maxAll is an array
+        ymax = np.max(emiss[topLines[0]]/maxAll)
+        ymin = ymax
+        pl.figure()
+        ax = pl.subplot(111)
+        nxvalues=len(xvalues)
+        for iline in range(top):
+            tline=topLines[iline]
+            pl.loglog(xvalues,emiss[tline]/maxAll)
+            if np.min(emiss[tline]/maxAll) < ymin:
+                ymin = np.min(emiss[tline]/maxAll)
+            if np.max(emiss[tline]/maxAll) > ymax:
+                ymax = np.max(emiss[tline]/maxAll)
+            skip=2
+            start=divmod(iline,nxvalues)[1]
+            for ixvalue in range(start,nxvalues,nxvalues/skip):
+                pl.text(xvalues[ixvalue],emiss[tline,ixvalue]/maxAll[ixvalue],str(wvl[tline]))
+        pl.xlim(xvalues.min(),xvalues.max())
+#        pl.ylim(ymin, ymax)
+        pl.xlabel(xlabel,fontsize=fontsize)
+        pl.ylabel(ylabel,fontsize=fontsize)
+        if ndens == ntemp and ntemp > 1:
+            pl.text(0.07, 0.5,title, horizontalalignment='left', verticalalignment='center', fontsize=fontsize,  transform = ax.transAxes)
+            #
+            ax2 = pl.twiny()
+            xlabelDen=r'Electron Density (cm$^{-3}$)'
+            pl.xlabel(xlabelDen, fontsize=fontsize)
+            pl.loglog(eDensity,emiss[topLines[top-1]]/maxAll, visible=False)
+            ax2.xaxis.tick_top()
+            pl.ylim(ymin/1.2, 1.2*ymax)
+        else:
+            pl.ylim(ymin/1.2, 1.2*ymax)
+            pl.title(title+desc_str,fontsize=fontsize)
+        pl.draw()
+        #  need time to let matplotlib finish plotting
+        time.sleep(0.5)
+        #
+        # get line selection  ************************************************************
+        #
+        selectTags = []
+        for itop in topLines:
+            selectTags.append(ionS[itop]+ ' '+ str(wvl[itop]))
+        #
+        numden = gui.choice2Dialog(selectTags)
+#        numden = gui.choice2Dialog(wvl[topLines])
+        #
+        # num_idx and den_idx are tuples
+        #
+        num_idx=numden.numIndex
+        if len(num_idx) == 0:
+            print ' no numerator lines were selected'
+            return
+        #
+        den_idx=numden.denIndex
+        if len(den_idx) == 0:
+            print ' no denominator lines were selected'
+            return
+        #
+        numEmiss=np.zeros(len(xvalues),'Float64')
+        for aline in num_idx:
+            numEmiss+=emiss[topLines[aline]]
+        #
+        denEmiss=np.zeros(len(xvalues),'Float64')
+        for aline in den_idx:
+            denEmiss+=emiss[topLines[aline]]
+        #
+        # plot the desired ratio
+        #  maxAll is an array
+        pl.figure()
+        ax = pl.subplot(111)
+        pl.loglog(xvalues,numEmiss/denEmiss)
+        pl.xlim(xvalues.min(),xvalues.max())
+        pl.xlabel(xlabel,fontsize=fontsize)
+        pl.ylabel('Emissivity Ratio ('+self.Defaults['flux']+')',fontsize=fontsize)
+        desc = ''
+        for aline in num_idx:
+            desc += ' ' + selectTags[aline]
+#            desc += ' ' + str(wvl[topLines[aline]])
+        desc +=' / '
+        for aline in den_idx:
+            desc += ' ' + selectTags[aline]
+#            desc += ' ' + str(wvl[topLines[aline]])
+        if ndens == ntemp and ntemp > 1:
+            pl.text(0.07, 0.5,desc, horizontalalignment='left', verticalalignment='center', fontsize=fontsize,  transform = ax.transAxes)
+            #
+            ax2 = pl.twiny()
+            xlabelDen=r'Electron Density (cm$^{-3}$)'
+            pl.xlabel(xlabelDen, fontsize=fontsize)
+            pl.loglog(eDensity,numEmiss/denEmiss, visible=False)
+            ax2.xaxis.tick_top()
+        else:
+#            pl.ylim(ymin, ymax)
+            pl.title(desc,fontsize=fontsize)
+#       desc=title+' '+str(wvl[num_line])+' / '+str(wvl[den_line])+' '+desc_str
+#        pl.title(desc, fontsize=fontsize)
+#       pl.title(title+' '+str(wvl[num_line])+' / '+str(wvl[den_line])+' '+desc_str,fontsize=fontsize)
+#        pl.draw()
+#        pl.ioff()
+#        pl.show()
+        #
+        intensityRatioFileName=self.IonStr
+        for aline in num_idx:
+            intensityRatioFileName+= '_%3i'%(wvl[topLines[aline]])
+        intensityRatioFileName+='_2'
+        for aline in den_idx:
+            intensityRatioFileName+= '_%3i'%(wvl[topLines[aline]])
+        intensityRatioFileName+='.rat'
+        self.IntensityRatio={'ratio':numEmiss/denEmiss,'desc':desc,
+                'temperature':outTemperature,'eDensity':outDensity,'filename':intensityRatioFileName, 'numIdx':num_idx, 'denIdx':den_idx}
+        #
         # ---------------------------------------------------------------------------
         #
     def intensity(self,  wvlRange = None,  allLines=1):
@@ -4345,6 +4585,7 @@ class ion:
                 print ' intensities not calculated and emiss() is unable to calculate them'
                 print ' perhaps the temperature and/or eDensity are not set'
                 return
+        #
         intensity = intens['intensity']
         ionS = np.asarray(intens['ionS'])
         wvl = intens['wvl']
@@ -4366,19 +4607,19 @@ class ion:
             print 'using index = %5i specifying temperature =  %10.2e'%(index, temperature[index])
             self.Message = 'using index = %5i specifying temperature =  %10.2e'%(index, temperature[index])
 
-            intensity=intensity[:, index]
+            intensity=intensity[index]
         elif ndens > 1 and ntemp == 1:
             if not index:
                 index = ndens/2
             print 'using index =%5i specifying eDensity = %10.2e'%(index, eDensity[index])
             self.Message = 'using index =%5i specifying eDensity = %10.2e'%(index, eDensity[index])
-            intensity=intensity[:, index]
+            intensity=intensity[index]
         elif ndens > 1 and ntemp > 1:
             if not index:
                 index = ntemp/2
             print 'using index = %5i specifying temperature = %10.2e, eDensity =  %10.2e'%(index, temperature[index], eDensity[index])
             self.Message = 'using index = %5i specifying temperature = %10.2e, eDensity =  %10.2e'%(index, temperature[index], eDensity[index])
-            intensity=intensity[:, index]
+            intensity=intensity[index]
         #
         if wvlRange:
             wvlIndex=util.between(wvl,wvlRange)
@@ -4531,28 +4772,29 @@ class ion:
         #        self.Emiss={"temperature":temperature,"density":density,"wvl":wvl,"emiss":em,
         #        "plotLabels":plotLabels}
         #
-        if hasattr(self, 'Emiss'):
-            doEmiss=False
-            em = self.Emiss
+        if hasattr(self, 'Intensity'):
+            doIntensity = False
+            intens = self.Intensity
         else:
-            doEmiss = True
+            doIntensity = True
         #
         #
-        if doEmiss:
+        if doIntensity:
             # new values of temperature or eDensity
-            self.emiss()
-            em=self.Emiss
+            self.intensity()
+            intens = self.Intensity
         #
         #
         fontsize=14
         #
         temperature = self.Temperature
         eDensity = self.EDensity
-        emiss = em['emiss']
-        wvl = em["wvl"]
-        plotLabels=em["plotLabels"]
-        xLabel=plotLabels["xLabel"]
-        yLabel=plotLabels["yLabel"]
+        intensity = intens['intensity']
+        ionS = intens['ionS']
+        wvl = intens["wvl"]
+        plotLabels = intens["plotLabels"]
+        xLabel = plotLabels["xLabel"]
+        yLabel = plotLabels["yLabel"]
         #
         # find which lines are in the wavelength range if it is set
         #
@@ -4576,7 +4818,7 @@ class ion:
         if top > nlines:
             top=nlines
             #
-        maxEmiss=np.zeros(nlines,'Float64')
+        maxI=np.zeros(nlines,'Float64')
         for iline in range(nlines):
             maxEmiss[iline]=emiss[igvl[iline]].max()
         for iline in range(nlines):
@@ -4678,6 +4920,10 @@ class ion:
         time.sleep(0.5)
         #
         # get line selection
+        #
+        selectTags = []
+        for itop in toplines:
+            selectTags.append()
         #
         numden = gui.choice2Dialog(wvl[topLines])
         #
@@ -4839,8 +5085,10 @@ class ion:
         # -------------------------------------------------------------------------------------
         #
     def ioneqOne(self):
-        '''Provide the ionization equilibrium for the selected ion as a function of temperature.
-        returned in self.IoneqOne'''
+        '''
+        Provide the ionization equilibrium for the selected ion as a function of temperature.
+        returned in self.IoneqOne
+        '''
         #
         if hasattr(self, 'Temperature'):
             temperature = self.Temperature
