@@ -122,11 +122,20 @@ class mspectrum:
         if not abund:
             self.AbundanceName = self.Defaults['abundfile']
         else:
-            self.AbundanceName = abund
-        self.Abundance = chdata.Abundance[self.AbundanceName]['abundance']
-#        self.AbundanceAll = util.abundanceRead(abundancename = self.AbundanceName)
-        #self.AbundanceAll = chdata.Abundance
-        #abundAll = self.AbundanceAll['abundance']
+            if abund in chdata.Abundance.keys():
+                self.AbundanceName = abund
+            else:
+                abundChoices = chdata.Abundance.keys()
+#                for one in wvl[topLines]:
+#                    wvlChoices.append('%12.3f'%(one))
+                abundChoice = gui.selectorDialog(abundChoices,label='Select Abundance name')
+                abundChoice_idx = abundChoice.selectedIndex
+                self.AbundanceName = abundChoices[abundChoice_idx[0]]
+                abund = self.AbundanceName
+                print(' Abundance chosen:  %s '%(self.AbundanceName))
+        #
+        abundAll = chdata.Abundance[self.AbundanceName]['abundance']
+        #
         nonzed = self.Abundance['abundance'] > 0.
         minAbundAll = self.Abundance[nonzed].min()
         if minAbund < minAbundAll:

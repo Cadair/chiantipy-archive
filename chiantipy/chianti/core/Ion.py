@@ -97,8 +97,18 @@ class ion:
         if not abund:
             self.AbundanceName = self.Defaults['abundfile']
         else:
-            self.AbundanceName = abund
-        self.Abundance = chdata.Abundance[self.AbundanceName]['abundance'][self.Z-1]
+            if abund in chdata.Abundance.keys():
+                self.AbundanceName = abund
+                self.Abundance = chdata.Abundance[self.AbundanceName]['abundance'][self.Z-1]
+            else:
+                abundChoices = chdata.Abundance.keys()
+#                for one in wvl[topLines]:
+#                    wvlChoices.append('%12.3f'%(one))
+                abundChoice = gui.selectorDialog(abundChoices,label='Select Abundance name')
+                abundChoice_idx = abundChoice.selectedIndex
+                self.AbundanceName = abundChoices[abundChoice_idx[0]]
+                self.Abundance = chdata.Abundance[self.AbundanceName]['abundance'][self.Z-1]
+                print(' Abundance chosen:  %s '%(self.AbundanceName))
         #
         #
         self.IoneqName = self.Defaults['ioneqfile']
@@ -1255,7 +1265,7 @@ class ion:
             if ttype == 5:
                 # dielectronic rates
                 st=kte/(kte+cups)
-                xs=dx*np.arange(nspl)
+#                xs=dx*np.arange(nspl)
                 y2=interpolate.splrep(xs,splups,s=0)
                 sups=interpolate.splev(st,y2,der=der)
                 ups[isplups]=sups/(kte+0.)

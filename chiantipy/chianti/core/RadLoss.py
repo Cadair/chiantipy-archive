@@ -68,11 +68,24 @@ class radLoss:
         self.Density = np.asarray(density, 'float64')
         nDen = self.Density.size
         nTempDen = max([nTemp, nDen])
+
         if not abund:
             self.AbundanceName = self.Defaults['abundfile']
         else:
-            self.AbundanceName = abund
-        abundAll = chdata.Abundance['self.AbundanceName']['abundance']
+            if abund in chdata.Abundance.keys():
+                self.AbundanceName = abund
+            else:
+                abundChoices = chdata.Abundance.keys()
+#                for one in wvl[topLines]:
+#                    wvlChoices.append('%12.3f'%(one))
+                abundChoice = gui.selectorDialog(abundChoices,label='Select Abundance name')
+                abundChoice_idx = abundChoice.selectedIndex
+                self.AbundanceName = abundChoices[abundChoice_idx[0]]
+                abund = self.AbundanceName
+                print(' Abundance chosen:  %s '%(self.AbundanceName))
+        #
+        abundAll = chdata.Abundance[self.AbundanceName]['abundance']
+        #
         nonzed = abundAll > 0.
         minAbundAll = abundAll[nonzed].min()
         if minAbund < minAbundAll:
