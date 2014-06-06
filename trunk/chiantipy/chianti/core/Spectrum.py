@@ -9,8 +9,9 @@ import chianti.util as util
 #
 defaults = chdata.Defaults
 
-class spectrum:
-    '''Calculate the emission spectrum as a function of temperature and density.
+class spectrum():
+    '''
+    Calculate the emission spectrum as a function of temperature and density.
 
     includes elemental abundances and ionization equilibria
 
@@ -92,11 +93,24 @@ class spectrum:
 
         #self.AbundanceName = defaults['abundfile']
         #self.AbundanceAll = chdata.AbundanceAll
+        #
         if not abund:
             self.AbundanceName = self.Defaults['abundfile']
         else:
-            self.AbundanceName = abund
+            if abund in chdata.Abundance.keys():
+                self.AbundanceName = abund
+            else:
+                abundChoices = chdata.Abundance.keys()
+#                for one in wvl[topLines]:
+#                    wvlChoices.append('%12.3f'%(one))
+                abundChoice = gui.selectorDialog(abundChoices,label='Select Abundance name')
+                abundChoice_idx = abundChoice.selectedIndex
+                self.AbundanceName = abundChoices[abundChoice_idx[0]]
+                abund = self.AbundanceName
+                print(' Abundance chosen:  %s '%(self.AbundanceName))
+        #
         abundAll = chdata.Abundance[self.AbundanceName]['abundance']
+        #
         nonzed = abundAll > 0.
         minAbundAll = abundAll[nonzed].min()
         if minAbund < minAbundAll:
@@ -113,6 +127,7 @@ class spectrum:
         twoPhoton = np.zeros((nTempDen, nWvl), 'float64').squeeze()
         lineSpectrum = np.zeros((nTempDen, nWvl), 'float64').squeeze()
         #
+        self.Intensity = {'ionS':[], 'lvl1':[], 'lvl2':[], 'wvl':[], 'pretty1':[], 'pretty2':[], 'intensity':np.zeros((nTempDen, 0),'float64'), 'obs':[] }
         ionsCalculated = []
         #
         for iz in range(31):
@@ -161,14 +176,20 @@ class spectrum:
                                     freeBound[iTempDen] += cont.FreeBound['rate'][iTempDen]
                     if masterListTest and wvlTestMin and wvlTestMax and ioneqTest:
                         print ' calculating spectrum for  :  ', ionS
+                        #
                         thisIon = chianti.core.ion(ionS, temperature, density, abund=abund)
                         ionsCalculated.append(ionS)
 #                       print ' dir = ', dir(thisIon)
 #                        thisIon.emiss(wvlRange = wvlRange, allLines=allLines)
                         thisIon.intensity(wvlRange = wvlRange, allLines=allLines)
+                        print(' intensity shape %5i %5i '%(thisIon.Intensity['intensity'].shape[0], thisIon.Intensity['intensity'].shape[1]))
                         # check that there are lines in this wavelength range
                         if 'errorMessage' not in  thisIon.Intensity.keys():
                             thisIon.spectrum(wavelength, filter=filter)
+                            for akey in self.Intensity:
+                                if akey != 'intensity':
+                                    self.Intensity[akey].extend(thisIon.Intensity[akey])
+                            self.Intensity['intensity'] = np.hstack((self.Intensity['intensity'], thisIon.Intensity['intensity']))
 #                           intensity = thisIon.Intensity['intensity']
                             if nTempDen == 1:
                                 lineSpectrum += thisIon.Spectrum['intensity']
@@ -182,6 +203,7 @@ class spectrum:
                     # get dielectronic lines
                     if masterListTestD and wvlTestMinD and wvlTestMaxD and ioneqTestD:
                         print ' calculating spectrum for  :  ', ionSd
+                        #
                         thisIon = chianti.core.ion(ionSd, temperature, density, abund=abund)
                         ionsCalculated.append(ionSd)
 #                       print ' dir = ', dir(thisIon)
@@ -191,6 +213,10 @@ class spectrum:
                         # check that there are lines in this wavelength range - probably not redundant
                         if 'errorMessage' not in  thisIon.Intensity.keys():
                             thisIon.spectrum(wavelength, filter=filter)
+                            for akey in self.Intensity:
+                                if akey != 'intensity':
+                                    self.Intensity[akey].extend(thisIon.Intensity[akey])
+                            self.Intensity['intensity'] = np.hstack((self.Intensity['intensity'], thisIon.Intensity['intensity']))
                             if nTempDen == 1:
                                 lineSpectrum += thisIon.Spectrum['intensity']
                             else:
