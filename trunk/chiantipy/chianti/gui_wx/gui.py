@@ -1,4 +1,6 @@
-'''wxWidget selection dialogs.'''
+'''
+wxWidget selection dialogs.
+'''
 import os
 import wx
 import chianti
@@ -21,9 +23,11 @@ def chpicker(dir,filter='All files (*.*)|*.*',title='ChiantiPy'):
 class selectorDialog:
     '''Make a single or multiple selection from a list of items.
 
-    expects the input of an array of items, will select one or more'''
+    expects the input of an array of items, will select one or more
+    '''
     def __init__(self, items,label='Your list',title='Select One'):
-        a=wx.MultiChoiceDialog(None,label,title,items)
+        a = wx.App()
+        a = wx.MultiChoiceDialog(None,label,title,items)
         a.ShowModal()
         self.selectedIndex = a.GetSelections()
         selectedItems=[]
