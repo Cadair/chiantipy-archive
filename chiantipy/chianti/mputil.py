@@ -42,7 +42,8 @@ def doIonQ(inQueue, outQueue):
         thisIon = chianti.core.ion(ionS, temperature, density, abund=abund)
         thisIon.intensity(wvlRange = wvlRange, allLines = allLines)
         thisIon.spectrum(wavelength,  filter=filter)
-        outList = [ionS, thisIon.Spectrum]
+#        outList = [ionS, thisIon.Spectrum]
+        outList = [ionS, thisIon.Spectrum, thisIon.Intensity]
         if not thisIon.Dielectronic:
             if (thisIon.Z - thisIon.Ion) in [0, 1]:
                 thisIon.twoPhoton(wavelength)

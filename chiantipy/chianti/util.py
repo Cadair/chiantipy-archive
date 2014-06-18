@@ -64,14 +64,16 @@ def ipRead(verbose=False):
     #
     # -------------------------------------------------------------------------------------
     #
-def masterListInfo(force=0):
-    """ returns information about ions in masterlist
+def masterListInfo(force=0, verbose=0):
+    """
+    returns information about ions in masterlist
     the reason for this file is to speed up multi-ion spectral calculations
     the information is stored in a pickled file 'masterlist_ions.pkl'
     if the file is not found, one will be created and the following information
     returned for each ion
     wmin, wmax :  the minimum and maximum wavelengths in the wgfa file
-    tmin, tmax :  the minimum and maximum temperatures for which the ionization balance is nonzero"""
+    tmin, tmax :  the minimum and maximum temperatures for which the ionization balance is nonzero
+    """
     dir=os.environ["XUVTOP"]
     infoPath = os.path.join(dir, 'masterlist')
     infoName=os.path.join(dir,'masterlist','masterlist_ions.pkl')
@@ -96,6 +98,8 @@ def masterListInfo(force=0):
         haveStage = np.zeros((31, 31), 'Int32')
         haveDielectronic = np.zeros((31, 31), 'Int32')
         for one in masterList:
+            if verbose:
+                print(' ion = %s'%(one))
             ionInfo = convertName(one)
             z = ionInfo['Z']
             stage = ionInfo['Ion']
@@ -1863,7 +1867,7 @@ def listFiles(path):
     walks the path and subdirectories to return a list of files
     '''
     alist=os.walk(path)
-    print(' getting file list')
+#    print(' getting file list')
     listname=[]
     for (dirpath,dirnames,filenames) in alist:
         if len(dirnames) == 0:

@@ -1,4 +1,3 @@
-import types
 import copy
 from datetime import datetime
 import numpy as np
@@ -76,10 +75,12 @@ class spectrum():
     em [for emission measure], can be a float or an array of the same length as the
     temperature/density
     '''
-    def __init__(self, temperature, eDensity, wavelength, filter=(chfilters.gaussianR, 1000.), elementList = 0, ionList = 0, minAbund=0, doContinuum=1, em = None, abund=0, verbose=0, allLines=1):
+    def __init__(self, temperature, eDensity, wavelength, filter=(chfilters.gaussianR, 1000.), elementList = 0, ionList = 0, minAbund=0, doContinuum=1, em = None, abundanceName=0, verbose=0, allLines=1):
         #
         t1 = datetime.now()
+        # creates Intensity dict from first ion calculated
         setupIntensity = 0
+        #
         masterlist = chdata.MasterList
         # use the ionList but make sure the ions are in the database
         if elementList:
@@ -107,8 +108,8 @@ class spectrum():
         self.EDensity = np.asarray(eDensity, 'float64')
         nDen = self.EDensity.size
         nTempDen = max([nTemp, nDen])
-        if type(em) != types.NoneType:
-            if type(em) == types.FloatType:
+        if type(em) != type(None):
+            if type(em) == type(None):
                 if nTempDen > 1:
                     em = np.ones_like(self.Temperature)*em
                     nEm = nTempDen
@@ -124,11 +125,9 @@ class spectrum():
         #self.AbundanceName = defaults['abundfile']
         #self.AbundanceAll = chdata.AbundanceAll
         #
-        if not abund:
-            self.AbundanceName = self.Defaults['abundfile']
-        else:
-            if abund in chdata.Abundance.keys():
-                self.AbundanceName = abund
+        if abundanceName:
+            if abundanceName in chdata.Abundance.keys():
+                self.AbundanceName = abundanceName
             else:
                 abundChoices = chdata.Abundance.keys()
 #                for one in wvl[topLines]:
@@ -136,8 +135,10 @@ class spectrum():
                 abundChoice = gui.selectorDialog(abundChoices,label='Select Abundance name')
                 abundChoice_idx = abundChoice.selectedIndex
                 self.AbundanceName = abundChoices[abundChoice_idx[0]]
-                abund = self.AbundanceName
+                abundanceName = self.AbundanceName
                 print(' Abundance chosen:  %s '%(self.AbundanceName))
+        else:
+            self.AbundanceName = self.Defaults['abundfile']
         #
         abundAll = chdata.Abundance[self.AbundanceName]['abundance']
         #
@@ -157,7 +158,7 @@ class spectrum():
         twoPhoton = np.zeros((nTempDen, nWvl), 'float64').squeeze()
         lineSpectrum = np.zeros((nTempDen, nWvl), 'float64').squeeze()
         #
-        self.Intensity = {'ionS':[], 'lvl1':[], 'lvl2':[], 'wvl':np.ndarray, 'pretty1':np.ndarray, 'pretty2':np.ndarray, 'intensity':np.zeros((nTempDen, 0),'float64'), 'obs':np.ndarray }
+#        self.Intensity = {'ionS':[], 'lvl1':[], 'lvl2':[], 'wvl':np.ndarray, 'pretty1':np.ndarray, 'pretty2':np.ndarray, 'intensity':np.zeros((nTempDen, 0),'float64'), 'obs':np.ndarray }
         ionsCalculated = []
         #
         for iz in range(31):
@@ -186,7 +187,7 @@ class spectrum():
                     if ionstageTest and ioneqTest and doContinuum:
                         # ionS is the target ion, cannot be the neutral for the continuum
                         print ' calculating continuum for :  ',  ionS
-                        cont = chianti.core.continuum(ionS, temperature, abund=abund)
+                        cont = chianti.core.continuum(ionS, temperature, abundanceName=self.AbundanceName)
                         cont.freeFree(wavelength)
     #                   print dir(thisIon)
     #                   print ' wvl = ', thisIon.FreeFree['wvl']
@@ -207,7 +208,7 @@ class spectrum():
                     if masterListTest and wvlTestMin and wvlTestMax and ioneqTest:
                         print ' calculating spectrum for  :  ', ionS
                         #
-                        thisIon = chianti.core.ion(ionS, temperature, eDensity, abund=abund)
+                        thisIon = chianti.core.ion(ionS, temperature, eDensity, abundanceName=self.AbundanceName)
                         ionsCalculated.append(ionS)
 #                       print ' dir = ', dir(thisIon)
 #                        thisIon.emiss(wvlRange = wvlRange, allLines=allLines)
@@ -218,9 +219,10 @@ class spectrum():
                             thisIon.spectrum(wavelength, filter=filter)
                             if setupIntensity:
                                 for akey in self.Intensity:
-                                    self.Intensity[akey] = np.hstack((self.Intensity[akey], thisIon.Intensity[akey]))
+                                    self.Intensity[akey] = np.hstack((copy.copy(self.Intensity[akey]), thisIon.Intensity[akey]))
                             else:
                                 setupIntensity = 1
+                                print(' creating Intensity dict from ion %s'%(ionS))
                                 self.Intensity  = thisIon.Intensity
 #                           intensity = thisIon.Intensity['intensity']
                             if nTempDen == 1:
@@ -228,6 +230,8 @@ class spectrum():
                             else:
                                 for iTempDen in range(nTempDen):
                                     lineSpectrum[iTempDen] += thisIon.Spectrum['intensity'][iTempDen]
+                        else:
+                            print(' error with ion = %s'%(ionS))
                         # get 2 photon emission for H and He sequences
                         if (iz - ionstage) in [0, 1]:
                             thisIon.twoPhoton(wavelength)
@@ -236,7 +240,7 @@ class spectrum():
                     if masterListTestD and wvlTestMinD and wvlTestMaxD and ioneqTestD:
                         print ' calculating spectrum for  :  ', ionSd
                         #
-                        thisIon = chianti.core.ion(ionSd, temperature, eDensity, abund=abund)
+                        thisIon = chianti.core.ion(ionSd, temperature, eDensity, abundanceName=self.AbundanceName)
                         ionsCalculated.append(ionSd)
 #                       print ' dir = ', dir(thisIon)
 #                       have to do all lines for the dielectronic satellites
@@ -265,7 +269,7 @@ class spectrum():
         t2 = datetime.now()
         dt=t2-t1
         print ' elapsed seconds = ', dt.seconds
-        if type(em) != types.NoneType:
+        if type(em) != type(None):
             if nEm == 1:
                 integrated = total*em
             else:
@@ -329,7 +333,6 @@ class spectrum():
                 index = ntemp/2
             print 'using index = %5i specifying temperature =  %10.2e'%(index, temperature[index])
             self.Message = 'using index = %5i specifying temperature =  %10.2e'%(index, temperature[index])
-
             intensity=intensity[index]
         elif ndens > 1 and ntemp == 1:
             if index < 0:
@@ -390,8 +393,8 @@ class spectrum():
         obs = obs[isrt[-top:]]
         intensity = intensity[isrt[-top:]]
         avalue = avalue[isrt[-top:]]
-        pretty1 = pretty1[isrt[-top]:]
-        pretty2 = pretty2[isrt[-top]:]
+        pretty1 = pretty1[isrt[-top:]]
+        pretty2 = pretty2[isrt[-top:]]
         #
     # must follow setting top
         #
@@ -399,15 +402,6 @@ class spectrum():
             intensity = intensity/intensity[:top].max()
         #
         #
-#        listIonS = ionS[:top]
-#        listWvl = wvl[:top]
-#        listIntensity = intensity[:top]
-##        listAvalue = avalue[:top]
-#        listLvl1 = lvl1[:top]
-#        listLvl2 = lvl2[:top]
-#        listObs = obs[:top]
-#        listPretty1 = pretty1[:top]
-#        listPretty2 = pretty2[:top]
         idx = np.argsort(wvl)
         fmt = '%5s %5i %5i %25s - %25s %12.3f %12.3e %12.2e %1s'
         print '   '
@@ -415,17 +409,11 @@ class spectrum():
         print '   '
         print ' Ion   lvl1  lvl2         lower                     upper                   Wvl(A)   Intensity       Obs'
         for kdx in idx:
-#            l1 = listLvl1[kdx] - 1
-#            l2 = listLvl2[kdx] - 1
-#            pretty1 = self.Intensity['pretty'][l1]
-#            pretty2 = self.Intensity['pretty'][l2].ljust(25)
-#            print fmt%(listIonS[kdx], listLvl1[kdx], listLvl2[kdx], pretty1, pretty2, listWvl[kdx], listIntensity[kdx], listObs[kdx])
             print(fmt%(ionS[kdx], lvl1[kdx], lvl2[kdx], pretty1[kdx], pretty2[kdx], wvl[kdx], intensity[kdx], avalue[kdx], obs[kdx]))
         print '   '
         print ' ------------------------------------------'
         print '   '
         #
-        idx = np.argsort(wvl)
         self.Intensity['wvlTop'] = wvl[idx]
         self.Intensity['intensityTop'] = intensity[idx]
         if outFile:
@@ -433,9 +421,5 @@ class spectrum():
             outpt = open(outFile, 'w')
             outpt.write('Ion lvl1  lvl2         lower                       upper                   Wvl(A)   Intensity       Obs \n')
             for kdx in idx:
-                l1 = listLvl1[kdx] - 1
-                l2 = listLvl2[kdx] - 1
-                pretty1 = self.Intensity['pretty'][l1]
-                pretty2 = self.Intensity['pretty'][l2].ljust(25)
-                outpt.write(fmt%(listIonS[kdx], listLvl1[kdx], listLvl2[kdx], pretty1, pretty2, listWvl[kdx], listIntensity[kdx], listObs[kdx]))
+                outpt.write(fmt%(ionS[kdx], lvl1[kdx], lvl2[kdx], pretty1[kdx], pretty2[kdx], wvl[kdx], intensity[kdx], avalue[kdx], obs[kdx]))
             outpt.close()
