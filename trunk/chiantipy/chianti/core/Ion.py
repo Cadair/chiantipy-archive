@@ -1,6 +1,5 @@
 import os
 import copy
-#import types
 import numpy as np
 from scipy import interpolate
 import time
@@ -64,25 +63,29 @@ xuvtop = chdata.xuvtop
 #AbundanceAll = chianti.AbundanceAll
 #IoneqAll = chianti.IoneqAll
 class ion:
-    '''The top level class for performing spectral calculations for an ion in the CHIANTI database.
+    '''
+    The top level class for performing spectral calculations for an ion in the CHIANTI database.
 
     ionStr is a string corresponding such as 'c_5' that corresponds to the C V ion.
     temperature in Kelvin
     eDensity in cm^-3
     radTemperature, the radiation black-body temperature in Kelvin
     rPlot, the distance from the center of the star in stellar radii
-    the elemental abundance values can be set to one of the names in the XUVTOP/abundance directory
-        without the '.abund' suffix, such as 'sun_photospheric_1998_grevesse'
     '''
-    def __init__(self, ionStr, temperature=None, eDensity=None, pDensity='default', radTemperature=0,  rStar=0, abund=0, verbose=0, setup=True,  **kwargs):
-        '''The top level class for performing spectral calculations for an ion in the CHIANTI database.
+    def __init__(self, ionStr, temperature=None, eDensity=None, pDensity='default', radTemperature=0,  rStar=0, abundanceName=0, abundance=0,  verbose=0, setup=True,  **kwargs):
+        '''
+        The top level class for performing spectral calculations for an ion in the CHIANTI database.
 
         ionStr is a string corresponding such as 'c_5' that corresponds to the C V ion.
         temperature in Kelvin
         eDensity in cm^-3
         radTemperature, the radiation black-body temperature in Kelvin
-        rPlot, the distance from the center of the star in stellar radii
-        '''
+        rStar, the distance from the center of the star in stellar radii
+
+        the elemental abundance values can be set to one of the names in the XUVTOP/abundance directory
+        without the '.abund' suffix, such as abundanceName = 'sun_photospheric_1998_grevesse'
+
+       '''
         #
         #
 #        self.__version__ = chianti.__version__
@@ -95,12 +98,9 @@ class ion:
         #
         self.Defaults=chdata.Defaults
         #
-        if not abund:
-            self.AbundanceName = self.Defaults['abundfile']
-            self.Abundance = chdata.Abundance[self.AbundanceName]['abundance'][self.Z-1]
-        else:
-            if abund in chdata.Abundance.keys():
-                self.AbundanceName = abund
+        if abundanceName:
+            if abundanceName in chdata.Abundance.keys():
+                self.AbundanceName = abundanceName
                 self.Abundance = chdata.Abundance[self.AbundanceName]['abundance'][self.Z-1]
             else:
                 abundChoices = chdata.Abundance.keys()
@@ -111,6 +111,9 @@ class ion:
                 self.AbundanceName = abundChoices[abundChoice_idx[0]]
                 self.Abundance = chdata.Abundance[self.AbundanceName]['abundance'][self.Z-1]
                 print(' Abundance chosen:  %s '%(self.AbundanceName))
+        else:
+            self.AbundanceName = self.Defaults['abundfile']
+            self.Abundance = chdata.Abundance[self.AbundanceName]['abundance'][self.Z-1]
         #
         #
         self.IoneqName = self.Defaults['ioneqfile']
@@ -1627,8 +1630,9 @@ class ion:
         #
         # -------------------------------------------------------------------------
         #
-    def spectrum(self,wavelength, filter=(chfilters.gaussianR,1000.)):
-        '''Calculates the line emission spectrum for the specified ion.
+    def spectrum(self, wavelength, filter=(chfilters.gaussianR,1000.)):
+        '''
+        Calculates the line emission spectrum for the specified ion.
 
         Convolves the results of intensity to make them look like an observed spectrum
         the default filter is the gaussianR filter with a resolving power of 1000.  Other choices
@@ -1638,12 +1642,14 @@ class ion:
 
         includes ionization equilibrium and elemental abundances
 
-        Note:  scipy.ndimage.filters also includes a range of filters.'''
+        Note:  scipy.ndimage.filters also includes a range of filters.
+        '''
         aspectrum = np.zeros_like(wavelength)
         nTemp = self.Temperature.size
         nDens = self.EDensity.size
         useFilter = filter[0]
         useFactor= filter[1]
+        #
         if hasattr(self, 'Intensity'):
             intensity = self.Intensity
         else:
@@ -3881,7 +3887,7 @@ class ion:
 #       nlvls=len(self.Elvlc['lvl'])
 ##        good=self.Wgfa['avalue'] > 0.
         # using [:] to make a copy things don't change elsewhere
-        wvl = np.asarray(self.Wgfa["wvl"][:], 'float64')
+        wvl = np.asarray(self.Wgfa["wvl"], 'float64')
         obs = np.where(wvl > 0., 'Y', 'N')
         if allLines:
             wvl=np.abs(wvl)
@@ -3889,9 +3895,9 @@ class ion:
         l2 = np.asarray(self.Wgfa["lvl2"], 'int64')
         avalue = np.asarray(self.Wgfa["avalue"], 'float64')
         if self.Wgfa.has_key('pretty1'):
-            p1 = np.asarray(self.Wgfa['pretty1'], 'string')
+            pretty1 = np.asarray(self.Wgfa['pretty1'])
         if self.Wgfa.has_key('pretty2'):
-            p2 = np.asarray(self.Wgfa['pretty2'], 'string')
+            pretty2 = np.asarray(self.Wgfa['pretty2'])
         #
         # make sure there are lines in the wavelength range, if specified
 
@@ -3901,10 +3907,11 @@ class ion:
             l2 = l2[realgood]
             wvl = wvl[realgood]
             avalue = avalue[realgood]
+            obs = obs[realgood]
             if self.Wgfa.has_key('pretty1'):
-                pretty1 = p1[realgood]
+                pretty1 = pretty1[realgood]
             if self.Wgfa.has_key('pretty2'):
-                pretty2 = p2[realgood]
+                pretty2 = pretty2[realgood]
         #
         # two-photon decays have wvl=0 and nonzero avalues
 #        zed = wvl.count(0.)
@@ -3986,11 +3993,11 @@ class ion:
 #        lvl2 = l2.tolist()
         nlvl = len(l1)
         ionS = np.asarray([self.IonStr]*nlvl)
-        Emiss = {'ionS':ionS,"wvl":wvl, "emiss":em, "plotLabels":plotLabels, 'lvl1':l1, 'lvl2':l2, 'avalue':avalue, 'obs':obs}
-        if self.Wgfa.has_key('pretty1'):
-            Emiss['pretty1'] = p1
-        if self.Wgfa.has_key('pretty2'):
-            Emiss['pretty2'] = p2
+        Emiss = {'ionS':ionS,"wvl":wvl, "emiss":em, "plotLabels":plotLabels, 'lvl1':l1, 'lvl2':l2, 'avalue':avalue, 'obs':obs, 'pretty1':pretty1, 'pretty2':pretty2}
+#        if self.Wgfa.has_key('pretty1'):
+#            Emiss['pretty1'] = np.asarray(p1)
+#        if self.Wgfa.has_key('pretty2'):
+#            Emiss['pretty2'] = np.asarray(p2)
         #  everything in Emiss should be a numpy array
         self.Emiss = Emiss
         return
@@ -4009,25 +4016,24 @@ class ion:
         '''
         #
         #
-        doEmiss=False
-        if hasattr(self, 'Emiss'):
-            em = self.Emiss
-        else:
+        if not hasattr(self, 'Emiss'):
             try:
                 self.emiss()
-                em = self.Emiss
             except:
                 print ' emissivities not calculated and emiss() is unable to calculate them'
                 print ' perhaps the temperature and/or eDensity are not set'
                 return
-        emiss = em['emiss']
-        ionS = em['ionS']
-        wvl = em['wvl']
-        lvl1 = em['lvl1']
-        lvl2 = em['lvl2']
-        obs = em['obs']
-        pretty1 = em['pretty1']
-        pretty2 = em['pretty2']
+        #
+        emissivity = copy.copy(self.Emiss)
+        emiss = emissivity['emiss']
+        ionS = emissivity['ionS']
+        wvl = emissivity['wvl']
+        lvl1 = emissivity['lvl1']
+        lvl2 = emissivity['lvl2']
+        avalue = emissivity['avalue']
+        obs = emissivity['obs']
+        pretty1 = emissivity['pretty1']
+        pretty2 = emissivity['pretty2']
         #
         temperature = self.Temperature
         eDensity = self.EDensity
@@ -4067,7 +4073,6 @@ class ion:
         else:
             wvlIndex = range(wvl.size)
         #
-        avalue = np.asarray(self.Wgfa['avalue'])
         #
         # get those in the right wavelength range
         #
@@ -4111,16 +4116,7 @@ class ion:
             emiss = emiss/emiss[:top].max()
         #
         #
-        listIonS = ionS[:top]
-        listWvl = wvl[:top]
-        listEmiss = emiss[:top]
-        listAvalue = avalue[:top]
-        listLvl1 = lvl1[:top]
-        listLvl2 = lvl2[:top]
-        listObs = obs[:top]
-        listPretty1 =  pretty1[:top]
-        listPretty2 =  pretty2[:top]
-        idx = np.argsort(listWvl)
+        idx = np.argsort(wvl)
         #
         fmt = '%5s %5i %5i %25s - %25s %12.3f %12.3e %12.2e %1s'
         print '   '
@@ -4128,24 +4124,24 @@ class ion:
         print '   '
         print ' Ion   lvl1  lvl2         lower                     upper                   Wvl(A)   Emissivity      A value Obs'
         for kdx in idx:
-            l1 = listLvl1[kdx] - 1
-            l2 = listLvl2[kdx] - 1
-            print fmt%(listIonS[kdx], listLvl1[kdx], listLvl2[kdx], listPretty1[kdx], listPretty2[kdx], listWvl[kdx], listEmiss[kdx], listAvalue[kdx], listObs[kdx])
+            print fmt%(ionS[kdx], lvl1[kdx], lvl2[kdx], pretty1[kdx], pretty2[kdx], wvl[kdx], emiss[kdx], avalue[kdx], obs[kdx])
         print '   '
         print ' ------------------------------------------'
         print '   '
         #
-        idx = np.argsort(wvl)
         self.Emiss['wvlTop'] = wvl[idx]
         self.Emiss['emissTop'] = emiss[idx]
         if outFile:
-            fmt = '%5s %5i %5i %25s - %25s %12.3f %12.3e %12.2e %1s \n'
-            outpt = open(outFile, 'w')
-            outpt.write('Ion lvl1  lvl2         lower                       upper                   Wvl(A)   Emissivity      A value Obs \n')
+            fmt = '%5s %5i %5i %25s - %25s %12.3f %12.3e %12.2e %1s'
+            print '   '
+            print ' ------------------------------------------'
+            print '   '
+            print ' Ion   lvl1  lvl2         lower                     upper                   Wvl(A)   Emissivity      A value Obs'
             for kdx in idx:
-                l1 = listLvl1[kdx] - 1
-                l2 = listLvl2[kdx] - 1
-                outpt.write(fmt%(listIonS[kdx], listLvl1[kdx], listLvl2[kdx], listPretty1[kdx], listPretty2[kdx], listWvl[kdx], listEmiss[kdx], listAvalue[kdx], listObs[kdx]))
+                print fmt%(ionS[kdx], lvl1[kdx], lvl2[kdx], pretty1[kdx], pretty2[kdx], wvl[kdx], emiss[kdx], avalue[kdx], obs[kdx])
+            print '   '
+            print ' ------------------------------------------'
+            print '   '
             outpt.close()
         #
         # ---------------------------------------------------------------------------
@@ -4539,9 +4535,9 @@ class ion:
         #
         if not hasattr(self, 'Emiss'):
             self.emiss(wvlRange = wvlRange, allLines=allLines)
-            emiss = self.Emiss
+            emiss = copy.copy(self.Emiss)
         else:
-            emiss = self.Emiss
+            emiss = copy.copy(self.Emiss)
         if 'errorMessage'  in emiss.keys():
             self.Intensity = {'errorMessage': self.Spectroscopic+' no lines in this wavelength region'}
             return
@@ -4692,8 +4688,8 @@ class ion:
         obs = obs[isrt[-top:]]
         intensity = intensity[isrt[-top:]]
         avalue = avalue[isrt[-top:]]
-        pretty1 = pretty1[isrt[-top]:]
-        pretty2 = pretty2[isrt[-top]:]
+        pretty1 = pretty1[isrt[-top:]]
+        pretty2 = pretty2[isrt[-top:]]
         #
     # must follow setting top
         #
@@ -4701,16 +4697,6 @@ class ion:
             intensity = intensity/intensity[:top].max()
         #
         #
-#        listIonS = ionS[:top]
-#        listWvl = wvl[:top]
-#        listIntensity = intensity[:top]
-#        listAvalue = avalue[:top]
-#        listLvl1 = lvl1[:top]
-#        listLvl2 = lvl2[:top]
-#        listObs = obs[:top]
-#        listPretty1 = pretty1[:top]
-#        listPretty2 = pretty2[:top]
-#        idx = np.argsort(listWvl)
         idx = np.argsort(wvl)
         fmt = '%5s %5i %5i %25s - %25s %12.3f %12.3e %12.2e %1s'
         print '   '
@@ -4718,13 +4704,11 @@ class ion:
         print '   '
         print ' Ion   lvl1  lvl2         lower                     upper                   Wvl(A)   Intensity      A value Obs'
         for kdx in idx:
-#            print(fmt%(listIonS[kdx], listLvl1[kdx], listLvl2[kdx], listPretty1[kdx], listPretty2[kdx], listWvl[kdx], listIntensity[kdx], listAvalue[kdx], listObs[kdx]))
             print(fmt%(ionS[kdx], lvl1[kdx], lvl2[kdx], pretty1[kdx], pretty2[kdx], wvl[kdx], intensity[kdx], avalue[kdx], obs[kdx]))
         print '   '
         print ' ------------------------------------------'
         print '   '
         #
-        idx = np.argsort(wvl)
         self.Intensity['wvlTop'] = wvl[idx]
         self.Intensity['intensityTop'] = intensity[idx]
         if outFile:
@@ -4732,7 +4716,7 @@ class ion:
             outpt = open(outFile, 'w')
             outpt.write('Ion lvl1  lvl2         lower                       upper                   Wvl(A)   Intensity      A value Obs \n')
             for kdx in idx:
-                outpt.write(fmt%(listIonS[kdx], listLvl1[kdx], listLvl2[kdx], listPretty1[kdx], listPretty2[kdx], listWvl[kdx], listIntensity[kdx], listAvalue[kdx], listObs[kdx]))
+                outpt.write(fmt%(ionS[kdx], lvl1[kdx], lvl2[kdx], pretty1[kdx], pretty2[kdx], wvl[kdx], intensity[kdx], avalue[kdx], obs[kdx]))
             outpt.close()
         #
         # ---------------------------------------------------------------------------

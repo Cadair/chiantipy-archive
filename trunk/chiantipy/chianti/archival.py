@@ -1,11 +1,13 @@
 import os
 from .FortranFormat import *
 import chianti.constants as const
+from .util import ion2filename
     #
     # -------------------------------------------------------------------------------------
     #
 def elvlcRead(ions, filename = 0, verbose=0,  useTh=0):
-    """ read a chianti energy level file and returns
+    """
+    read a chianti energy level file and returns
     {"lvl":lvl,"conf":conf,"term":term,"spin":spin,"l":l,"spd":spd,"j":j
     ,"mult":mult,"ecm":ecm,"eryd":eryd,"ecmth":ecmth,"erydth":erydth,"ref":ref,"pretty":pretty, 'ionS':ions}
     if a energy value for ecm or eryd is zero(=unknown), the theoretical values

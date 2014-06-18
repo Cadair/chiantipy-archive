@@ -33,9 +33,11 @@ for one in filelist:
     fname = os.path.join(abunddir,one)
     if os.path.isfile(fname):
         abundList.append(os.path.splitext(one)[0])
-for one in abundList:
-    print(one)
+#for one in abundList:
+#    print(one)
 Abundance = {abundList[0]:util.abundanceRead(abundancename = abundList[0])}
 for one in abundList[1:]:
     Abundance[one] = util.abundanceRead(abundancename = one)
+
+print(' importing data')
 
