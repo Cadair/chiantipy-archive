@@ -39,5 +39,3 @@ Abundance = {abundList[0]:util.abundanceRead(abundancename = abundList[0])}
 for one in abundList[1:]:
     Abundance[one] = util.abundanceRead(abundancename = one)
 
-print(' importing data')
-

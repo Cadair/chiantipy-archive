@@ -314,9 +314,34 @@ def zion2name(z,ion, dielectronic=False):
     #
     # -------------------------------------------------------------------------------------
     #
-def zion2filename(z,ion, dielectronic=False):
+def zion2dir(z,ion, dielectronic=False, xuvtop=0):
     """ convert Z to generic file name string """
-    dir=os.environ["XUVTOP"]
+    if xuvtop:
+        dir = xuvtop
+    else:
+        dir=os.environ["XUVTOP"]
+    if (z-1 < len(const.El)) and (ion <= z+1):
+        thisel=const.El[z-1]
+    else:
+        thisel=''
+    if z-1 < len(const.El):
+        thisone=const.El[z-1]+'_'+str(ion)
+        if dielectronic:
+            thisone+='d'
+    else:
+        thisone=''
+    if thisel != '' :
+        fname=os.path.join(dir,thisel,thisone)
+    return fname
+    #
+    # -------------------------------------------------------------------------------------
+    #
+def zion2filename(z,ion, dielectronic=False, xuvtop=0):
+    """ convert Z to generic file name string """
+    if xuvtop:
+        dir = xuvtop
+    else:
+        dir=os.environ["XUVTOP"]
     if (z-1 < len(const.El)) and (ion <= z+1):
         thisel=const.El[z-1]
     else:
@@ -585,7 +610,8 @@ def elvlcRead(ions, filename=0, getExtended=0, verbose=0,  useTh=1):
     eryd = [x*const.invCm2ryd for x in ecm]
     erydth = [x*const.invCm2ryd for x in ecmth]
     ref=[]
-    for i in range(nlvls+1,len(s1)-1):
+    # this should skip the last '-1' in the file
+    for i in range(nlvls+1,len(s1) -1):
         s1a=s1[i][:-1]
         ref.append(s1a.strip())
 #    self.const.Elvlc={"lvl":lvl,"conf":conf,"term":term,"spin":spin,"l":l,"spd":spd,"j":j
@@ -658,13 +684,13 @@ def elvlcWrite(info, outfile=0, addLvl=0, includeRyd=0):
 #        out.write(one+'\n')
     for aref in info['ref']:
         out.write(aref + '\n')
-#    out.write(' -1\n')
+    out.write(' -1\n')
     out.close()
     return
     #
     # -------------------------------------------------------------------------------------
     #
-def wgfaRead(ions, filename=0, elvlcname=0, total=0, verbose=0):
+def wgfaRead(ions, filename=0, elvlcname=-1, total=0, verbose=0):
     """
     reads chianti wgfa file and returns
     {"lvl1":lvl1,"lvl2":lvl2,"wvl":wvl,"gf":gf,"avalue":avalue,"ref":ref}
@@ -673,7 +699,10 @@ def wgfaRead(ions, filename=0, elvlcname=0, total=0, verbose=0):
     #
     if filename:
         wgfaname = filename
-        if not elvlcname:
+        if elvlcname < 0:
+            elvlcnamee = 0
+            elvlc = 0
+        elif not elvlcname:
             elvlcname = os.path.splitext(wgfaname)[0] + '.elvlc'
             if os.path.isfile(elvlcname):
                 elvlc = elvlcRead('', elvlcname)
@@ -690,43 +719,52 @@ def wgfaRead(ions, filename=0, elvlcname=0, total=0, verbose=0):
             elvlc = elvlcRead('', elvlcname)
         else:
             elvlc = 0
+    if verbose:
+        if elvlc:
+            print(' have elvlc data')
+        else:
+            print(' do not have elvlc data')
     #
     input=open(wgfaname,'r')
     s1=input.readlines()
-    dum=input.close()
+    input.close()
     nwvl=0
     ndata=2
     while ndata > 1:
-        s1a=s1[nwvl][:-1]
+        s1a=s1[nwvl]
         s2=s1a.split()
         ndata=len(s2)
-        nwvl=nwvl+1
-    nwvl=nwvl-1
+        nwvl += 1
+    nwvl -= 1
     if verbose:
-        print(' nwvl = %i7'%(nwvl))
+        print(' nwvl = %10i ndata = %4i'%(nwvl, ndata))
     lvl1=[0]*nwvl
     lvl2=[0]*nwvl
     wvl=[0.]*nwvl
     gf=[0.]*nwvl
     avalue=[0.]*nwvl
-    if elvlcname:
+    if elvlc:
         pretty1 = ['']*nwvl
         pretty2 = ['']*nwvl
     #
+    if verbose:
+        print(' nwvl = %10i'%(nwvl))
+    #
     wgfaFormat='(2i5,f15.3,2e15.3)'
-    for i in range(nwvl):
-        inpt=FortranLine(s1[i],wgfaFormat)
-        lvl1[i]=inpt[0]
-        lvl2[i]=inpt[1]
-        wvl[i]=inpt[2]
-        gf[i]=inpt[3]
-        avalue[i]=inpt[4]
+    for ivl in range(nwvl):
+        inpt=FortranLine(s1[ivl],wgfaFormat)
+        lvl1[ivl]=inpt[0]
+        lvl2[ivl]=inpt[1]
+        wvl[ivl]=inpt[2]
+        gf[ivl]=inpt[3]
+        avalue[ivl]=inpt[4]
         if elvlc:
-            pretty1[i] = elvlc['pretty'][inpt[0] - 1]
-            pretty2[i] = elvlc['pretty'][inpt[1] - 1]
+            pretty1[ivl] = elvlc['pretty'][inpt[0] - 1]
+            pretty2[ivl] = elvlc['pretty'][inpt[1] - 1]
 
     ref=[]
-    for i in range(nwvl+1,len(s1)-1):
+    # should skip the last '-1' in the file
+    for i in range(nwvl+1,len(s1) -1):
         s1a=s1[i][:-1]
         ref.append(s1a.strip())
     Wgfa={"lvl1":lvl1,"lvl2":lvl2,"wvl":wvl,"gf":gf,"avalue":avalue,"ref":ref, 'ionS':ions, 'filename':wgfaname}
@@ -736,9 +774,10 @@ def wgfaRead(ions, filename=0, elvlcname=0, total=0, verbose=0):
             avalueLvl[lvl2[iwvl] -1] += avalue[iwvl]
         Wgfa['avalueLvl'] = avalueLvl
 
-    if elvlcname:
+    if elvlc:
         Wgfa['pretty1'] = pretty1
         Wgfa['pretty2'] = pretty2
+    #
     return Wgfa
     #
     # --------------------------------------
@@ -1077,7 +1116,7 @@ def splupsRead(ions, filename=0, prot=0, ci=0,  diel=0):
             splups[i] = spl1
         #
         ref=[]
-        for i in range(nsplups+1,len(s1)-1):
+        for i in range(nsplups+1,len(s1)):
             s1a=s1[i][:-1]
             ref.append(s1a.strip())
         if prot:
@@ -1129,14 +1168,14 @@ def cireclvlRead(ions, filename=0, cilvl=0, reclvl=0, rrlvl=0):
     ndata = iline - 1
     ntrans = ndata/2
     #
-    nref = 0
-    idx = -1
-    while idx < 0:
-        aline=lines[iline][0:5]
-        idx=aline.find('-1')
-        iline += 1
-        nref += 1
-    nref -= 1
+#    nref = 0
+#    idx = -1
+#    while idx < 0:
+#        aline=lines[iline][0:5]
+#        idx=aline.find('-1')
+#        iline += 1
+#        nref += 1
+#    nref -= 1
     #
     # need to find the maximum number of temperatures, not all lines are the same
     #
@@ -1173,7 +1212,7 @@ def cireclvlRead(ions, filename=0, cilvl=0, reclvl=0, rrlvl=0):
         lvl2[idat] = int(cidat[3])
         ci[idat] = np.resize(shortCi, maxNtemp)
         idat += 1
-    return {'temperature':temp, 'ntemp':ntemp,'lvl1':lvl1, 'lvl2':lvl2, 'rate':ci,'ref':lines[ndata+1:-1], 'ionS':ions}
+    return {'temperature':temp, 'ntemp':ntemp,'lvl1':lvl1, 'lvl2':lvl2, 'rate':ci,'ref':lines[ndata+1:], 'ionS':ions}
     #
     # ----------------------------------------------------------
     #
