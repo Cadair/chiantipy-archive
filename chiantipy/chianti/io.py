@@ -3,6 +3,7 @@ a collection of reading and writing functions
 '''
 import os, fnmatch
 import numpy as np
+import chianti.util as util
     #
     # -------------------------------------------------------------------------------------
     #
@@ -16,7 +17,7 @@ def scupsRead(ions, filename=0, verbose=0):
         bname = os.path.basename(scupsFileName)
         ions = bname.split('.')[0]
     else:
-        fname = ion2filename(ions)
+        fname = util.ion2filename(ions)
         scupsFileName = fname+'.scups'
     if not os.path.isfile(scupsFileName):
         print((' elvlc file does not exist:  %s'%(scupsFileName)))

@@ -1130,6 +1130,7 @@ class ion:
         Provides the temperatures and effective collision strengths (upsilons)
         set prot for proton rates
         otherwise, ce will be set for electron collision rates
+        uses the new format "scups" files
         """
         #
         #  xt=kt/de
@@ -1323,6 +1324,210 @@ class ion:
         else:
             self.Upsilon = {'upsilon':ups, 'temperature':temperature, 'exRate':exRate, 'dexRate':dexRate, 'de':deAll}
         #
+        # -------------------------------------------------------------------------------------
+        #
+    def upsilonDescaleSplups(self, prot=0, diel=0):
+        """
+        Provides the temperatures and effective collision strengths (upsilons)
+        set prot for proton rates
+        otherwise, ce will be set for electron collision rates
+        """
+        #
+        #  xt=kt/de
+        #
+        #
+        if prot:
+            ce = 0
+            try:
+                nsplups=len(self.Psplups["lvl1"])
+            except:
+                self.Psplups=util.splupsRead(self.IonStr,prot=1)
+                if type(self.Psplups) == type(None):
+                    self.PUpsilon = None
+                    return
+                else:
+                    nsplups = len(self.Cilvl["lvl1"])
+        elif diel:
+            ce = 0
+            try:
+                nsplups = len(self.DielSplups["lvl1"])
+            except:
+                self.DielSplups = util.splupsRead(self.IonStr,diel=1)
+                if type(self.DielSplups) == type(None):
+                    self.DielUpsilon = None
+                    return
+                else:
+                    nsplups = len(self.DielSplups["lvl1"])
+        else:
+            ce=1
+            try:
+                nsplups=len(self.Splups["lvl1"])
+            except:
+                self.Splups = util.splupsRead(self.IonStr)
+                if type(self.Splups) == type(None):
+                    self.Upsilon = None
+                    return
+                else:
+                    nsplups = len(self.Splups["lvl1"])
+        #
+        #
+        if hasattr(self, 'Temperature'):
+            temperature=self.Temperature
+        else:
+            print ' Temperature undefined'
+            return
+        #
+        if hasattr(self, 'Elvlc'):
+            nlvls=len(self.Elvlc["lvl"])
+        else:
+            self.elvlcRead()
+            nlvls=len(self.Elvlc["lvl"])
+        #
+        #  need to make sure elvl is >0, except for ground level
+        eryd=np.asarray(self.Elvlc["eryd"])
+        erydth=np.asarray(self.Elvlc["erydth"])
+        elvlc=np.where(eryd > 0.,eryd,erydth)
+##        de=self.Elvlc["de"]
+        temp=np.asarray(temperature)
+        ntemp=temp.size
+        if ntemp > 1:
+            ups = np.zeros((nsplups,ntemp),"Float64")
+            exRate = np.zeros((nsplups,ntemp),"Float64")
+            dexRate = np.zeros((nsplups,ntemp),"Float64")
+        else:
+            ups = np.zeros(nsplups,"Float64")
+            exRate = np.zeros((nsplups,ntemp),"Float64")
+            dexRate = np.zeros((nsplups,ntemp),"Float64")
+        deAll = []
+        #
+        for isplups in range(nsplups):
+            if prot:
+                # for proton rates
+                l1=self.Psplups["lvl1"][isplups]-1
+                l2=self.Psplups["lvl2"][isplups]-1
+                ttype=self.Psplups["ttype"][isplups]
+                cups=self.Psplups["cups"][isplups]
+                nspl=self.Psplups["nspl"][isplups]
+                dx=1./(float(nspl)-1.)
+#                splups=self.Psplups["splups"][isplups,0:nspl]
+                splups=self.Psplups["splups"][isplups]
+                de=elvlc[l2]-elvlc[l1]
+#                de=self.Psplups['de'][isplups]  # these are generally 0.
+                kte = const.boltzmann*temp/(de*const.ryd2erg)
+            elif diel:
+                #
+                l1 = self.DielSplups["lvl1"][isplups]-1
+                l2 = self.DielSplups["lvl2"][isplups]-1
+                ttype = self.DielSplups["ttype"][isplups]
+                cups = self.DielSplups["cups"][isplups]
+                nspl = self.DielSplups["nspl"][isplups]
+                ttype = self.DielSplups["ttype"][isplups]
+                dx = 1./(float(nspl)-1.)
+#                splups = self.DielSplups["splups"][isplups,0:nspl]
+                splups = self.DielSplups["splups"][isplups]
+                de=self.DielSplups['de'][isplups]
+                kte = const.boltzmann*temp/(de*const.ryd2erg)
+            else:
+                # electron collisional excitation
+                l1=self.Splups["lvl1"][isplups]-1
+                l2=self.Splups["lvl2"][isplups]-1
+                ttype=self.Splups["ttype"][isplups]
+                cups=self.Splups["cups"][isplups]
+                nspl=self.Splups["nspl"][isplups]
+                dx=1./(float(nspl)-1.)
+##                print self.Splups["splups"][l1,l2]
+#                splups=self.Splups["splups"][isplups,0:nspl]
+                splups=self.Splups["splups"][isplups]
+#                de=elvlc[l2]-elvlc[l1]
+                de=self.Splups['de'][isplups]
+                kte = const.boltzmann*temp/(de*const.ryd2erg)
+            #
+            der=0
+            if ttype == 1:
+                st=1.-np.log(cups)/np.log(kte+cups)
+                xs=dx*np.arange(nspl)
+                y2=interpolate.splrep(xs,splups,s=0)
+                sups=interpolate.splev(st,y2,der=der)
+#                sups=interpolate.spline(xs, splups, st)
+                ups[isplups]=sups*np.log(kte+np.exp(1.))
+            #
+            if ttype == 2:
+                st=kte/(kte+cups)
+                xs=dx*np.arange(nspl)
+                y2=interpolate.splrep(xs,splups,s=0)
+                sups=interpolate.splev(st,y2,der=der)
+                ups[isplups]=sups
+            #
+            if ttype == 3:
+                st=kte/(kte+cups)
+                xs=dx*np.arange(nspl)
+                y2=interpolate.splrep(xs,splups,s=0)
+                sups=interpolate.splev(st,y2,der=der)
+                ups[isplups]=sups/(kte+1.)
+            #
+            if ttype == 4:
+                st=1.-np.log(cups)/np.log(kte+cups)
+                xs=dx*np.arange(nspl)
+                y2=interpolate.splrep(xs,splups,s=0)
+                sups=interpolate.splev(st,y2,der=der)
+                ups[isplups]=sups*np.log(kte+cups)
+            #
+            if ttype == 5:
+                # dielectronic rates
+                st=kte/(kte+cups)
+                xs=dx*np.arange(nspl)
+                y2=interpolate.splrep(xs,splups,s=0)
+                sups=interpolate.splev(st,y2,der=der)
+                ups[isplups]=sups/(kte+0.)
+            #
+            #  descale proton values
+            if ttype == 6:
+                st=kte/(kte+cups)
+                xs=dx*np.arange(nspl)
+                y2=interpolate.splrep(xs,splups,s=0)
+                sups=interpolate.splev(st,y2,der=der)
+#                ups[isplups] = sups
+                ups[isplups]=10.**sups
+            #
+            elif ttype > 6:  print ' t_type ne 1,2,3,4,5=',ttype,l1,l2
+            #
+            if ce:
+                if self.Dielectronic:
+                    # the dielectronic ions will eventually be discontinued
+                    de = np.abs((elvlc[l2] - self.UpperIp/const.ryd2Ev) - elvlc[l1])
+                else:
+                    de = np.abs(elvlc[l2] - elvlc[l1])
+                deAll.append(de)
+#                print ' ce lvl1 %5i  lvl2 %5i de %10.2e'%(l1, l2, de)
+                ekt = (de*const.ryd2erg)/(const.boltzmann*temp)
+                fmult1 = float(self.Elvlc["mult"][l1])
+                fmult2 = float(self.Elvlc["mult"][l2])
+                dexRate[isplups] = const.collision*ups[isplups]/(fmult2*np.sqrt(temp))
+                exRate[isplups] = const.collision*ups[isplups]*np.exp(-ekt)/(fmult1*np.sqrt(temp))
+            elif diel:
+#                print ' diel lvl1 %5i  lvl2 %5i de %10.2e'%(l1, l2, de)
+                de = np.abs((elvlc[l2] - self.Ip/const.ryd2Ev) - elvlc[l1])
+                ekt = (de*const.ryd2erg)/(const.boltzmann*temp)
+                fmult1 = float(self.Elvlc["mult"][l1])
+                fmult2 = float(self.Elvlc["mult"][l2])
+                exRate[isplups] = const.collision*ups[isplups]*np.exp(-ekt)/(fmult1*np.sqrt(temp))
+            elif prot:
+                de = np.abs(elvlc[l2]- elvlc[l1])
+                ekt = (de*1.57888e+5)/temp
+                fmult1 = float(self.Elvlc["mult"][l1])
+                fmult2 = float(self.Elvlc["mult"][l2])
+                dexRate[isplups] = const.collision*ups[isplups]/(fmult2*np.sqrt(temp))
+                exRate[isplups] = const.collision*ups[isplups]*np.exp(-ekt)/(fmult1*np.sqrt(temp))
+        #
+        ups=np.where(ups > 0.,ups,0.)
+        #
+        if prot == 1:
+            self.PUpsilon = {'upsilon':ups, 'temperature':temperature, 'exRate':exRate, 'dexRate':dexRate}
+        elif diel == 1:
+            self.DielUpsilon = {'upsilon':ups, 'temperature':temperature, 'exRate':exRate}
+        else:
+            self.Upsilon = {'upsilon':ups, 'temperature':temperature, 'exRate':exRate, 'dexRate':dexRate, 'de':deAll}
+        #
         # -------------------------------------------------------------------------
         #
     def setupSplups(self, dir=0, verbose=0):
@@ -1338,27 +1543,38 @@ class ion:
         #
         MasterList = chdata.MasterList
         #
-        if dir:
-            fileName = os.path.join(dir, self.IonStr)
-        else:
-            fileName = util.ion2filename(self.IonStr)
         if self.IonStr in MasterList:
-            self.Elvlc = util.elvlcRead('', filename=fileName+'.elvlc',  verbose=verbose)
-            self.Wgfa = util.wgfaRead('', filename=fileName+'.wgfa')
-            self.Nwgfa=len(self.Wgfa['lvl1'])
-            nlvlWgfa = max(self.Wgfa['lvl2'])
-            nlvlList =[nlvlWgfa]
-#                print 'fileName = ', fileName
-            splupsfile = fileName + '.splups'
-            if os.path.isfile(splupsfile):
-                # happens the case of fe_3 and prob. a few others
-                self.Scups = util.splupsRead('', filename=fileName+'.splups')
-                self.Nsplups=len(self.Scups['lvl1'])
-                nlvlSplups = max(self.Scups['lvl2'])
-                nlvlList.append(nlvlSplups)
+            if dir:
+                fileName = os.path.join(dir, self.IonStr)
+                self.Elvlc = util.elvlcRead('',filename=fileName+'.elvlc')
+                self.Wgfa = util.wgfaRead('',filename=fileName+'.wgfa', elvlcname=fileName+'.elvlc')
+                self.Nwgfa=len(self.Wgfa['lvl1'])
+                nlvlWgfa = max(self.Wgfa['lvl2'])
+                nlvlList =[nlvlWgfa]
+    #                print 'fileName = ', fileName
+                splupsfile = fileName + '.splups'
+                if os.path.isfile(splupsfile):
+                    # happens the case of fe_3 and prob. a few others
+                    self.Splups = util.splupsRead('', filename=splupsfile)
+                    self.Nsplups = len(self.Splups['lvl1'])
+                    nlvlSplups = max(self.Splups['lvl2'])
+                    nlvlList.append(nlvlSplups)
+                else:
+                    self.Nsplups = 0
+                    nlvlSplups = 0
             else:
-                self.Nsplups = 0
-                nlvlSplups = 0
+                fileName = util.ion2filename(self.IonStr)
+                self.Elvlc = util.elvlcRead(self.IonStr)
+                self.Wgfa = util.wgfaRead(self.IonStr)
+                self.Nwgfa=len(self.Wgfa['lvl1'])
+                nlvlWgfa = max(self.Wgfa['lvl2'])
+                nlvlList =[nlvlWgfa]
+    #                print 'fileName = ', fileName
+                    # happens the case of fe_3 and prob. a few others
+                self.Splups = util.splupsRead(self.IonStr)
+                self.Nsplups=len(self.Splups['lvl1'])
+                nlvlSplups = max(self.Splups['lvl2'])
+                nlvlList.append(nlvlSplups)
 ##                self.Nlvls = nlvlElvlc
             #
             file = fileName +'.cilvl'
@@ -1417,12 +1633,11 @@ class ion:
             #  elvlc file can have more levels than the rate level files
             self.Nlvls = min([nlvlElvlc, max(nlvlList)])
         else:
-            print ' the ion ' + self.IonStr + ' is not in the CHIANTI masterlist '
             try:
                 self.Elvlc = util.elvlcRead(self.IonStr, verbose=verbose)
-                print ' elvlc file available '
             except:
-                print ' elvlc file NOT available '
+                print(' elvlc file NOT available for %s'%(self.IonStr))
+                return
         #
         # -------------------------------------------------------------------------
         #
@@ -1445,21 +1660,65 @@ class ion:
         else:
             fileName = util.ion2filename(self.IonStr)
         if self.IonStr in MasterList:
-            self.Elvlc = util.elvlcRead('', filename=fileName+'.elvlc',  verbose=verbose)
-            self.Wgfa = util.wgfaRead('', filename=fileName+'.wgfa', total=1)
-            self.Nwgfa=len(self.Wgfa['lvl1'])
-            nlvlWgfa = max(self.Wgfa['lvl2'])
-            nlvlList =[nlvlWgfa]
-            splupsfile = fileName + '.splups'
-            if os.path.isfile(splupsfile):
-                # happens the case of fe_3 and prob. a few others
-                self.Scups = util.splupsRead('', filename=fileName+'.splups')
-                self.Nsplups=len(self.Scups['lvl1'])
-                nlvlSplups = max(self.Scups['lvl2'])
-                nlvlList.append(nlvlSplups)
+            if dir:
+                self.Elvlc = util.elvlcRead('', filename=fileName+'.elvlc',  verbose=verbose)
+                self.Wgfa = util.wgfaRead('', filename=fileName+'.wgfa', elvlcname=fileName+'.elvlc', total=1)
+                self.Nwgfa=len(self.Wgfa['lvl1'])
+                nlvlWgfa = max(self.Wgfa['lvl2'])
+                nlvlList =[nlvlWgfa]
+#                splupsfile = fileName + '.splups'
+                scupsfile = fileName + '.scups'
+                if os.path.isfile(scupsfile):
+                    # happens the case of fe_3 and prob. a few others
+                    self.Scups = io.scupsRead('', filename=fileName+'.scups')
+                    self.Nscups=len(self.Scups['lvl1'])
+                    nlvlScups = max(self.Scups['lvl2'])
+                    nlvlList.append(nlvlScups)
+                    self.Nsplups = 0
+                    nlvlSplups = 0
+#                else:
+#                    if os.path.isfile(splupsfile):
+#                        self.Nscups = 0
+#                        nlvlScups = 0
+#                        # happens the case of fe_3 and prob. a few others
+#                        self.Splups = util.splupsRead('', filename=fileName+'.splups')
+#                        self.Nsplups=len(self.Splups['lvl1'])
+#                        nlvlSplups = max(self.Splups['lvl2'])
+#                        nlvlList.append(nlvlSplups)
+                else:
+                    self.Nscups = 0
+                    nlvlScups = 0
+                    print('do not have a scups file for %s'%(self.IonStr))
             else:
-                self.Nsplups = 0
-                nlvlSplups = 0
+                self.Elvlc = util.elvlcRead(self.IonStr,  verbose=verbose)
+                self.Wgfa = util.wgfaRead(self.IonStr, total=1)
+                self.Nwgfa=len(self.Wgfa['lvl1'])
+                nlvlWgfa = max(self.Wgfa['lvl2'])
+                nlvlList =[nlvlWgfa]
+#                splupsfile = fileName + '.splups'
+                scupsfile = fileName + '.scups'
+                if os.path.isfile(scupsfile):
+                    # happens the case of fe_3 and prob. a few others
+                    self.Scups = io.scupsRead(self.IonStr)
+                    self.Nsplups=len(self.Scups['lvl1'])
+                    nlvlScups = max(self.Scups['lvl2'])
+                    nlvlList.append(nlvlScups)
+                    self.Nsplups = 0
+                    nlvlSplups = 0
+#                else:
+#                    if os.path.isfile(splupsfile):
+#                        self.Nscups = 0
+#                        nlvlScups = 0
+#                        # happens the case of fe_3 and prob. a few others
+#                        self.Splups = util.splupsRead(self.IonStr)
+#                        self.Nsplups=len(self.Splups['lvl1'])
+#                        nlvlSplups = max(self.Splups['lvl2'])
+#                        nlvlList.append(nlvlSplups)
+                else:
+                    print('do not have either a scups  file for %s'(self.IonStr))
+                    self.Nscups = 0
+                    nlvlScups = 0
+
 ##                self.Nlvls = nlvlElvlc
             #
             file = fileName +'.cilvl'
@@ -1474,14 +1733,14 @@ class ion:
             #  not longer using the reclvl files
             #  using the new rrlvl - radiaitive recombination rates only
             #  dielectronic rates derived from the autoionization values in the .auto file
-            rrlvlfile = fileName +'.rrlvl'
-            if os.path.isfile(rrlvlfile):
-                self.Rrlvl = util.cireclvlRead('',filename=fileName, rrlvl=1)
-                self.Nrrlvl = len(self.Rrlvl['lvl1'])
-                nlvlRrlvl = max(self.Rrlvl['lvl2'])
-                nlvlList.append(nlvlRrlvl)
+            reclvlfile = fileName +'.reclvl'
+            if os.path.isfile(reclvlfile):
+                self.Reclvl = util.cireclvlRead('',filename=fileName, reclvl=1)
+                self.Nreclvl = len(self.Reclvl['lvl1'])
+                nlvlReclvl = max(self.Reclvl['lvl2'])
+                nlvlList.append(nlvlReclvl)
             else:
-                self.Nrrlvl = 0
+                self.Nreclvl = 0
             # in setupNew, the dielsplups files are disregarded
             #  .dielsplups file may not exist
 #            dielsplupsfile = fileName +'.dielsplups'
@@ -1542,27 +1801,43 @@ class ion:
         #
         MasterList = chdata.MasterList
         #
-        if dir:
-            fileName = os.path.join(dir, self.IonStr)
-        else:
-            fileName = util.ion2filename(self.IonStr)
         if self.IonStr in MasterList:
-            self.Elvlc = util.elvlcRead('', filename=fileName+'.elvlc',  verbose=verbose)
-            self.Wgfa = util.wgfaRead('', filename=fileName+'.wgfa')
-            self.Nwgfa=len(self.Wgfa['lvl1'])
-            nlvlWgfa = max(self.Wgfa['lvl2'])
-            nlvlList =[nlvlWgfa]
-#                print 'fileName = ', fileName
-            scupsfile = fileName + '.scups'
-            if os.path.isfile(scupsfile):
-                # happens the case of fe_3 and prob. a few others
-                self.Scups = io.scupsRead('', filename=fileName+'.scups')
-                self.Nscups=len(self.Scups['lvl1'])
-                nlvlScups = max(self.Scups['lvl2'])
-                nlvlList.append(nlvlScups)
+            if dir:
+                fileName = os.path.join(dir, self.IonStr)
+                self.Elvlc = util.elvlcRead('',filename=fileName+'.elvlc')
+                self.Wgfa = util.wgfaRead('',filename=fileName+'.wgfa', elvlcname=fileName+'.elvlc')
+                self.Nwgfa=len(self.Wgfa['lvl1'])
+                nlvlWgfa = max(self.Wgfa['lvl2'])
+                nlvlList =[nlvlWgfa]
+    #                print 'fileName = ', fileName
+                scupsfile = fileName + '.scups'
+                if os.path.isfile(scupsfile):
+                    # happens the case of fe_3 and prob. a few others
+                    self.Scups = io.scupsRead('', filename=scupsfile)
+                    self.Nscups=len(self.Scups['lvl1'])
+                    nlvlScups = max(self.Scups['lvl2'])
+                    nlvlList.append(nlvlScups)
+                else:
+                    self.Nscups = 0
+                    nlvlScups = 0
             else:
-                self.Nscups = 0
-                nlvlScups = 0
+                fileName = util.ion2filename(self.IonStr)
+                self.Elvlc = util.elvlcRead(self.IonStr)
+                self.Wgfa = util.wgfaRead(self.IonStr)
+                self.Nwgfa=len(self.Wgfa['lvl1'])
+                nlvlWgfa = max(self.Wgfa['lvl2'])
+                nlvlList =[nlvlWgfa]
+    #                print 'fileName = ', fileName
+                scupsfile = fileName + '.scups'
+                if os.path.isfile(scupsfile):
+                    # happens the case of fe_3 and prob. a few others
+                    self.Scups = io.scupsRead(self.IonStr)
+                    self.Nscups=len(self.Scups['lvl1'])
+                    nlvlScups = max(self.Scups['lvl2'])
+                    nlvlList.append(nlvlScups)
+                else:
+                    self.Nscups = 0
+                    nlvlScups = 0
 ##                self.Nlvls = nlvlElvlc
             #
             file = fileName +'.cilvl'
@@ -1621,12 +1896,12 @@ class ion:
             #  elvlc file can have more levels than the rate level files
             self.Nlvls = min([nlvlElvlc, max(nlvlList)])
         else:
-            print ' the ion ' + self.IonStr + ' is not in the CHIANTI masterlist '
             try:
                 self.Elvlc = util.elvlcRead(self.IonStr, verbose=verbose)
-                print ' elvlc file available '
             except:
-                print ' elvlc file NOT available '
+                print ' the ion ' + self.IonStr + ' is not in the CHIANTI masterlist '
+                print(' elvlc file NOT available for %s'%(self.IonStr))
+                return
         #
         # -------------------------------------------------------------------------
         #
@@ -1842,7 +2117,7 @@ class ion:
         #
         #
         if self.Nsplups:
-            self.upsilonDescale()
+            self.upsilonDescaleSplups()
             ups = self.Upsilon['upsilon']
             exRate = self.Upsilon['exRate']
             dexRate = self.Upsilon['dexRate']
@@ -1873,8 +2148,8 @@ class ion:
         if ndens==1 and ntemp==1:
             popmat=np.copy(rad)
             for isplups in range(0,nsplups):
-                l1=self.Scups["lvl1"][isplups]-1
-                l2=self.Scups["lvl2"][isplups]-1
+                l1=self.Splups["lvl1"][isplups]-1
+                l2=self.Splups["lvl2"][isplups]-1
                 #
                 popmat[l1+ci,l2+ci] += self.EDensity*dexRate[isplups]
                 popmat[l2+ci,l1+ci] += self.EDensity*exRate[isplups]
@@ -1999,8 +2274,8 @@ class ion:
             for itemp in range(0,ntemp):
                 popmat=np.copy(rad)
                 for isplups in range(0,nsplups):
-                    l1=self.Scups["lvl1"][isplups]-1
-                    l2=self.Scups["lvl2"][isplups]-1
+                    l1=self.Splups["lvl1"][isplups]-1
+                    l2=self.Splups["lvl2"][isplups]-1
                     popmat[l1+ci,l2+ci] += self.EDensity*dexRate[isplups, itemp]
                     popmat[l2+ci,l1+ci] += self.EDensity*exRate[isplups, itemp]
                     popmat[l1+ci,l1+ci] -= self.EDensity*exRate[isplups, itemp]
@@ -2106,8 +2381,8 @@ class ion:
             for idens in range(0,ndens):
                 popmat=np.copy(rad)
                 for isplups in range(0,nsplups):
-                    l1=self.Scups["lvl1"][isplups]-1
-                    l2=self.Scups["lvl2"][isplups]-1
+                    l1=self.Splups["lvl1"][isplups]-1
+                    l2=self.Splups["lvl2"][isplups]-1
 #                    if self.Dielectronic:
 #                        de=np.abs((self.Elvlc["eryd"][l2]-self.Ip/const.ryd2Ev)-self.Elvlc["eryd"][l1])
 #                    else:
@@ -2240,8 +2515,8 @@ class ion:
                 temp=self.Temperature[itemp]
                 popmat=np.copy(rad)
                 for isplups in range(0,nsplups):
-                    l1=self.Scups["lvl1"][isplups]-1
-                    l2=self.Scups["lvl2"][isplups]-1
+                    l1=self.Splups["lvl1"][isplups]-1
+                    l2=self.Splups["lvl2"][isplups]-1
 #                    if self.Dielectronic:
 #                        de=np.abs((self.Elvlc["eryd"][l2]-self.Ip/const.ryd2Ev)-self.Elvlc["eryd"][l1])
 #                    else:
@@ -2387,7 +2662,7 @@ class ion:
         #
         nlvls = self.Nlvls
         nwgfa = self.Nwgfa
-        nsplups = self.Nsplups
+        nscups = self.Nscups
         npsplups = self.Npsplups
         #
         if kwargs.has_key('temperature'):
@@ -2457,30 +2732,26 @@ class ion:
             lowMult = self.Lower.Elvlc['mult']
         else:
             ci = 0
-        #  evetually will be looking for just an rrLvl attribute
-        if self.Nrrlvl:
-            rec = 1
-            rrlvl = self.Rrlvl
-            if hasattr(self, 'RrlvlRate'):
-                rrlvlRate = self.RrlvlRate
+        #  evetually will be looking for just an recLvl attribute
+        if self.Nreclvl:
+            reclvl = self.Reclvl
+            if hasattr(self, 'ReclvlRate'):
+                reclvlRate = self.ReclvlRate
             else:
-                self.cireclvlDescale('rrlvl')
-                rrlvlRate = self.RrlvlRate
-        elif hasattr(self, 'Auto'):
-            # will calculate the dielectronic rates below
-            rec = 1
-        else:
-            rec = 0
-        #
-        if rec:
-            if hasattr(self, 'Auto'):
-                self.drRateLvl()
+                self.cireclvlDescale('reclvl')
+                reclvlRate = self.ReclvlRate
+        if hasattr(self, 'Auto'):
+            self.drRateLvl()
+        if self.Nreclvl or hasattr(self, 'Auto'):
+            rec=1
             # get ionization rate of this ion
             self.ionizRate()
             #  get the higher ionization stage
             highers = util.zion2name(self.Z, self.Ion+1)
             self.Higher = ion(highers, temperature=self.Temperature, eDensity=self.EDensity)
             self.Higher.recombRate()
+        else:
+            rec=0
         #
         rad=np.zeros((nlvls+ci+rec,nlvls+ci+rec),"float64")  #  the populating matrix for radiative transitions
         #
@@ -2530,13 +2801,14 @@ class ion:
 
         #
         #
-        if self.Nsplups:
+        if self.Nscups:
+#            print(' Nscups = %10i'%(self.Nscups))
             self.upsilonDescale()
             ups = self.Upsilon['upsilon']
             exRate = self.Upsilon['exRate']
             dexRate = self.Upsilon['dexRate']
         #
-        if npsplups:
+        if self.Npsplups:
             self.upsilonDescale(prot=1)
 #            pups = self.PUpsilon['upsilon']
             pexRate = self.PUpsilon['exRate']
@@ -2547,7 +2819,7 @@ class ion:
         #
         cc=const.collision*self.EDensity
         ndens=cc.size
-        if npsplups:
+        if self.Npsplups:
             cp=const.collision*protonDensity
         if ntemp > 1 and ndens >1 and ntemp != ndens:
             print ' unless temperature or eDensity are single values'
@@ -2557,18 +2829,19 @@ class ion:
         #
         # get corrections for recombination and excitation
         #
+        nscups = self.Nscups
         #
         #  first, for ntemp=ndens=1
         if ndens==1 and ntemp==1:
             popmat=np.copy(rad)
-            for isplups in range(0,nsplups):
-                l1=self.Scups["lvl1"][isplups]-1
-                l2=self.Scups["lvl2"][isplups]-1
+            for iscups in range(0,nsplups):
+                l1=self.Scups["lvl1"][iscups]-1
+                l2=self.Scups["lvl2"][iscups]-1
                 #
-                popmat[l1+ci,l2+ci] += self.EDensity*dexRate[isplups]
-                popmat[l2+ci,l1+ci] += self.EDensity*exRate[isplups]
-                popmat[l1+ci,l1+ci] -= self.EDensity*exRate[isplups]
-                popmat[l2+ci,l2+ci] -= self.EDensity*dexRate[isplups]
+                popmat[l1+ci,l2+ci] += self.EDensity*dexRate[iscups]
+                popmat[l2+ci,l1+ci] += self.EDensity*exRate[iscups]
+                popmat[l1+ci,l1+ci] -= self.EDensity*exRate[iscups]
+                popmat[l2+ci,l2+ci] -= self.EDensity*dexRate[iscups]
                 #
             for isplups in range(0,npsplups):
                 l1=self.Psplups["lvl1"][isplups]-1
@@ -2615,13 +2888,13 @@ class ion:
                 #
                 #
                 #
-                for itrans in range(self.Nrrlvl):
+                for itrans in range(self.Nreclvl):
 #                    lvl1 = reclvl['lvl1'][itrans]-1
-                    lvl2 = rrlvl['lvl2'][itrans]-1
-                    popmat[lvl2+ci, -1] += self.EDensity*rrlvlRate['rate'][itrans]
-                    popmat[-1, -1] -= self.EDensity*rrlvlRate['rate'][itrans]
-                if self.Nrrlvl:
-                    recTot = rrlvlRate['rate'].sum(axis=0)
+                    lvl2 = reclvl['lvl2'][itrans]-1
+                    popmat[lvl2+ci, -1] += self.EDensity*reclvlRate['rate'][itrans]
+                    popmat[-1, -1] -= self.EDensity*reclvlRate['rate'][itrans]
+                if self.Nreclvl:
+                    recTot = reclvlRate['rate'].sum(axis=0)
                 else:
                     recTot = 0.
                 #
@@ -2663,19 +2936,20 @@ class ion:
         #
         # ------------- ntemp = 1 ---------------------------------------------------------
         #
+        #
         elif ndens == 1:
             pop = np.zeros((ntemp, nlvls),"float64")
             popHigher = np.zeros(ntemp, 'float64')
 #            pop=np.zeros((ntemp,ci + nlvls + rec),"float64")
             for itemp in range(ntemp):
                 popmat=np.copy(rad)
-                for isplups in range(0,nsplups):
-                    l1=self.Scups["lvl1"][isplups]-1
-                    l2=self.Scups["lvl2"][isplups]-1
-                    popmat[l1+ci,l2+ci] += self.EDensity*dexRate[isplups, itemp]
-                    popmat[l2+ci,l1+ci] += self.EDensity*exRate[isplups, itemp]
-                    popmat[l1+ci,l1+ci] -= self.EDensity*exRate[isplups, itemp]
-                    popmat[l2+ci,l2+ci] -= self.EDensity*dexRate[isplups, itemp]
+                for iscups in range(0,nscups):
+                    l1=self.Scups["lvl1"][iscups]-1
+                    l2=self.Scups["lvl2"][iscups]-1
+                    popmat[l1+ci,l2+ci] += self.EDensity*dexRate[iscups, itemp]
+                    popmat[l2+ci,l1+ci] += self.EDensity*exRate[iscups, itemp]
+                    popmat[l1+ci,l1+ci] -= self.EDensity*exRate[iscups, itemp]
+                    popmat[l2+ci,l2+ci] -= self.EDensity*dexRate[iscups, itemp]
                 for isplups in range(0,npsplups):
                     l1=self.Psplups["lvl1"][isplups]-1
                     l2=self.Psplups["lvl2"][isplups]-1
@@ -2719,14 +2993,14 @@ class ion:
                         dielTot = 0.
                     #
                     #
-                    for itrans in range(self.Nrrlvl):
-                        lvl1 = rrlvl['lvl1'][itrans]-1
-                        lvl2 = rrlvl['lvl2'][itrans]-1
-                        popmat[lvl2+ci, -1] += self.EDensity*self.RrlvlRate['rate'][itrans, itemp]
-                        popmat[-1, -1] -= self.EDensity*self.RrlvlRate['rate'][itrans, itemp]
+                    for itrans in range(self.Nreclvl):
+                        lvl1 = reclvl['lvl1'][itrans]-1
+                        lvl2 = reclvl['lvl2'][itrans]-1
+                        popmat[lvl2+ci, -1] += self.EDensity*self.ReclvlRate['rate'][itrans, itemp]
+                        popmat[-1, -1] -= self.EDensity*self.ReclvlRate['rate'][itrans, itemp]
                     #
-                    if self.Nrrlvl:
-                        recTot = self.RrlvlRate['rate'][:, itemp].sum()
+                    if self.Nreclvl:
+                        recTot = self.ReclvlRate['rate'][:, itemp].sum()
                     else:
                         recTot = 0.
                     #
@@ -2772,14 +3046,14 @@ class ion:
             popHigher = np.zeros(ndens, 'float64')
             for idens in range(0,ndens):
                 popmat=np.copy(rad)
-                for isplups in range(0,nsplups):
-                    l1=self.Scups["lvl1"][isplups]-1
-                    l2=self.Scups["lvl2"][isplups]-1
+                for iscups in range(0,nscups):
+                    l1=self.Scups["lvl1"][iscups]-1
+                    l2=self.Scups["lvl2"][iscups]-1
                 #
-                    popmat[l1+ci,l2+ci] += self.EDensity[idens]*dexRate[isplups]
-                    popmat[l2+ci,l1+ci] += self.EDensity[idens]*exRate[isplups]
-                    popmat[l1+ci,l1+ci] -= self.EDensity[idens]*exRate[isplups]
-                    popmat[l2+ci,l2+ci] -= self.EDensity[idens]*dexRate[isplups]
+                    popmat[l1+ci,l2+ci] += self.EDensity[idens]*dexRate[iscups]
+                    popmat[l2+ci,l1+ci] += self.EDensity[idens]*exRate[iscups]
+                    popmat[l1+ci,l1+ci] -= self.EDensity[idens]*exRate[iscups]
+                    popmat[l2+ci,l2+ci] -= self.EDensity[idens]*dexRate[iscups]
                 #
                 for isplups in range(0,npsplups):
                     l1=self.Psplups["lvl1"][isplups]-1
@@ -2818,8 +3092,8 @@ class ion:
                         dielTot = self.DrRateLvl['totalRate'][0]
                     else:
                         dielTot = 0.
-                    if self.Nrrlvl:
-                        recTot = self.RrlvlRate['rate'].sum()
+                    if self.Nreclvl:
+                        recTot = self.ReclvlRate['rate'].sum()
                     else:
                         recTot = 0.
                     #
@@ -2832,11 +3106,11 @@ class ion:
                         popmat[-1, -1] -= netRecomb
                     #
 #                    for itrans in range(len(rrlvl['lvl1'])):
-                    for itrans in range(self.Nrrlvl):
-                        lvl1 = rrlvl['lvl1'][itrans]-1
-                        lvl2 = rrlvl['lvl2'][itrans]-1
-                        popmat[lvl2+ci, -1] += self.EDensity[idens]*self.RrlvlRate['rate'][itrans]
-                        popmat[-1, -1] -= self.EDensity[idens]*self.RrlvlRate['rate'][itrans]
+                    for itrans in range(self.Nreclvl):
+                        lvl1 = reclvl['lvl1'][itrans]-1
+                        lvl2 = reclvl['lvl2'][itrans]-1
+                        popmat[lvl2+ci, -1] += self.EDensity[idens]*self.ReclvlRate['rate'][itrans]
+                        popmat[-1, -1] -= self.EDensity[idens]*self.ReclvlRate['rate'][itrans]
                 #
                 # normalize to unity
                 norm=np.ones(nlvls+ci+rec,'float64')
@@ -2864,14 +3138,14 @@ class ion:
             for itemp in range(0,ntemp):
                 temp=self.Temperature[itemp]
                 popmat=np.copy(rad)
-                for isplups in range(0,nsplups):
-                    l1=self.Scups["lvl1"][isplups]-1
-                    l2=self.Scups["lvl2"][isplups]-1
+                for iscups in range(0,nscups):
+                    l1=self.Scups["lvl1"][iscups]-1
+                    l2=self.Scups["lvl2"][iscups]-1
                     #
-                    popmat[l1+ci,l2+ci] += self.EDensity[itemp]*dexRate[isplups, itemp]
-                    popmat[l2+ci,l1+ci] += self.EDensity[itemp]*exRate[isplups, itemp]
-                    popmat[l1+ci,l1+ci] -= self.EDensity[itemp]*exRate[isplups, itemp]
-                    popmat[l2+ci,l2+ci] -= self.EDensity[itemp]*dexRate[isplups, itemp]
+                    popmat[l1+ci,l2+ci] += self.EDensity[itemp]*dexRate[iscups, itemp]
+                    popmat[l2+ci,l1+ci] += self.EDensity[itemp]*exRate[iscups, itemp]
+                    popmat[l1+ci,l1+ci] -= self.EDensity[itemp]*exRate[iscups, itemp]
+                    popmat[l2+ci,l2+ci] -= self.EDensity[itemp]*dexRate[iscups, itemp]
                 # proton rates
                 for isplups in range(0,npsplups):
                     l1=self.Psplups["lvl1"][isplups]-1
@@ -2912,7 +3186,7 @@ class ion:
                     else:
                         dielTot = 0.
                 #
-                    if self.Nrrlvl:
+                    if self.Nreclvl:
                         recTot = self.RrlvlRate['rate'][:, itemp].sum()
                     else:
                         recTot = 0.
@@ -2926,9 +3200,9 @@ class ion:
                         popmat[ci, -1] += netRecomb
                         popmat[-1, -1] -= netRecomb
                     #
-                    for itrans in range(self.Nrrlvl):
-                        lvl1 = rrlvl['lvl1'][itrans]-1
-                        lvl2 = rrlvl['lvl2'][itrans]-1
+                    for itrans in range(self.Nreclvl):
+                        lvl1 = reclvl['lvl1'][itrans]-1
+                        lvl2 = reclvl['lvl2'][itrans]-1
                         popmat[lvl2+ci, -1] += self.EDensity[itemp]*self.RrlvlRate['rate'][itrans, itemp]
                         popmat[-1, -1] -= self.EDensity[itemp]*self.RrlvlRate['rate'][itrans, itemp]
                 #
@@ -2973,7 +3247,7 @@ class ion:
         #
         nlvls=self.Nlvls
         nwgfa=self.Nwgfa
-        nsplups=self.Nscups
+        nscups=self.Nscups
         npsplups=self.Npsplups
         #
         if kwargs.has_key('temperature'):
@@ -3147,18 +3421,19 @@ class ion:
         #
         # get corrections for recombination and excitation
         #
+        nscups = self.Nscups
         #
         #  first, for ntemp=ndens=1
         if ndens==1 and ntemp==1:
             popmat=np.copy(rad)
-            for isplups in range(0,nsplups):
-                l1=self.Scups["lvl1"][isplups]-1
-                l2=self.Scups["lvl2"][isplups]-1
+            for iscups in range(0,nscups):
+                l1=self.Scups["lvl1"][iscups]-1
+                l2=self.Scups["lvl2"][iscups]-1
                 #
-                popmat[l1+ci,l2+ci] += self.EDensity*dexRate[isplups]
-                popmat[l2+ci,l1+ci] += self.EDensity*exRate[isplups]
-                popmat[l1+ci,l1+ci] -= self.EDensity*exRate[isplups]
-                popmat[l2+ci,l2+ci] -= self.EDensity*dexRate[isplups]
+                popmat[l1+ci,l2+ci] += self.EDensity*dexRate[iscups]
+                popmat[l2+ci,l1+ci] += self.EDensity*exRate[iscups]
+                popmat[l1+ci,l1+ci] -= self.EDensity*exRate[iscups]
+                popmat[l2+ci,l2+ci] -= self.EDensity*dexRate[iscups]
                 #
             for isplups in range(0,npsplups):
                 l1=self.Psplups["lvl1"][isplups]-1
@@ -3277,13 +3552,13 @@ class ion:
 #            pop=np.zeros((ntemp,ci + nlvls + rec),"float64")
             for itemp in range(0,ntemp):
                 popmat=np.copy(rad)
-                for isplups in range(0,nsplups):
-                    l1=self.Scups["lvl1"][isplups]-1
-                    l2=self.Scups["lvl2"][isplups]-1
-                    popmat[l1+ci,l2+ci] += self.EDensity*dexRate[isplups, itemp]
-                    popmat[l2+ci,l1+ci] += self.EDensity*exRate[isplups, itemp]
-                    popmat[l1+ci,l1+ci] -= self.EDensity*exRate[isplups, itemp]
-                    popmat[l2+ci,l2+ci] -= self.EDensity*dexRate[isplups, itemp]
+                for iscups in range(0,nscups):
+                    l1=self.Scups["lvl1"][iscups]-1
+                    l2=self.Scups["lvl2"][iscups]-1
+                    popmat[l1+ci,l2+ci] += self.EDensity*dexRate[iscups, itemp]
+                    popmat[l2+ci,l1+ci] += self.EDensity*exRate[iscups, itemp]
+                    popmat[l1+ci,l1+ci] -= self.EDensity*exRate[iscups, itemp]
+                    popmat[l2+ci,l2+ci] -= self.EDensity*dexRate[iscups, itemp]
                 for isplups in range(0,npsplups):
                     l1=self.Psplups["lvl1"][isplups]-1
                     l2=self.Psplups["lvl2"][isplups]-1
@@ -3384,7 +3659,7 @@ class ion:
             pop=np.zeros((ndens,nlvls),"float64")
             for idens in range(0,ndens):
                 popmat=np.copy(rad)
-                for isplups in range(0,nsplups):
+                for isplups in range(0,nscups):
                     l1=self.Scups["lvl1"][isplups]-1
                     l2=self.Scups["lvl2"][isplups]-1
 #                    if self.Dielectronic:
@@ -3518,7 +3793,7 @@ class ion:
             for itemp in range(0,ntemp):
                 temp=self.Temperature[itemp]
                 popmat=np.copy(rad)
-                for isplups in range(0,nsplups):
+                for isplups in range(0,nscups):
                     l1=self.Scups["lvl1"][isplups]-1
                     l2=self.Scups["lvl2"][isplups]-1
 #                    if self.Dielectronic:
@@ -3920,6 +4195,9 @@ class ion:
         l1 = l1[nonzed]
         l2 = l2[nonzed]
         avalue = avalue[nonzed]
+        pretty1 = pretty1[nonzed]
+        pretty2 = pretty2[nonzed]
+        obs = obs[nonzed]
         nwvl=len(wvl)
         #
         if nwvl == 0:
@@ -4034,6 +4312,7 @@ class ion:
         obs = emissivity['obs']
         pretty1 = emissivity['pretty1']
         pretty2 = emissivity['pretty2']
+#        plotLabels = emissivity['plotLabels']
         #
         temperature = self.Temperature
         eDensity = self.EDensity
@@ -4804,9 +5083,9 @@ class ion:
         intensity = intens['intensity']
         ionS = intens['ionS']
         wvl = intens["wvl"]
-        plotLabels = intens["plotLabels"]
-        xLabel = plotLabels["xLabel"]
-        yLabel = plotLabels["yLabel"]
+#        plotLabels = intens["plotLabels"]
+#        xLabel = plotLabels["xLabel"]
+#        yLabel = plotLabels["yLabel"]
         #
         # find which lines are in the wavelength range if it is set
         #
@@ -4830,14 +5109,14 @@ class ion:
         if top > nlines:
             top=nlines
             #
-        maxI=np.zeros(nlines,'Float64')
+        maxIntens = np.zeros(nlines,'Float64')
         for iline in range(nlines):
-            maxEmiss[iline]=emiss[igvl[iline]].max()
+            maxIntens[iline] = intensity[:, igvl[iline]].max()
         for iline in range(nlines):
-            if maxEmiss[iline]==maxEmiss.max():
-                maxAll=emiss[igvl[iline]]
+            if maxIntens[iline]==maxIntens.max():
+                maxAll=intensity[:, igvl[iline]]
         line=range(nlines)
-        igvlsort=np.take(igvl,np.argsort(maxEmiss))
+        igvlsort=np.take(igvl,np.argsort(maxIntens))
 #        print 'igvlsort = ', igvlsort
         topLines=igvlsort[-top:]
 #        print ' topLines = ', topLines
@@ -4848,10 +5127,10 @@ class ion:
         #
         #
         # need to make sure there are no negative values before plotting
-        good = np.where(emiss > 0.)
-        emissMin=emiss[good].min()
-        bad=np.where(emiss <= 0.)
-        emiss[bad]=emissMin
+        good = intensity > 0.
+        intensMin = intensity[good].min()
+        bad = intensity <= 0.
+        intensity[bad] = intensMin
         #
         #
         ntemp=self.Temperature.size
@@ -4895,22 +5174,22 @@ class ion:
 #            pl.ioff()
         #
         #  maxAll is an array
-        ymax = np.max(emiss[topLines[0]]/maxAll)
+        ymax = np.max(intensity[:, topLines[0]]/maxAll)
         ymin = ymax
         pl.figure()
         ax = pl.subplot(111)
         nxvalues=len(xvalues)
         for iline in range(top):
             tline=topLines[iline]
-            pl.loglog(xvalues,emiss[tline]/maxAll)
-            if np.min(emiss[tline]/maxAll) < ymin:
-                ymin = np.min(emiss[tline]/maxAll)
-            if np.max(emiss[tline]/maxAll) > ymax:
-                ymax = np.max(emiss[tline]/maxAll)
+            pl.loglog(xvalues,intensity[:, tline]/maxAll)
+            if np.min(intensity[:, tline]/maxAll) < ymin:
+                ymin = np.min(intensity[:, tline]/maxAll)
+            if np.max(intensity[:, tline]/maxAll) > ymax:
+                ymax = np.max(intensity[:, tline]/maxAll)
             skip=2
             start=divmod(iline,nxvalues)[1]
             for ixvalue in range(start,nxvalues,nxvalues/skip):
-                pl.text(xvalues[ixvalue],emiss[tline,ixvalue]/maxAll[ixvalue],str(wvl[tline]))
+                pl.text(xvalues[ixvalue], intensity[ixvalue, tline]/maxAll[ixvalue], str(wvl[tline]))
         pl.xlim(xvalues.min(),xvalues.max())
 #        pl.ylim(ymin, ymax)
         pl.xlabel(xlabel,fontsize=fontsize)
@@ -4921,7 +5200,7 @@ class ion:
             ax2 = pl.twiny()
             xlabelDen=r'Electron Density (cm$^{-3}$)'
             pl.xlabel(xlabelDen, fontsize=fontsize)
-            pl.loglog(eDensity,emiss[topLines[top-1]]/maxAll, visible=False)
+            pl.loglog(eDensity,intensity[:, topLines[top-1]]/maxAll, visible=False)
             ax2.xaxis.tick_top()
             pl.ylim(ymin/1.2, 1.2*ymax)
         else:
@@ -4934,8 +5213,8 @@ class ion:
         # get line selection
         #
         selectTags = []
-        for itop in toplines:
-            selectTags.append()
+        for itop in topLines:
+            selectTags.append(ionS[itop]+ ' '+ str(wvl[itop]))
         #
         numden = gui.choice2Dialog(wvl[topLines])
         #
@@ -4951,19 +5230,19 @@ class ion:
             print ' no denominator lines were selected'
             return
         #
-        numEmiss=np.zeros(len(xvalues),'Float64')
+        numIntens=np.zeros(len(xvalues),'Float64')
         for aline in num_idx:
-            numEmiss+=emiss[topLines[aline]]
+            numIntens += intensity[:, topLines[aline]]
         #
-        denEmiss=np.zeros(len(xvalues),'Float64')
+        denIntens = np.zeros(len(xvalues),'Float64')
         for aline in den_idx:
-            denEmiss+=emiss[topLines[aline]]
+            denIntens += intensity[:, topLines[aline]]
         #
         # plot the desired ratio
         #  maxAll is an array
         pl.figure()
         ax = pl.subplot(111)
-        pl.loglog(xvalues,numEmiss/denEmiss)
+        pl.loglog(xvalues,numIntens/denIntens)
         pl.xlim(xvalues.min(),xvalues.max())
         pl.xlabel(xlabel,fontsize=fontsize)
         pl.ylabel('Ratio ('+self.Defaults['flux']+')',fontsize=fontsize)
@@ -4979,7 +5258,7 @@ class ion:
             ax2 = pl.twiny()
             xlabelDen=r'Electron Density (cm$^{-3}$)'
             pl.xlabel(xlabelDen, fontsize=fontsize)
-            pl.loglog(eDensity,numEmiss/denEmiss, visible=False)
+            pl.loglog(eDensity,numIntens/denIntens, visible=False)
             ax2.xaxis.tick_top()
         else:
 #            pl.ylim(ymin, ymax)
@@ -4998,7 +5277,7 @@ class ion:
         for aline in den_idx:
             intensityRatioFileName+= '_%3i'%(wvl[topLines[aline]])
         intensityRatioFileName+='.rat'
-        self.IntensityRatio={'ratio':numEmiss/denEmiss,'desc':desc,
+        self.IntensityRatio={'ratio':numIntens/denIntens,'desc':desc,
                 'temperature':outTemperature,'eDensity':outDensity,'filename':intensityRatioFileName, 'numIdx':num_idx, 'denIdx':den_idx}
         #
         # -------------------------------------------------------------------------------------
@@ -5155,15 +5434,10 @@ class ion:
         #
         #
         if hasattr(self, 'Emiss'):
-            doEmiss=False
-            em=self.Emiss
+            em=copy.copy(self.Emiss)
         else:
-            doEmiss=True
-        #
-        #
-        if doEmiss:
             self.emiss()
-            em=self.Emiss
+            em=copy.copy(self.Emiss)
         #
         #
         if hasattr(self, 'Abundance'):
@@ -5176,6 +5450,11 @@ class ion:
         #
         emiss=em["emiss"]
         wvl=em["wvl"]
+        pretty1 = em['pretty1']
+        pretty2 = em['pretty2']
+        lvl1 = em['lvl1']
+        lvl2 = em['lvl2']
+        #
         temperature=self.Temperature
         eDensity=self.EDensity
         plotLabels=em["plotLabels"]
@@ -5205,7 +5484,7 @@ class ion:
                 maxAll=emiss[igvl[iline]]
                 maxIndex = igvl[iline]
 #        print ' maxIndex, maxAll = ', maxIndex,  maxAll
-        line=range(nlines)
+#        line=range(nlines)
         igvlsort=np.take(igvl,np.argsort(maxEmiss))
         topLines=igvlsort[-top:]
         maxWvl='%5.3f' % wvl[topLines[-1]]
@@ -5306,8 +5585,9 @@ class ion:
         #
 #        print ' topLInes = ', wvl[topLines]
         wvlChoices = []
-        for one in wvl[topLines]:
-            wvlChoices.append('%12.3f'%(one))
+        for iline in range(top):
+            tline = topLines[iline]
+            wvlChoices.append('%12.3f %4i %4i %s - %s'%(wvl[tline], lvl1[tline], lvl2[tline], pretty1[tline], pretty2[tline]))
         gline = gui.selectorDialog(wvlChoices,label='Select line(s)')
         gline_idx=gline.selectedIndex
         #
@@ -5333,7 +5613,7 @@ class ion:
         #
         # plot the desired ratio
         pl.figure()
-        g_line= topLines[gline_idx]#  [0]
+        g_line = topLines[gline_idx]#  [0]
         ##        print ' g_line = ',g_line
         #
         gofnt=np.zeros(ngofnt,'float64')
@@ -5345,8 +5625,19 @@ class ion:
         pl.xlim(xvalues.min(),xvalues.max())
         pl.xlabel(xlabel,fontsize=fontsize)
         pl.ylabel('Gofnt',fontsize=fontsize)
+        newTitle = '%9s'%(self.Spectroscopic) + '%12.3f %4i %4i %s - %s'%(wvl[g_line[0]], lvl1[g_line[0]], lvl2[g_line[0]], pretty1[g_line[0]], pretty2[g_line[0]])
+        if len(g_line) > 1:
+            newTitle +='\n'
+        for igl in g_line[1:]:
+            newTitle += ' ' + '%12.3f %4i %4i %s - %s'%(wvl[igl], lvl1[igl], lvl2[igl], pretty1[igl], pretty2[igl])
+            if igl != g_line[-1]:
+                newTitle +='\n'
+#        pl.annotate(newTitle, xytext=(0.3, 0.3), textcoords='figure_fraction')
+        pl.annotate(newTitle, xy=(-10, 10),
+                xycoords='axes points',
+                horizontalalignment='right', verticalalignment='bottom')  #,fontsize=20)
         if ndens == ntemp and ntemp > 1:
-            newTitle = title+' '+str(wvl[g_line])+' '+desc_str
+#            newTitle +' '+str(wvl[g_line])+' '+desc_str
             pl.text(0.07, 0.5,newTitle, horizontalalignment='left', verticalalignment='center', fontsize=fontsize,  transform = ax.transAxes)
             #
             ax2 = pl.twiny()
@@ -5355,7 +5646,7 @@ class ion:
             pl.loglog(eDensity,gofnt, visible=False)
             ax2.xaxis.tick_top()
         else:
-            pl.title(title+' '+str(wvl[g_line])+' '+desc_str, fontsize=fontsize)
+            pl.title(newTitle, fontsize=fontsize)
         #pl.ioff()
         #pl.show()
 #        return
