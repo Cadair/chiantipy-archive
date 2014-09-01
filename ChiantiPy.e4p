@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Project SYSTEM "Project-4.6.dtd">
 <!-- eric4 project file for project ChiantiPy -->
-<!-- Saved: 2013-07-02, 12:07:40 -->
-<!-- Copyright (C) 2013 Kenneth Derer,  -->
+<!-- Saved: 2014-06-25, 11:37:20 -->
+<!-- Copyright (C) 2014 Kenneth Derer,  -->
 <Project version="4.6">
   <Language>en</Language>
   <ProgLanguage mixed="0">Python</ProgLanguage>
@@ -43,6 +43,9 @@
     <Source>scripts/wgfaTest.py</Source>
     <Source>scripts/ioneqMake.py</Source>
     <Source>__init__.py</Source>
+    <Source>chiantipy/chianti/core/IpyMspectrum.py</Source>
+    <Source>chiantipy/chianti/ipymputil.py</Source>
+    <Source>chiantipy/chianti/io.py</Source>
   </Sources>
   <Forms>
   </Forms>

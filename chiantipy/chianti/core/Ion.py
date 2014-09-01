@@ -6,6 +6,7 @@ import time
 #
 import chianti.data as chdata
 import chianti.sources as sources
+import chianti.archival as archival
 #chInteractive = chdata.chInteractive
 import pylab as pl
 #if chInteractive:
@@ -987,12 +988,14 @@ class ion:
         totalRate = np.zeros(nt, 'float64')
         lvlformat = '%7i%7i%10.2e%10.2e'
         for i, avalue in enumerate(self.Auto['avalue']):
-            gUpper = float(self.Elvlc['mult'][self.Auto['lvl2'][i] -1])
-            gLower = float(self.Higher.Elvlc['mult'][self.Auto['lvl1'][i] - 1])
+            elvl1idx = self.Elvlc['lvl'].index(self.Auto['lvl1'][i])
+            elvl2idx = self.Elvlc['lvl'].index(self.Auto['lvl2'][i])
+            gUpper = float(self.Elvlc['mult'][elvl2idx])
+            gLower = float(self.Higher.Elvlc['mult'][elvl1idx])
     #        print i, autoa['lvl2'][i], gLower, gUpper, avalue
-            ecm2 = self.Elvlc['ecm'][self.Auto['lvl2'][i] -1]
+            ecm2 = self.Elvlc['ecm'][elvl2idx]
             if ecm2 < 0.:
-                ecm2 = self.Elvlc['ecmth'][self.Auto['lvl2'][i] -1]
+                ecm2 = self.Elvlc['ecmth'][elvl2idx]
             de1 = ecm2*const.invCm2Erg - self.Ip*const.ev2Erg
             #de1 = ecm2*const.invCm2Ev - self.Ip
             de.append(de1)
@@ -1002,7 +1005,7 @@ class ion:
             #expkt = np.exp(-de1/(const.boltzmann*self.Temperature))
             expkt = np.exp(-dekt1)
             rate = coef*gUpper*expkt*avalue/(2.*gLower)
-            branch1 = self.Wgfa['avalueLvl'][self.Auto['lvl2'][i] -1]/(avalue + self.Wgfa['avalueLvl'][self.Auto['lvl2'][i] -1])
+            branch1 = self.Wgfa['avalueLvl'][elvl2idx]/(avalue + self.Wgfa['avalueLvl'][elvl2idx])
             branch.append(branch1)
             lvl.append(self.Auto['lvl2'][i])
 #            print i, self.Auto['lvl2'][i], cnt
@@ -1232,7 +1235,9 @@ class ion:
             else:
                 # electron collisional excitation
                 l1=self.Scups["lvl1"][isplups]-1
+                l1idx = self.Elvlc['lvl'].index(self.Scups['lvl1'][isplups])
                 l2=self.Scups["lvl2"][isplups]-1
+                l2idx = self.Elvlc['lvl'].index(self.Scups['lvl2'][isplups])
                 ttype=self.Scups["ttype"][isplups]
                 cups=self.Scups["cups"][isplups]
                 nspl=self.Scups["ntemp"][isplups]
@@ -1292,7 +1297,7 @@ class ion:
                     # the dielectronic ions will eventually be discontinued
                     de = np.abs((elvlc[l2] - self.UpperIp/const.ryd2Ev) - elvlc[l1])
                 else:
-                    de = np.abs(elvlc[l2] - elvlc[l1])
+                    de = np.abs(elvlc[l2idx] - elvlc[l1idx])
                 deAll.append(de)
 #                print ' ce lvl1 %5i  lvl2 %5i de %10.2e'%(l1, l2, de)
                 ekt = (de*const.ryd2erg)/(const.boltzmann*temp)
@@ -1302,13 +1307,13 @@ class ion:
                 exRate[isplups] = const.collision*ups[isplups]*np.exp(-ekt)/(fmult1*np.sqrt(temp))
             elif diel:
 #                print ' diel lvl1 %5i  lvl2 %5i de %10.2e'%(l1, l2, de)
-                de = np.abs((elvlc[l2] - self.Ip/const.ryd2Ev) - elvlc[l1])
+                de = np.abs((elvlc[l2idx] - self.Ip/const.ryd2Ev) - elvlc[l1idx])
                 ekt = (de*const.ryd2erg)/(const.boltzmann*temp)
                 fmult1 = float(self.Elvlc["mult"][l1])
                 fmult2 = float(self.Elvlc["mult"][l2])
                 exRate[isplups] = const.collision*ups[isplups]*np.exp(-ekt)/(fmult1*np.sqrt(temp))
             elif prot:
-                de = np.abs(elvlc[l2]- elvlc[l1])
+                de = np.abs(elvlc[l2idx]- elvlc[l1idx])
                 ekt = (de*1.57888e+5)/temp
                 fmult1 = float(self.Elvlc["mult"][l1])
                 fmult2 = float(self.Elvlc["mult"][l2])
@@ -1536,6 +1541,7 @@ class ion:
         perhaps, more importantly,  by setting dir to a directory cotaining the necessary files
         for a ChiantiPy ion, it allows one to setup an ion with files not in the current
         Chianti directory
+        currently, this works for database versions 7.1.4 and earlier
         '''
         #
         # read in all data if in masterlist
@@ -1546,8 +1552,8 @@ class ion:
         if self.IonStr in MasterList:
             if dir:
                 fileName = os.path.join(dir, self.IonStr)
-                self.Elvlc = util.elvlcRead('',filename=fileName+'.elvlc')
-                self.Wgfa = util.wgfaRead('',filename=fileName+'.wgfa', elvlcname=fileName+'.elvlc')
+                self.Elvlc = archival.elvlcRead('',filename=fileName+'.elvlc')
+                self.Wgfa = archival.wgfaRead('',filename=fileName+'.wgfa', elvlcname=fileName+'.elvlc')
                 self.Nwgfa=len(self.Wgfa['lvl1'])
                 nlvlWgfa = max(self.Wgfa['lvl2'])
                 nlvlList =[nlvlWgfa]

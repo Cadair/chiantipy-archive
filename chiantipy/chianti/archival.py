@@ -125,3 +125,101 @@ def elvlcWrite(info, outfile=0, addLvl=0):
     out.write(' -1\n')
     out.close()
     return
+    #
+    # -------------------------------------------------------------------------------------
+    #
+def wgfaRead(ions, filename=0, elvlcname=-1, total=0, verbose=0):
+    """
+    this is text-wise not different that the v8.0 util.wgfaRead except that it uses the
+    archival elvlcRead above
+
+    reads chianti wgfa file and returns
+    {"lvl1":lvl1,"lvl2":lvl2,"wvl":wvl,"gf":gf,"avalue":avalue,"ref":ref}
+    if elvlcname is specified, the lsj term labels are returned as 'pretty1' and 'pretty2'
+    """
+    #
+    if filename:
+        wgfaname = filename
+        if elvlcname < 0:
+            elvlcnamee = 0
+            elvlc = 0
+        elif not elvlcname:
+            elvlcname = os.path.splitext(wgfaname)[0] + '.elvlc'
+            if os.path.isfile(elvlcname):
+                elvlc = elvlcRead('', elvlcname)
+            else:
+                elvlc = 0
+        else:
+            elvlc = elvlcRead('',elvlcname)
+
+    else:
+        fname=ion2filename(ions)
+        wgfaname=fname+'.wgfa'
+        elvlcname = fname + '.elvlc'
+        if os.path.isfile(elvlcname):
+            elvlc = elvlcRead('', elvlcname)
+        else:
+            elvlc = 0
+    if verbose:
+        if elvlc:
+            print(' have elvlc data')
+        else:
+            print(' do not have elvlc data')
+    #
+    input=open(wgfaname,'r')
+    s1=input.readlines()
+    input.close()
+    nwvl=0
+    ndata=2
+    while ndata > 1:
+        s1a=s1[nwvl]
+        s2=s1a.split()
+        ndata=len(s2)
+        nwvl += 1
+    nwvl -= 1
+    if verbose:
+        print(' nwvl = %10i ndata = %4i'%(nwvl, ndata))
+    lvl1=[0]*nwvl
+    lvl2=[0]*nwvl
+    wvl=[0.]*nwvl
+    gf=[0.]*nwvl
+    avalue=[0.]*nwvl
+    if elvlc:
+        pretty1 = ['']*nwvl
+        pretty2 = ['']*nwvl
+    #
+    if verbose:
+        print(' nwvl = %10i'%(nwvl))
+    #
+    wgfaFormat='(2i5,f15.3,2e15.3)'
+    for ivl in range(nwvl):
+        inpt=FortranLine(s1[ivl],wgfaFormat)
+        lvl1[ivl]=inpt[0]
+        lvl2[ivl]=inpt[1]
+        wvl[ivl]=inpt[2]
+        gf[ivl]=inpt[3]
+        avalue[ivl]=inpt[4]
+        if elvlc:
+            pretty1[ivl] = elvlc['pretty'][inpt[0] - 1]
+            pretty2[ivl] = elvlc['pretty'][inpt[1] - 1]
+
+    ref=[]
+    # should skip the last '-1' in the file
+    for i in range(nwvl+1,len(s1) -1):
+        s1a=s1[i][:-1]
+        ref.append(s1a.strip())
+    Wgfa={"lvl1":lvl1,"lvl2":lvl2,"wvl":wvl,"gf":gf,"avalue":avalue,"ref":ref, 'ionS':ions, 'filename':wgfaname}
+    if total:
+        avalueLvl = [0.]*max(lvl2)
+        for iwvl in range(nwvl):
+            avalueLvl[lvl2[iwvl] -1] += avalue[iwvl]
+        Wgfa['avalueLvl'] = avalueLvl
+
+    if elvlc:
+        Wgfa['pretty1'] = pretty1
+        Wgfa['pretty2'] = pretty2
+    #
+    return Wgfa
+    #
+    # --------------------------------------
+    #
