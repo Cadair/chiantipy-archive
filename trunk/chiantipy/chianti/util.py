@@ -646,10 +646,14 @@ def elvlcWrite(info, outfile=0, addLvl=0, includeRyd=0):
     addLvl is to add a constant value to the index of all levels
     setting includeRyd will also write the Rydberg energies in the extended area, demarked by a comma
     '''
-    gname = info['ionS']
     if outfile:
         elvlcName = outfile
     else:
+        try:
+            gname = info['ionS']
+        except:
+            print(' ''ionS'' not included in input dict')
+            return
         elvlcName = gname + '.elvlc'
     print((' elvlc file name = ', elvlcName))
     #
