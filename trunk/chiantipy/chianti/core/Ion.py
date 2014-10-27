@@ -220,7 +220,7 @@ class ion:
             try:
                 diparams = self.DiParams
             except:
-                self.DiParams = util.diRead(self.IonStr)
+                self.DiParams = io.diRead(self.IonStr)
                 diparams = self.DiParams
             cross=np.zeros(len(energy), 'Float64')
 
@@ -253,7 +253,7 @@ class ion:
         if hasattr(self, 'DiParams'):
             DiParams = self.DiParams
         else:
-            DiParams = util.diRead(self.IonStr)
+            DiParams = io.diRead(self.IonStr)
         #
         if hasattr(self, 'Temperature'):
             temperature=self.Temperature
@@ -318,7 +318,7 @@ class ion:
         if hasattr(self, 'EaParams'):
             eaparams=self.EaParams
         else:
-            self.EaParams = util.eaRead(self.IonStr)
+            self.EaParams = io.eaRead(self.IonStr)
             eaparams=self.EaParams
         #
         if hasattr(self, 'Temperature'):
@@ -402,7 +402,7 @@ class ion:
         try:
             diparams = self.DiParams
         except:
-            self.DiParams = util.diRead(self.IonStr)
+            self.DiParams = io.diRead(self.IonStr)
             diparams = self.DiParams
         #
         if self.DiParams['info']['neaev'] == 0:
@@ -453,7 +453,7 @@ class ion:
         if hasattr(self, 'DiParams'):
             diparams=self.DiParams
         else:
-            self.DiParams = util.diRead(self.IonStr)
+            self.DiParams = io.diRead(self.IonStr)
         #
         if self.DiParams['info']['neaev'] == 0:
 #            print ' no EA rates'
@@ -470,7 +470,7 @@ class ion:
             if hasattr(self, 'EaParams'):
                 eaparams=self.EaParams
             else:
-                self.eaParams = util.eaRead(self.IonStr)
+                self.eaParams = io.eaRead(self.IonStr)
                 self.eaDescale()
                 eaparams=self.EaParams
             #
@@ -601,7 +601,7 @@ class ion:
         if hasattr(self, 'DrParams'):
             drparams=self.DrParams
         elif os.path.isfile(drparamsfile):
-            self.DrParams = util.drRead(self.IonStr)
+            self.DrParams = io.drRead(self.IonStr)
             drparams=self.DrParams
         else:
             self.DrRate = {'rate':np.zeros_like(temperature), 'temperature':temperature}
@@ -647,7 +647,7 @@ class ion:
                 lvl = self.Reclvl
             elif os.path.isfile(lvlfile):
 #           print ' reading reclvl file'
-                self.Reclvl = util.cireclvlRead(self.IonStr, '.'+lvlType)
+                self.Reclvl = io.cireclvlRead(self.IonStr, '.'+lvlType)
                 lvl = self.Reclvl
             else:
                 self.ReclvlRate = {'rate':zeros_like(temperature)}
@@ -657,7 +657,7 @@ class ion:
                 lvl = self.Cilvl
             elif os.path.isfile(lvlfile):
 #           print ' reading reclvl file'
-                self.Cilvl = util.cireclvlRead(self.IonStr, '.'+lvlType)
+                self.Cilvl = io.cireclvlRead(self.IonStr, '.'+lvlType)
                 lvl = self.Cilvl
             else:
                 self.CilvlRate = {'rate':zeros_like(temperature)}
@@ -667,7 +667,7 @@ class ion:
                 lvl = self.Rrlvl
             elif os.path.isfile(lvlfile):
 #           print ' reading reclvl file'
-                self.Rrlvl = util.cireclvlRead(self.IonStr, '.'+lvlType)
+                self.Rrlvl = io.cireclvlRead(self.IonStr, '.'+lvlType)
                 lvl = self.Rrlvl
             else:
                 self.RrlvlRate = {'rate':zeros_like(temperature)}
@@ -783,7 +783,7 @@ class ion:
 #            reclvl = self.Reclvl
 #        elif os.path.isfile(reclvlfile):
 ##           print ' reading reclvl file'
-#            reclvl = util.cireclvlRead(self.IonStr, 'reclvl')
+#            reclvl = io.cireclvlRead(self.IonStr, 'reclvl')
 #        else:
 #            self.ReclvlRate = {'rate':zeros_like(temperature)}
 #            return
@@ -987,7 +987,7 @@ class ion:
             #ab=self.Abundance
         #else:
             #abundName = self.Defaults['abundfile']
-            #util.abundanceRead(abundancename = abundName)
+            #io.abundanceRead(abundancename = abundName)
         #
         if not hasattr(self, 'IoneqAll'):
             self.IoneqAll = util.ioneqRead(ioneqname = ioneqname)
@@ -1494,8 +1494,8 @@ class ion:
                     nlvlSplups = 0
             else:
                 fileName = util.ion2filename(self.IonStr)
-                self.Elvlc = util.elvlcRead(self.IonStr)
-                self.Wgfa = util.wgfaRead(self.IonStr)
+                self.Elvlc = io.elvlcRead(self.IonStr)
+                self.Wgfa = io.wgfaRead(self.IonStr)
                 self.Nwgfa=len(self.Wgfa['lvl1'])
                 nlvlWgfa = max(self.Wgfa['lvl2'])
                 nlvlList =[nlvlWgfa]
@@ -1509,7 +1509,7 @@ class ion:
             #
             file = fileName +'.cilvl'
             if os.path.isfile(file):
-                self.Cilvl = util.cireclvlRead('',filename = fileName, cilvl=1)
+                self.Cilvl = io.cireclvlRead('',filename = fileName, cilvl=1)
                 self.Ncilvl=len(self.Cilvl['lvl1'])
                 nlvlCilvl = max(self.Cilvl['lvl2'])
                 nlvlList.append(nlvlCilvl)
@@ -1518,7 +1518,7 @@ class ion:
             #  .reclvl file may not exist
             reclvlfile = fileName +'.reclvl'
             if os.path.isfile(reclvlfile):
-                self.Reclvl = util.cireclvlRead('',filename=fileName, reclvl=1)
+                self.Reclvl = io.cireclvlRead('',filename=fileName, reclvl=1)
                 self.Nreclvl = len(self.Reclvl['lvl1'])
                 nlvlReclvl = max(self.Reclvl['lvl2'])
                 nlvlList.append(nlvlReclvl)
@@ -1544,7 +1544,7 @@ class ion:
             #
             drparamsFile = fileName +'.drparams'
             if os.path.isfile(drparamsFile):
-                self.DrParams = util.drRead(self.IonStr)
+                self.DrParams = io.drRead(self.IonStr)
             #
             rrparamsFile = fileName +'.rrparams'
             if os.path.isfile(rrparamsFile):
@@ -1564,7 +1564,7 @@ class ion:
             self.Nlvls = min([nlvlElvlc, max(nlvlList)])
         else:
             try:
-                self.Elvlc = util.elvlcRead(self.IonStr, verbose=verbose)
+                self.Elvlc = io.elvlcRead(self.IonStr, verbose=verbose)
             except:
                 print(' elvlc file NOT available for %s'%(self.IonStr))
                 return
@@ -1591,8 +1591,8 @@ class ion:
             fileName = util.ion2filename(self.IonStr)
         if self.IonStr in MasterList:
             if dir:
-                self.Elvlc = util.elvlcRead('', filename=fileName+'.elvlc',  verbose=verbose)
-                self.Wgfa = util.wgfaRead('', filename=fileName+'.wgfa', elvlcname=fileName+'.elvlc', total=1)
+                self.Elvlc = io.elvlcRead('', filename=fileName+'.elvlc',  verbose=verbose)
+                self.Wgfa = io.wgfaRead('', filename=fileName+'.wgfa', elvlcname=fileName+'.elvlc', total=1)
                 self.Nwgfa=len(self.Wgfa['lvl1'])
                 nlvlWgfa = max(self.Wgfa['lvl2'])
                 nlvlList =[nlvlWgfa]
@@ -1620,8 +1620,8 @@ class ion:
                     nlvlScups = 0
                     print('do not have a scups file for %s'%(self.IonStr))
             else:
-                self.Elvlc = util.elvlcRead(self.IonStr,  verbose=verbose)
-                self.Wgfa = util.wgfaRead(self.IonStr, total=1)
+                self.Elvlc = io.elvlcRead(self.IonStr,  verbose=verbose)
+                self.Wgfa = io.wgfaRead(self.IonStr, total=1)
                 self.Nwgfa=len(self.Wgfa['lvl1'])
                 nlvlWgfa = max(self.Wgfa['lvl2'])
                 nlvlList =[nlvlWgfa]
@@ -1653,7 +1653,7 @@ class ion:
             #
             file = fileName +'.cilvl'
             if os.path.isfile(file):
-                self.Cilvl = util.cireclvlRead('',filename = fileName, cilvl=1)
+                self.Cilvl = io.cireclvlRead('',filename = fileName, cilvl=1)
                 self.Ncilvl=len(self.Cilvl['lvl1'])
                 nlvlCilvl = max(self.Cilvl['lvl2'])
                 nlvlList.append(nlvlCilvl)
@@ -1665,7 +1665,7 @@ class ion:
             #  dielectronic rates derived from the autoionization values in the .auto file
             reclvlfile = fileName +'.reclvl'
             if os.path.isfile(reclvlfile):
-                self.Reclvl = util.cireclvlRead('',filename=fileName, reclvl=1)
+                self.Reclvl = io.cireclvlRead('',filename=fileName, reclvl=1)
                 self.Nreclvl = len(self.Reclvl['lvl1'])
                 nlvlReclvl = max(self.Reclvl['lvl2'])
                 nlvlList.append(nlvlReclvl)
@@ -1692,7 +1692,7 @@ class ion:
             #
             drparamsFile = fileName +'.drparams'
             if os.path.isfile(drparamsFile):
-                self.DrParams = util.drRead(self.IonStr)
+                self.DrParams = io.drRead(self.IonStr)
             #
             rrparamsFile = fileName +'.rrparams'
             if os.path.isfile(rrparamsFile):
@@ -1701,7 +1701,7 @@ class ion:
             # get autoionizing A-values
             autoFile = fileName + '.auto'
             if os.path.isfile(autoFile):
-                self.Auto = util.wgfaRead('', filename=autoFile)
+                self.Auto = io.wgfaRead('', filename=autoFile)
 
             #  not needed for ion, only phion
 #                photoxfile = util.ion2filename(self.IonStr)+'.photox'
@@ -1734,8 +1734,8 @@ class ion:
         if self.IonStr in MasterList:
             if dir:
                 fileName = os.path.join(dir, self.IonStr)
-                self.Elvlc = util.elvlcRead('',filename=fileName+'.elvlc')
-                self.Wgfa = util.wgfaRead('',filename=fileName+'.wgfa', elvlcname=fileName+'.elvlc')
+                self.Elvlc = io.elvlcRead('',filename=fileName+'.elvlc')
+                self.Wgfa = io.wgfaRead('',filename=fileName+'.wgfa', elvlcname=fileName+'.elvlc')
                 self.Nwgfa=len(self.Wgfa['lvl1'])
                 nlvlWgfa = max(self.Wgfa['lvl2'])
                 nlvlList =[nlvlWgfa]
@@ -1752,8 +1752,8 @@ class ion:
                     nlvlScups = 0
             else:
                 fileName = util.ion2filename(self.IonStr)
-                self.Elvlc = util.elvlcRead(self.IonStr)
-                self.Wgfa = util.wgfaRead(self.IonStr)
+                self.Elvlc = io.elvlcRead(self.IonStr)
+                self.Wgfa = io.wgfaRead(self.IonStr)
                 self.Nwgfa=len(self.Wgfa['lvl1'])
                 nlvlWgfa = max(self.Wgfa['lvl2'])
                 nlvlList =[nlvlWgfa]
@@ -1772,7 +1772,7 @@ class ion:
             #
             file = fileName +'.cilvl'
             if os.path.isfile(file):
-                self.Cilvl = util.cireclvlRead('',filename = fileName, cilvl=1)
+                self.Cilvl = io.cireclvlRead('',filename = fileName, cilvl=1)
                 self.Ncilvl=len(self.Cilvl['lvl1'])
                 nlvlCilvl = max(self.Cilvl['lvl2'])
                 nlvlList.append(nlvlCilvl)
@@ -1781,7 +1781,7 @@ class ion:
             #  .reclvl file may not exist
             reclvlfile = fileName +'.reclvl'
             if os.path.isfile(reclvlfile):
-                self.Reclvl = util.cireclvlRead('',filename=fileName, reclvl=1)
+                self.Reclvl = io.cireclvlRead('',filename=fileName, reclvl=1)
                 self.Nreclvl = len(self.Reclvl['lvl1'])
                 nlvlReclvl = max(self.Reclvl['lvl2'])
                 nlvlList.append(nlvlReclvl)
@@ -1789,7 +1789,7 @@ class ion:
                 self.Nreclvl = 0
             #  .dielsplups file may not exist
             dielsplupsfile = fileName +'.splups'
-            if os.path.isfile(dielsplupsfile):
+            if self.Dielectronic and os.path.isfile(dielsplupsfile):
                 self.DielSplups = util.splupsRead('', filename=dielsplupsfile, diel=1)
                 self.Ndielsplups=len(self.DielSplups["lvl1"])
                 nlvlDielSplups = max(self.DielSplups['lvl2'])
@@ -1807,7 +1807,7 @@ class ion:
             #
             drparamsFile = fileName +'.drparams'
             if os.path.isfile(drparamsFile):
-                self.DrParams = util.drRead(self.IonStr)
+                self.DrParams = io.drRead(self.IonStr)
             #
             rrparamsFile = fileName +'.rrparams'
             if os.path.isfile(rrparamsFile):
@@ -1827,7 +1827,7 @@ class ion:
             self.Nlvls = min([nlvlElvlc, max(nlvlList)])
         else:
             try:
-                self.Elvlc = util.elvlcRead(self.IonStr, verbose=verbose)
+                self.Elvlc = io.elvlcRead(self.IonStr, verbose=verbose)
             except:
                 print ' the ion ' + self.IonStr + ' is not in the CHIANTI masterlist '
                 print(' elvlc file NOT available for %s'%(self.IonStr))
@@ -1849,14 +1849,14 @@ class ion:
         #
         elvlcname=fileName+'.elvlc'
         if os.path.isfile(elvlcname):
-            self.Elvlc = util.elvlcRead('',elvlcname)
+            self.Elvlc = io.elvlcRead('',elvlcname)
         else:
             print(' Elvlc file missing for '+self.IonStr)
             return
         #
         file = fileName +'.cilvl'
         if os.path.isfile(file):
-            self.Cilvl = util.cireclvlRead('',filename = fileName, cilvl=1)
+            self.Cilvl = io.cireclvlRead('',filename = fileName, cilvl=1)
             self.Ncilvl=len(self.Cilvl['lvl1'])
             nlvlCilvl = max(self.Cilvl['lvl2'])
             nlvlList.append(nlvlCilvl)
@@ -1865,7 +1865,7 @@ class ion:
         #  .reclvl file may not exist
         reclvlfile = fileName +'.reclvl'
         if os.path.isfile(reclvlfile):
-            self.Reclvl = util.cireclvlRead('',filename=fileName, reclvl=1)
+            self.Reclvl = io.cireclvlRead('',filename=fileName, reclvl=1)
             self.Nreclvl = len(self.Reclvl['lvl1'])
             nlvlReclvl = max(self.Reclvl['lvl2'])
             nlvlList.append(nlvlReclvl)
@@ -1875,7 +1875,7 @@ class ion:
         #          #
         drparamsFile = fileName +'.drparams'
         if os.path.isfile(drparamsFile):
-            self.DrParams = util.drRead(self.IonStr)
+            self.DrParams = io.drRead(self.IonStr)
         #
         rrparamsFile = fileName +'.rrparams'
         if os.path.isfile(rrparamsFile):
@@ -2035,7 +2035,7 @@ class ion:
             else:
                 rec = 0
 #            except:
-#                self.Reclvl = util.cireclvlRead(self.IonStr,'reclvl' )
+#                self.Reclvl = io.cireclvlRead(self.IonStr,'reclvl' )
 #                reclvl = self.Reclvl
 #                self.reclvlDescale()
 #                if type(self.Reclvl) != type(None):
@@ -3229,15 +3229,14 @@ class ion:
         #
     def populate(self, popCorrect=1, verbose=0, **kwargs):
         """
-        Calculate level populations for specified ion.  This is a new version that will enable the calculation
-        of dielectronic satellite lines without resorting to the dielectronic ions, such as c_5d
+        Calculate level populations for specified ion.
         possible keyword arguments include temperature, eDensity, pDensity, radTemperature and rStar
         """
         #
         #
         for one in kwargs.keys():
             if one not in chdata.keywordArgs:
-                print ' following keyword is not understood - ',  one
+                print(' following keyword is not understood - %20s '%(one))
         #
         nlvls=self.Nlvls
         nwgfa=self.Nwgfa
@@ -3250,7 +3249,7 @@ class ion:
         elif hasattr(self, 'Temperature'):
             temperature=self.Temperature
         else:
-                print ' no temperature values have been set'
+                print(' no temperature values have been set')
                 return
         #
         if kwargs.has_key('eDensity'):
@@ -3259,7 +3258,7 @@ class ion:
         elif hasattr(self, 'EDensity'):
             eDensity = self.EDensity
         else:
-            print ' no eDensity values have been set'
+            print(' no eDensity values have been set')
             return
         #
         if kwargs.has_key('pDensity'):
@@ -3270,8 +3269,8 @@ class ion:
                 try:
                     self.PDensity = np.asarray(kwargs['pDensity'])
                 except:
-                    print ' could not interpret value for keyword pDensity'
-                    print ' should be either "default" or a number or array'
+                    print(' could not interpret value for keyword pDensity')
+                    print(' should be either "default" or a number or array')
                     return
         else:
             if hasattr(self, 'PDensity'):
@@ -3280,7 +3279,7 @@ class ion:
                 self.p2eRatio()
                 self.PDensity = self.ProtonDensityRatio*self.EDensity
                 protonDensity = self.PDensity
-                print ' proton density not specified, set to "default"'
+                print(' proton density not specified, set to \"default\" ')
         #
         if 'radTemperature' in kwargs.keys() and 'rStar' in kwargs.keys():
             self.RadTemperature = np.asarray(kwargs['radTemperature'])
@@ -3322,7 +3321,6 @@ class ion:
                 if hasattr(self, 'ReclvlRate'):
                     reclvlRate = self.ReclvlRate
                 else:
-#                    print ' doing reclvlDescale in populate'
                     self.cireclvlDescale('reclvl')
                     reclvlRate = self.ReclvlRate
 #            if self.Ndielsplups:
@@ -3335,7 +3333,7 @@ class ion:
 #                    dielexRate = self.DielUpsilon['exRate']
 
 #            except:
-#                self.Reclvl = util.cireclvlRead(self.IonStr,'reclvl' )
+#                self.Reclvl = io.cireclvlRead(self.IonStr,'reclvl' )
 #                reclvl = self.Reclvl
 #                self.reclvlDescale()
 #                if type(self.Reclvl) != type(None):
@@ -3420,9 +3418,9 @@ class ion:
         if npsplups:
             cp=const.collision*protonDensity
         if ntemp > 1 and ndens >1 and ntemp != ndens:
-            print ' unless temperature or eDensity are single values'
-            print ' the number of temperatures values must match the '
-            print ' the number of eDensity values'
+            print(' unless temperature or eDensity are single values')
+            print(' the number of temperatures values must match the ')
+            print(' the number of eDensity values')
             return
         #
         # get corrections for recombination and excitation
@@ -3481,16 +3479,16 @@ class ion:
                     popmat[lvl2+ci, -1] += self.EDensity*reclvlRate['rate'][itrans]
                     popmat[-1, -1] -= self.EDensity*reclvlRate['rate'][itrans]
                 if self.Nreclvl:
-                    reclvlRateTot = reclvlRate['rate'].sum(axis=0)
+                    recTot = reclvlRate['rate'].sum(axis=0)
                 else:
-                    reclvlRateTot = 0.
+                    recTot = 0.
 
                 #
                 popmat[-1,  ci] += self.EDensity*self.IonizRate['rate']
                 popmat[ci, ci] -= self.EDensity*self.IonizRate['rate']
                 # next 2 line take care of overbooking
-                popmat[ci, -1] += self.EDensity*(higher.RecombRate['rate']- reclvlRateTot - dielTot)
-                popmat[-1, -1] -= self.EDensity*(higher.RecombRate['rate']- reclvlRateTot - dielTot)
+                popmat[ci, -1] += self.EDensity*(higher.RecombRate['rate']- recTot)
+                popmat[-1, -1] -= self.EDensity*(higher.RecombRate['rate']- recTot)
                 #
             if self.Dielectronic:
                 # for dielectronic ions, l1 = ground level of the ion itself
@@ -3522,7 +3520,7 @@ class ion:
 
 #                print ' higher, rec , dieltot = ',  self.EDensity*higher.RecombRate['rate'], self.EDensity*reclvlRate['rate'].sum(axis=0),  dielTot
             # normalize to unity
-            print(' rec =  %5i  ci = %5i'%(rec, ci))
+#            print(' rec =  %5i  ci = %5i'%(rec, ci))
             norm=np.ones(nlvls+ci+rec,'float64')
             if ci:
                 norm[0] = 0.
@@ -4854,7 +4852,7 @@ class ion:
         if hasattr(self, 'Abundance'):
             ab=self.Abundance
         else:
-            self.Abundance = util.abundanceRead()
+            self.Abundance = io.abundanceRead()
             ab=self.Abundance
         if hasattr(self, 'IoneqOne'):
             thisIoneq=self.IoneqOne
@@ -5041,7 +5039,7 @@ class ion:
         if hasattr(self, 'Abundance'):
             ab=self.Abundance
         else:
-            self.Abundance = util.abundanceRead()
+            self.Abundance = io.abundanceRead()
             ab=self.Abundance
         if hasattr(self, 'IoneqOne'):
             thisIoneq=self.IoneqOne
@@ -5444,12 +5442,14 @@ class ion:
         # -------------------------------------------------------------------------------------
         #
     def gofnt(self,wvlRange=0,top=10, verbose=0):
-        """Calculate the 'so-called' G(T) function.
+        """
+        Calculate the 'so-called' G(T) function.
 
         Given as a function of both temperature and eDensity.
 
         Only the top( set by 'top') brightest lines are plotted.
-        the G(T) function is returned in a dictionary self.Gofnt"""
+        the G(T) function is returned in a dictionary self.Gofnt
+        """
         #
         #self.emiss={"wvl":wvl,"emiss":em,"units":units,"plotLabels":plotLabels}
         #
@@ -5464,7 +5464,7 @@ class ion:
         if hasattr(self, 'Abundance'):
             ab=self.Abundance
         else:
-            self.Abundance = util.abundanceRead()
+            self.Abundance = io.abundanceRead()
             ab=self.Abundance
         #
         fontsize=12
@@ -5608,7 +5608,7 @@ class ion:
         wvlChoices = []
         for iline in range(top):
             tline = topLines[iline]
-            wvlChoices.append('%12.3f %4i %4i %s - %s'%(wvl[tline], lvl1[tline], lvl2[tline], pretty1[tline], pretty2[tline]))
+            wvlChoices.append('%12.4f %4i %4i %s - %s'%(wvl[tline], lvl1[tline], lvl2[tline], pretty1[tline], pretty2[tline]))
         gline = gui.selectorDialog(wvlChoices,label='Select line(s)')
         gline_idx=gline.selectedIndex
         #
@@ -5759,7 +5759,7 @@ class ion:
             try:
                 ab=self.Abundance
             except:
-                self.Abundance = util.abundanceRead()
+                self.Abundance = io.abundanceRead()
                 ab=self.Abundance
             try:
                 thisIoneq=self.IoneqOne
@@ -5850,7 +5850,7 @@ class ion:
             if hasattr(self, 'Abundance'):
                 ab=self.Abundance
             else:
-                self.Abundance = util.abundanceRead()
+                self.Abundance = io.abundanceRead()
                 ab=self.Abundance
             if hasattr(self, 'IoneqOne'):
                 thisIoneq=self.IoneqOne
@@ -5936,7 +5936,7 @@ class ionWeb(ion):
         if hasattr(self, 'Abundance'):
             ab=self.Abundance
         else:
-            self.Abundance = util.abundanceRead()
+            self.Abundance = io.abundanceRead()
             ab=self.Abundance
         #
         fontsize=12
@@ -6096,7 +6096,7 @@ class ionWeb(ion):
         if hasattr(self, 'Abundance'):
             ab=self.Abundance
         else:
-            self.Abundance = util.abundanceRead()
+            self.Abundance = io.abundanceRead()
             ab=self.Abundance
         #
         fontsize=12
@@ -6287,7 +6287,7 @@ class ionWeb(ion):
 #        try:
 #            ab=self.Abundance
 #        except:
-#            self.Abundance = util.abundanceRead()
+#            self.Abundance = io.abundanceRead()
 #            ab=self.Abundance
         #
         fontsize=12
@@ -6464,7 +6464,7 @@ class ionWeb(ion):
 #        try:
 #            ab=self.Abundance
 #        except:
-#            self.Abundance = util.abundanceRead()
+#            self.Abundance = io.abundanceRead()
 #            ab=self.Abundance
         emiss = em['emiss']
         wvl = em["wvl"]

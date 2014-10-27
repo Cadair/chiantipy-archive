@@ -22,16 +22,16 @@ elif pl.rcParams['backend'].lower() == 'agg':
 elif pl.rcParams['backend'].lower() == 'macosx':
     import chianti.gui_cl.gui as gui
 else:
-    print(' - Warning - \n' \
+    print((' - Warning - \n' \
           + ' - in order to use the various gui dialogs, the matlpotlib/pylab backend needs \n' \
           +' - to be either Qt4Agg or WXAgg - \n' \
          +' - in order to use the command line dialogs, the matlpotlib/pylab backend needs \n' \
          +' - to be GTKAgg or MacOSX - \n' \
-        + ' - current backend is %s \n '%(pl.rcParams['backend']))
-    print(' - the full functionality of the chianti.core.ion class may not be available \n')
-    print(' - it would probably be better to set your matplotlib backend to either \n')
-    print(' - Qt4Agg, WXAgg, GTKAgg, or MacOSX \n')
-    print(' - using the command line dialogs for now but there could be problems - \n')
+        + ' - current backend is %s \n '%(pl.rcParams['backend'])))
+    print((' - the full functionality of the chianti.core.ion class may not be available \n'))
+    print((' - it would probably be better to set your matplotlib backend to either \n'))
+    print((' - Qt4Agg, WXAgg, GTKAgg, or MacOSX \n'))
+    print((' - using the command line dialogs for now but there could be problems - \n'))
     import gui_cl.gui as gui
 
 defaults = chdata.Defaults
@@ -126,17 +126,17 @@ class spectrum():
         #self.AbundanceAll = chdata.AbundanceAll
         #
         if abundanceName:
-            if abundanceName in chdata.Abundance.keys():
+            if abundanceName in list(chdata.Abundance.keys()):
                 self.AbundanceName = abundanceName
             else:
-                abundChoices = chdata.Abundance.keys()
+                abundChoices = list(chdata.Abundance.keys())
 #                for one in wvl[topLines]:
 #                    wvlChoices.append('%12.3f'%(one))
                 abundChoice = gui.selectorDialog(abundChoices,label='Select Abundance name')
                 abundChoice_idx = abundChoice.selectedIndex
                 self.AbundanceName = abundChoices[abundChoice_idx[0]]
                 abundanceName = self.AbundanceName
-                print(' Abundance chosen:  %s '%(self.AbundanceName))
+                print((' Abundance chosen:  %s '%(self.AbundanceName)))
         else:
             self.AbundanceName = self.Defaults['abundfile']
         #
@@ -164,13 +164,13 @@ class spectrum():
         for iz in range(31):
             abundance = chdata.Abundance[self.AbundanceName]['abundance'][iz-1]
             if abundance >= minAbund:
-                print ' %5i %5s abundance = %10.2e '%(iz, const.El[iz-1],  abundance)
+                print((' %5i %5s abundance = %10.2e '%(iz, const.El[iz-1],  abundance)))
                 #
                 for ionstage in range(1, iz+2):
                     ionS = util.zion2name(iz, ionstage)
 #                   print ' ionS = ', ionS
                     masterListTest = ionS in masterlist
-                    masterListInfoTest = ionS in ionInfo.keys()
+                    masterListInfoTest = ionS in list(ionInfo.keys())
                     if masterListTest or masterListInfoTest:
                         wvlTestMin = self.Wavelength.min() <= ionInfo[ionS]['wmax']
                         wvlTestMax = self.Wavelength.max() >= ionInfo[ionS]['wmin']
@@ -178,7 +178,7 @@ class spectrum():
                     # construct similar test for the dielectronic files
                     ionSd = util.zion2name(iz, ionstage, dielectronic=1)
                     masterListTestD = ionSd in masterlist
-                    masterListInfoTestD = ionSd in ionInfo.keys()
+                    masterListInfoTestD = ionSd in list(ionInfo.keys())
                     if masterListTestD or masterListInfoTestD:
                         wvlTestMinD = self.Wavelength.min() <= ionInfo[ionSd]['wmax']
                         wvlTestMaxD = self.Wavelength.max() >= ionInfo[ionSd]['wmin']
@@ -186,7 +186,7 @@ class spectrum():
                     ionstageTest = ionstage > 1
                     if ionstageTest and ioneqTest and doContinuum:
                         # ionS is the target ion, cannot be the neutral for the continuum
-                        print ' calculating continuum for :  ',  ionS
+                        print((' calculating continuum for :  ',  ionS))
                         cont = chianti.core.continuum(ionS, temperature, abundanceName=self.AbundanceName)
                         cont.freeFree(wavelength)
     #                   print dir(thisIon)
@@ -198,7 +198,7 @@ class spectrum():
                                 freeFree[iTempDen] += cont.FreeFree['rate'][iTempDen]
                     #
                         cont.freeBound(wavelength)
-                        if 'errorMessage' not in cont.FreeBound.keys():
+                        if 'errorMessage' not in list(cont.FreeBound.keys()):
                             #  an fblvl file exists for this ions
                             if nTempDen == 1:
                                 freeBound += cont.FreeBound['rate']
@@ -206,7 +206,7 @@ class spectrum():
                                 for iTempDen in range(nTempDen):
                                     freeBound[iTempDen] += cont.FreeBound['rate'][iTempDen]
                     if masterListTest and wvlTestMin and wvlTestMax and ioneqTest:
-                        print ' calculating spectrum for  :  ', ionS
+                        print((' calculating spectrum for  :  ', ionS))
                         #
                         thisIon = chianti.core.ion(ionS, temperature, eDensity, abundanceName=self.AbundanceName)
                         ionsCalculated.append(ionS)
@@ -215,7 +215,7 @@ class spectrum():
                         thisIon.intensity(wvlRange = wvlRange, allLines=allLines)
 #                        print(' intensity shape %5i %5i '%(thisIon.Intensity['intensity'].shape[0], thisIon.Intensity['intensity'].shape[1]))
                         # check that there are lines in this wavelength range
-                        if 'errorMessage' not in  thisIon.Intensity.keys():
+                        if 'errorMessage' not in  list(thisIon.Intensity.keys()):
                             thisIon.spectrum(wavelength, filter=filter)
                             if setupIntensity:
                                 for akey in self.Intensity:
@@ -231,14 +231,14 @@ class spectrum():
                                 for iTempDen in range(nTempDen):
                                     lineSpectrum[iTempDen] += thisIon.Spectrum['intensity'][iTempDen]
                         else:
-                            print(' error with ion = %s'%(ionS))
+                            print((' error with ion = %s'%(ionS)))
                         # get 2 photon emission for H and He sequences
                         if (iz - ionstage) in [0, 1]:
                             thisIon.twoPhoton(wavelength)
                             twoPhoton += thisIon.TwoPhoton['rate']
                     # get dielectronic lines
                     if masterListTestD and wvlTestMinD and wvlTestMaxD and ioneqTestD:
-                        print ' calculating spectrum for  :  ', ionSd
+                        print(' calculating spectrum for  :  ', ionSd)
                         #
                         thisIon = chianti.core.ion(ionSd, temperature, eDensity, abundanceName=self.AbundanceName)
                         ionsCalculated.append(ionSd)
@@ -247,7 +247,7 @@ class spectrum():
 #                        thisIon.emiss(allLines=1)
                         thisIon.intensity(wvlRange = wvlRange, allLines=allLines)
                         # check that there are lines in this wavelength range - probably not redundant
-                        if 'errorMessage' not in  thisIon.Intensity.keys():
+                        if 'errorMessage' not in  list(thisIon.Intensity.keys()):
                             thisIon.spectrum(wavelength, filter=filter)
                             if setupIntensity:
                                 for akey in self.Intensity:
@@ -268,7 +268,7 @@ class spectrum():
         total = freeFree + freeBound + lineSpectrum + twoPhoton
         t2 = datetime.now()
         dt=t2-t1
-        print ' elapsed seconds = ', dt.seconds
+        print(' elapsed seconds = ', dt.seconds)
         if type(em) != type(None):
             if nEm == 1:
                 integrated = total*em
@@ -301,8 +301,8 @@ class spectrum():
             try:
                 self.intensity()
             except:
-                print ' intensities not calculated and emiss() is unable to calculate them'
-                print ' perhaps the temperature and/or eDensity are not set'
+                print(' intensities not calculated and emiss() is unable to calculate them')
+                print(' perhaps the temperature and/or eDensity are not set')
                 return
         #
         # everything in self.Intensity should be a numpy array
@@ -331,19 +331,20 @@ class spectrum():
         elif ndens == 1 and ntemp > 1:
             if index < 0:
                 index = ntemp/2
-            print 'using index = %5i specifying temperature =  %10.2e'%(index, temperature[index])
+            print('using index = %5i specifying temperature =  %10.2e'%(index, temperature[index]))
+
             self.Message = 'using index = %5i specifying temperature =  %10.2e'%(index, temperature[index])
             intensity=intensity[index]
         elif ndens > 1 and ntemp == 1:
             if index < 0:
                 index = ndens/2
-            print 'using index =%5i specifying eDensity = %10.2e'%(index, eDensity[index])
+            print('using index =%5i specifying eDensity = %10.2e'%(index, eDensity[index]))
             self.Message = 'using index =%5i specifying eDensity = %10.2e'%(index, eDensity[index])
             intensity=intensity[index]
         elif ndens > 1 and ntemp > 1:
             if index < 0:
                 index = ntemp/2
-            print 'using index = %5i specifying temperature = %10.2e, eDensity =  %10.2e'%(index, temperature[index], eDensity[index])
+            print('using index = %5i specifying temperature = %10.2e, eDensity =  %10.2e'%(index, temperature[index], eDensity[index]))
             self.Message = 'using index = %5i specifying temperature = %10.2e, eDensity =  %10.2e'%(index, temperature[index], eDensity[index])
             intensity=intensity[index]
         #
@@ -354,7 +355,7 @@ class spectrum():
             for awvlRange in wvlRanges:
                 wvlIndex.extend(util.between(wvl,awvlRange))
         else:
-            wvlIndex = range(wvl.size)
+            wvlIndex = list(range(wvl.size))
         #
         #
         #  get lines in the specified wavelength range
@@ -371,7 +372,7 @@ class spectrum():
         #
         self.Error = 0
         if wvl.size == 0:
-            print 'No lines in this wavelength interval'
+            print('No lines in this wavelength interval')
             self.Error = 1
             self.Message = 'No lines in this wavelength interval'
             return
@@ -404,15 +405,15 @@ class spectrum():
         #
         idx = np.argsort(wvl)
         fmt = '%5s %5i %5i %25s - %25s %12.3f %12.3e %12.2e %1s'
-        print '   '
-        print ' ------------------------------------------'
-        print '   '
-        print ' Ion   lvl1  lvl2         lower                     upper                   Wvl(A)   Intensity       Obs'
+        print('   ')
+        print(' ------------------------------------------')
+        print('   ')
+        print(' Ion   lvl1  lvl2         lower                     upper                   Wvl(A)   Intensity       Obs')
         for kdx in idx:
             print(fmt%(ionS[kdx], lvl1[kdx], lvl2[kdx], pretty1[kdx], pretty2[kdx], wvl[kdx], intensity[kdx], avalue[kdx], obs[kdx]))
-        print '   '
-        print ' ------------------------------------------'
-        print '   '
+        print('   ')
+        print(' ------------------------------------------')
+        print('   ')
         #
         self.Intensity['wvlTop'] = wvl[idx]
         self.Intensity['intensityTop'] = intensity[idx]

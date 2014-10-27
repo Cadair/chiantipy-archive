@@ -11,14 +11,15 @@ distance is the distance from the central source
 '''
 import os, fnmatch
 from  . import util
+from . import io
 
 ###
 xuvtop = os.environ['XUVTOP']
 #chInteractive=1
-Defaults = util.defaultsRead()
+Defaults = io.defaultsRead()
 Ip = util.ipRead()
 MasterList = util.masterListRead()
-#AbundanceAll = util.abundanceRead(abundancename = Defaults['abundfile'])
+#AbundanceAll = io.abundanceRead(abundancename = Defaults['abundfile'])
 IoneqAll = util.ioneqRead(ioneqname = Defaults['ioneqfile'])
 # gets the ChianitPy version
 # gets the version of the CHIANTI database
@@ -35,7 +36,7 @@ for one in filelist:
         abundList.append(os.path.splitext(one)[0])
 #for one in abundList:
 #    print(one)
-Abundance = {abundList[0]:util.abundanceRead(abundancename = abundList[0])}
+Abundance = {abundList[0]:io.abundanceRead(abundancename = abundList[0])}
 for one in abundList[1:]:
-    Abundance[one] = util.abundanceRead(abundancename = one)
+    Abundance[one] = io.abundanceRead(abundancename = one)
 

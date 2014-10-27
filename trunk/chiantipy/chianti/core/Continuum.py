@@ -86,7 +86,7 @@ class continuum:
             fblvl = self.Fblvl
         else:
             fblvlname = util.zion2filename(self.Z,self.Ion-1)+'.fblvl'
-            self.Fblvl = util.fblvlRead(fblvlname)
+            self.Fblvl = io.fblvlRead(fblvlname)
             fblvl = self.Fblvl
         #  need some data for the recombining ion
         if hasattr(self, 'rFblvl'):
@@ -97,7 +97,7 @@ class continuum:
                 rFblvl = {'mult':[1., 1.]}
             else:
                 rfblvlname = util.zion2filename(self.Z,self.Ion)+'.fblvl'  # previously self.Ion)
-                self.rFblvl = util.fblvlRead(rfblvlname)
+                self.rFblvl = io.fblvlRead(rfblvlname)
                 rFblvl = self.rFblvl
         #  6/9/2010 the recombining ion is the present ion
         #
@@ -287,7 +287,7 @@ class continuum:
             fblvl = self.Fblvl
         except:
             fblvlname = util.zion2filename(self.Z,self.Ion-1)+'.fblvl'
-            self.Fblvl = util.fblvlRead(fblvlname)
+            self.Fblvl = io.fblvlRead(fblvlname)
             fblvl = self.Fblvl
             # in case there is no fblvl file
             if 'errorMessage' in fblvl.keys():
@@ -302,7 +302,7 @@ class continuum:
                 rFblvl = {'mult':[1., 1.]}
             else:
                 rfblvlname = util.zion2filename(self.Z,self.Ion)+'.fblvl'
-                self.rFblvl = util.fblvlRead(fblvlname)
+                self.rFblvl = io.fblvlRead(fblvlname)
                 rFblvl = self.rFblvl
             if 'errorMessage' in rFblvl.keys():
                 self.FreeBound = fblvl
@@ -319,7 +319,7 @@ class continuum:
         #try:
             #abund = self.Abundance
         #except:
-            #self.AbundanceAll = util.abundanceRead(abundancename = self.AbundanceName)
+            #self.AbundanceAll = io.abundanceRead(abundancename = self.AbundanceName)
             #self.Abundance = self.AbundanceAll['abundance'][self.Z-1]
         abund = chdata.Abundance[self.AbundanceName]['abundance'][self.Z-1]
         #
@@ -507,7 +507,7 @@ class continuum:
         else:
             fblvlname = util.zion2filename(self.Z,self.Ion-1)+'.fblvl'
             if os.path.isfile(fblvlname):
-                self.Fblvl = util.fblvlRead(fblvlname)
+                self.Fblvl = io.fblvlRead(fblvlname)
                 fblvl = self.Fblvl
             else:
 #                print ' cannot find file - ', fblvlname
@@ -523,7 +523,7 @@ class continuum:
             else:
                 rfblvlname = util.zion2filename(self.Z,self.Ion)+'.fblvl'
                 if os.path.isfile(rfblvlname):
-                    self.rFblvl = util.fblvlRead(rfblvlname)
+                    self.rFblvl = io.fblvlRead(rfblvlname)
                     rFblvl = self.rFblvl
                 else:
 #                    print ' cannot find file - ', rfblvlname
@@ -538,7 +538,7 @@ class continuum:
         #if hasattr(self, 'Abundance'):
             #abund = self.Abundance
         #else:
-            #self.AbundanceAll = util.abundanceRead(abundancename = self.AbundanceName)
+            #self.AbundanceAll = io.abundanceRead(abundancename = self.AbundanceName)
             #self.Abundance = self.AbundanceAll['abundance'][self.Z-1]
         abund = chdata.Abundance[self.AbundanceName]['abundance'][self.Z-1]
         #
@@ -669,7 +669,7 @@ class continuum:
             #try:
                 #abund = self.Abundance
             #except:
-                #self.AbundanceAll = util.abundanceRead(abundancename = self.AbundanceName)
+                #self.AbundanceAll = io.abundanceRead(abundancename = self.AbundanceName)
                 #self.Abundance = self.AbundanceAll['abundance'][self.Z-1]
                 #abund = self.Abundance
                 #
@@ -741,7 +741,7 @@ class continuum:
             #if hasattr(self, 'Abundance'):
                 #abund = self.Abundance
             #else:
-                #self.AbundanceAll = util.abundanceRead(abundancename = self.AbundanceName)
+                #self.AbundanceAll = io.abundanceRead(abundancename = self.AbundanceName)
                 #self.Abundance = self.AbundanceAll['abundance'][self.Z-1]
                 #abund = self.Abundance
                 #

@@ -8,15 +8,15 @@ that is found in the LICENSE file
 
 '''
 #from chianti import *
-from Spectrum import spectrum
-from Mspectrum import mspectrum
-from IpyMspectrum import ipymspectrum
-from Continuum import continuum
-from RadLoss import radLoss
+from .Spectrum import spectrum
+from .Mspectrum import mspectrum
+from .IpyMspectrum import ipymspectrum
+from .Continuum import continuum
+from .RadLoss import radLoss
 #from PNe import pne
-from Ion import ion
-from Ion import ionWeb
-from Ion import ioneq
+from .Ion import ion
+#from .Ion import ionWeb
+from .Ion import ioneq
 #from Ion import photoioneq
 #from Ion import phion
 #
