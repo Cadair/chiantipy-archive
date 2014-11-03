@@ -450,7 +450,7 @@ class ipymspectrum:
         #
         #
         idx = np.argsort(wvl)
-        fmt = '%5s %5i %5i %25s - %25s %12.3f %12.3e %12.2e %1s'
+        fmt = '%5s %5i %5i %25s - %25s %12.4f %12.3e %12.2e %1s'
         print '   '
         print ' ------------------------------------------'
         print '   '
@@ -464,7 +464,7 @@ class ipymspectrum:
         self.Intensity['wvlTop'] = wvl[idx]
         self.Intensity['intensityTop'] = intensity[idx]
         if outFile:
-            fmt = '%5s %5i %5i %25s - %25s %12.3f %12.3e %1s \n'
+            fmt = '%5s %5i %5i %25s - %25s %12.4f %12.3e %1s \n'
             outpt = open(outFile, 'w')
             outpt.write('Ion lvl1  lvl2         lower                       upper                   Wvl(A)   Intensity       Obs \n')
             for kdx in idx:

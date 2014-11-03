@@ -8,6 +8,7 @@ except:
     from scikits.delaunay.triangulate import Triangulation
 import chianti.data as chdata
 import chianti.util as util
+import chianti.io as io
 import chianti.constants as const
 ip = chdata.Ip
 MasterList = chdata.MasterList
@@ -19,7 +20,7 @@ class continuum:
 
     can specify the abundance file with abund='cosmic_1973_allen', for example (the .ioneq suffix should not be included
     '''
-    def __init__(self, ionStr,  temperature=None,  density=None, abund=0):
+    def __init__(self, ionStr,  temperature=None,  density=None, abund=0, abundanceName=0):
         nameDict = util.convertName(ionStr)
         self.Z = nameDict['Z']
         self.Ion = nameDict['Ion']
@@ -125,7 +126,7 @@ class continuum:
         try:
             klgfb = self.Klgfb
         except:
-            self.Klgfb = util.klgfbRead()
+            self.Klgfb = io.klgfbRead()
             klgfb = self.Klgfb
         #
         nWvl = wvl.size
@@ -346,7 +347,7 @@ class continuum:
         try:
             klgfb = self.Klgfb
         except:
-            self.Klgfb = util.klgfbRead()
+            self.Klgfb = io.klgfbRead()
             klgfb = self.Klgfb
         #
         nWvl = wvl.size
@@ -552,7 +553,7 @@ class continuum:
         if hasattr(self, 'Klgfb'):
             klgfb = self.Klgfb
         else:
-            self.Klgfb = util.klgfbRead()
+            self.Klgfb = io.klgfbRead()
             klgfb = self.Klgfb
         #
         nTemp = temperature.size
@@ -603,7 +604,7 @@ class continuum:
         try:
             vernerDat = self.VernerDat
         except:
-            self.VernerDat = util.vernerRead()
+            self.VernerDat = io.vernerRead()
             vernerDat = self.VernerDat
         z = self.Z
         stage = self.Ion
@@ -722,7 +723,7 @@ class continuum:
                 gffint = self.Gffint['gffint']
                 g2 = self.Gffint['g2']
             else:
-                self.Gffint = util.gffintRead()
+                self.Gffint = io.gffintRead()
                 gffint = self.Gffint['gffint']
                 g2 = self.Gffint['g2']
             #
@@ -760,7 +761,7 @@ class continuum:
         try:
             klgfb = self.Klgfb
         except:
-            self.Klgfb = util.klgfbRead()
+            self.Klgfb = io.klgfbRead()
             klgfb = self.Klgfb
         # get log of photon energy relative to the ionization potential
         sclE = np.log(self.Ip/(wvl*const.ev2ang))
@@ -782,7 +783,7 @@ class continuum:
         try:
             itohCoef = self.ItohCoef
         except:
-            self.ItohCoef = util.itohRead()['itohCoef'][self.Z-1].reshape(11, 11)
+            self.ItohCoef = io.itohRead()['itohCoef'][self.Z-1].reshape(11, 11)
             itohCoef = self.ItohCoef
         try:
             t = (np.log10(self.Temperature) -7.25)/1.25
@@ -914,7 +915,7 @@ class continuum:
         try:
             gffInterpolator = self.GffInterpolator
         except:
-            self.Gff = util.gffRead()
+            self.Gff = io.gffRead()
             gff = self.Gff
             iu=(np.log10(gff['u1d']) + 4.)*10.
             ig=(np.log10(gff['g21d']) + 4.)*5.
@@ -1037,7 +1038,7 @@ class continuum:
         try:
             ioneqAll = self.IoneqAll
         except:
-            self.IoneqAll = util.ioneqRead(ioneqname = self.Defaults['ioneqfile'])
+            self.IoneqAll = io.ioneqRead(ioneqname = self.Defaults['ioneqfile'])
             ioneqAll=self.IoneqAll
         #
         ioneqTemperature = ioneqAll['ioneqTemperature']
