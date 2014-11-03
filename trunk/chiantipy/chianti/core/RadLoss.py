@@ -18,7 +18,8 @@ defaults = chdata.Defaults
 #    import matplotlib.pyplot as pl
 
 class radLoss:
-    '''Calculate the emission spectrum as a function of temperature and density.
+    '''
+    Calculate the emission spectrum as a function of temperature and density.
 
     includes elemental abundances or ionization equilibria
 

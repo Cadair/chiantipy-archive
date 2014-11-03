@@ -17,13 +17,13 @@ from . import io
 xuvtop = os.environ['XUVTOP']
 #chInteractive=1
 Defaults = io.defaultsRead()
-Ip = util.ipRead()
-MasterList = util.masterListRead()
+Ip = io.ipRead()
+MasterList = io.masterListRead()
 #AbundanceAll = io.abundanceRead(abundancename = Defaults['abundfile'])
-IoneqAll = util.ioneqRead(ioneqname = Defaults['ioneqfile'])
+IoneqAll = io.ioneqRead(ioneqname = Defaults['ioneqfile'])
 # gets the ChianitPy version
 # gets the version of the CHIANTI database
-ChiantiVersion = util.versionRead()
+ChiantiVersion = io.versionRead()
 keywordArgs = ['temperature','eDensity','hDensity', 'pDensity','radTemperature', 'rStar', 'distance']
 #
 abunddir = os.path.join(xuvtop,'abundance')

@@ -135,7 +135,7 @@ class ion:
         #
         #
         #
-#        self.IoneqAll = util.ioneqRead(ioneqname = self.Defaults['ioneqfile'])
+#        self.IoneqAll = io.ioneqRead(ioneqname = self.Defaults['ioneqfile'])
 #        if chInteractive:
         self.IoneqAll = chdata.IoneqAll
         self.ioneqOne()
@@ -552,7 +552,7 @@ class ion:
         if hasattr(self, 'RrParams'):
             rrparams=self.RrParams
         elif os.path.isfile(rrparamsfile):
-            self.RrParams = util.rrRead(self.IonStr)
+            self.RrParams = io.rrRead(self.IonStr)
             rrparams=self.RrParams
         else:
             self.RrRate={'temperature':temperature, 'rate':np.zeros_like(temperature)}
@@ -990,7 +990,7 @@ class ion:
             #io.abundanceRead(abundancename = abundName)
         #
         if not hasattr(self, 'IoneqAll'):
-            self.IoneqAll = util.ioneqRead(ioneqname = ioneqname)
+            self.IoneqAll = io.ioneqRead(ioneqname = ioneqname)
         #
         if hasattr(self, 'Temperature'):
             temperature=self.Temperature
@@ -1064,7 +1064,7 @@ class ion:
             try:
                 nsplups=len(self.Psplups["lvl1"])
             except:
-                self.Psplups=util.splupsRead(self.IonStr,prot=1)
+                self.Psplups=io.splupsRead(self.IonStr,prot=1)
                 if type(self.Psplups) == type(None):
                     self.PUpsilon = None
                     return
@@ -1075,7 +1075,7 @@ class ion:
             try:
                 nsplups = len(self.DielSplups["lvl1"])
             except:
-                self.DielSplups = util.splupsRead(self.IonStr,diel=1)
+                self.DielSplups = io.splupsRead(self.IonStr,diel=1)
                 if type(self.DielSplups) == type(None):
                     self.DielUpsilon = None
                     return
@@ -1219,7 +1219,7 @@ class ion:
             if ce:
                 if self.Dielectronic:
                     # the dielectronic ions will eventually be discontinued
-                    de = np.abs((elvlc[l2] - self.UpperIp/const.ryd2Ev) - elvlc[l1])
+                    de = np.abs((elvlc[l2idx] - self.UpperIp/const.ryd2Ev) - elvlc[l1idx])
                 else:
                     de = np.abs(elvlc[l2idx] - elvlc[l1idx])
                 deAll.append(de)
@@ -1270,7 +1270,7 @@ class ion:
             try:
                 nsplups=len(self.Psplups["lvl1"])
             except:
-                self.Psplups=util.splupsRead(self.IonStr,prot=1)
+                self.Psplups=io.splupsRead(self.IonStr,prot=1)
                 if type(self.Psplups) == type(None):
                     self.PUpsilon = None
                     return
@@ -1281,7 +1281,7 @@ class ion:
             try:
                 nsplups = len(self.DielSplups["lvl1"])
             except:
-                self.DielSplups = util.splupsRead(self.IonStr,diel=1)
+                self.DielSplups = io.splupsRead(self.IonStr,diel=1)
                 if type(self.DielSplups) == type(None):
                     self.DielUpsilon = None
                     return
@@ -1292,7 +1292,7 @@ class ion:
             try:
                 nsplups=len(self.Splups["lvl1"])
             except:
-                self.Splups = util.splupsRead(self.IonStr)
+                self.Splups = io.splupsRead(self.IonStr)
                 if type(self.Splups) == type(None):
                     self.Upsilon = None
                     return
@@ -1485,7 +1485,7 @@ class ion:
                 splupsfile = fileName + '.splups'
                 if os.path.isfile(splupsfile):
                     # happens the case of fe_3 and prob. a few others
-                    self.Splups = util.splupsRead('', filename=splupsfile)
+                    self.Splups = io.splupsRead('', filename=splupsfile)
                     self.Nsplups = len(self.Splups['lvl1'])
                     nlvlSplups = max(self.Splups['lvl2'])
                     nlvlList.append(nlvlSplups)
@@ -1501,7 +1501,7 @@ class ion:
                 nlvlList =[nlvlWgfa]
     #                print 'fileName = ', fileName
                     # happens the case of fe_3 and prob. a few others
-                self.Splups = util.splupsRead(self.IonStr)
+                self.Splups = io.splupsRead(self.IonStr)
                 self.Nsplups=len(self.Splups['lvl1'])
                 nlvlSplups = max(self.Splups['lvl2'])
                 nlvlList.append(nlvlSplups)
@@ -1527,7 +1527,7 @@ class ion:
             #  .dielsplups file may not exist
             dielsplupsfile = fileName +'.dielsplups'
             if os.path.isfile(dielsplupsfile):
-                self.DielSplups = util.splupsRead('', filename=dielsplupsfile, diel=1)
+                self.DielSplups = io.splupsRead('', filename=dielsplupsfile, diel=1)
                 self.Ndielsplups=len(self.DielSplups["lvl1"])
                 nlvlDielSplups = max(self.DielSplups['lvl2'])
                 nlvlList.append(nlvlDielSplups)
@@ -1537,7 +1537,7 @@ class ion:
             #  psplups file may not exist
             psplupsfile = fileName +'.psplups'
             if os.path.isfile(psplupsfile):
-                self.Psplups = util.splupsRead('', filename=psplupsfile,  prot=True)
+                self.Psplups = io.splupsRead('', filename=psplupsfile,  prot=True)
                 self.Npsplups=len(self.Psplups["lvl1"])
             else:
                 self.Npsplups = 0
@@ -1548,7 +1548,7 @@ class ion:
             #
             rrparamsFile = fileName +'.rrparams'
             if os.path.isfile(rrparamsFile):
-                self.RrParams = util.rrRead(self.IonStr)
+                self.RrParams = io.rrRead(self.IonStr)
 
             #  not needed for ion, only phion
 #                photoxfile = util.ion2filename(self.IonStr)+'.photox'
@@ -1611,7 +1611,7 @@ class ion:
 #                        self.Nscups = 0
 #                        nlvlScups = 0
 #                        # happens the case of fe_3 and prob. a few others
-#                        self.Splups = util.splupsRead('', filename=fileName+'.splups')
+#                        self.Splups = io.splupsRead('', filename=fileName+'.splups')
 #                        self.Nsplups=len(self.Splups['lvl1'])
 #                        nlvlSplups = max(self.Splups['lvl2'])
 #                        nlvlList.append(nlvlSplups)
@@ -1640,7 +1640,7 @@ class ion:
 #                        self.Nscups = 0
 #                        nlvlScups = 0
 #                        # happens the case of fe_3 and prob. a few others
-#                        self.Splups = util.splupsRead(self.IonStr)
+#                        self.Splups = io.splupsRead(self.IonStr)
 #                        self.Nsplups=len(self.Splups['lvl1'])
 #                        nlvlSplups = max(self.Splups['lvl2'])
 #                        nlvlList.append(nlvlSplups)
@@ -1675,7 +1675,7 @@ class ion:
             #  .dielsplups file may not exist
 #            dielsplupsfile = fileName +'.dielsplups'
 #            if os.path.isfile(dielsplupsfile):
-#                self.DielSplups = util.splupsRead('', filename=dielsplupsfile, diel=1)
+#                self.DielSplups = io.splupsRead('', filename=dielsplupsfile, diel=1)
 #                self.Ndielsplups=len(self.DielSplups["lvl1"])
 #                nlvlDielSplups = max(self.DielSplups['lvl2'])
 #                nlvlList.append(nlvlDielSplups)
@@ -1685,7 +1685,7 @@ class ion:
             #  psplups file may not exist
             psplupsfile = fileName +'.psplups'
             if os.path.isfile(psplupsfile):
-                self.Psplups = util.splupsRead('', filename=psplupsfile,  prot=True)
+                self.Psplups = io.splupsRead('', filename=psplupsfile,  prot=True)
                 self.Npsplups=len(self.Psplups["lvl1"])
             else:
                 self.Npsplups = 0
@@ -1696,7 +1696,7 @@ class ion:
             #
             rrparamsFile = fileName +'.rrparams'
             if os.path.isfile(rrparamsFile):
-                self.RrParams = util.rrRead(self.IonStr)
+                self.RrParams = io.rrRead(self.IonStr)
             #
             # get autoionizing A-values
             autoFile = fileName + '.auto'
@@ -1790,7 +1790,7 @@ class ion:
             #  .dielsplups file may not exist
             dielsplupsfile = fileName +'.splups'
             if self.Dielectronic and os.path.isfile(dielsplupsfile):
-                self.DielSplups = util.splupsRead('', filename=dielsplupsfile, diel=1)
+                self.DielSplups = io.splupsRead('', filename=dielsplupsfile, diel=1)
                 self.Ndielsplups=len(self.DielSplups["lvl1"])
                 nlvlDielSplups = max(self.DielSplups['lvl2'])
                 nlvlList.append(nlvlDielSplups)
@@ -1800,7 +1800,7 @@ class ion:
             #  psplups file may not exist
             psplupsfile = fileName +'.psplups'
             if os.path.isfile(psplupsfile):
-                self.Psplups = util.splupsRead('', filename=psplupsfile,  prot=True)
+                self.Psplups = io.splupsRead('', filename=psplupsfile,  prot=True)
                 self.Npsplups=len(self.Psplups["lvl1"])
             else:
                 self.Npsplups = 0
@@ -1811,7 +1811,7 @@ class ion:
             #
             rrparamsFile = fileName +'.rrparams'
             if os.path.isfile(rrparamsFile):
-                self.RrParams = util.rrRead(self.IonStr)
+                self.RrParams = io.rrRead(self.IonStr)
 
             #  not needed for ion, only phion
 #                photoxfile = util.ion2filename(self.IonStr)+'.photox'
@@ -1879,7 +1879,7 @@ class ion:
         #
         rrparamsFile = fileName +'.rrparams'
         if os.path.isfile(rrparamsFile):
-            self.RrParams = util.rrRead(self.IonStr)
+            self.RrParams = io.rrRead(self.IonStr)
         #
         # -------------------------------------------------------------------------
         #
@@ -3353,7 +3353,7 @@ class ion:
             if hasattr(self, 'DielUpsilon'):
                 dielexRate = self.DielUpsilon['exRate']
             else:
-                print(' doing upsilonDescale')
+#                print(' doing upsilonDescale')
                 self.upsilonDescaleSplups(diel=1)
                 dielexRate = self.DielUpsilon['exRate']
          #
@@ -4996,7 +4996,7 @@ class ion:
         #
         #
         idx = np.argsort(wvl)
-        fmt = '%5s %5i %5i %25s - %25s %12.3f %12.3e %12.2e %1s'
+        fmt = '%5s %5i %5i %25s - %25s %12.4f %12.3e %12.2e %1s'
         print '   '
         print ' ------------------------------------------'
         print '   '
@@ -5010,7 +5010,7 @@ class ion:
         self.Intensity['wvlTop'] = wvl[idx]
         self.Intensity['intensityTop'] = intensity[idx]
         if outFile:
-            fmt = '%5s %5i %5i %25s - %25s %12.3f %12.3e %12.2e %1s \n'
+            fmt = '%5s %5i %5i %25s - %25s %12.4f %12.3e %12.2e %1s \n'
             outpt = open(outFile, 'w')
             outpt.write('Ion lvl1  lvl2         lower                       upper                   Wvl(A)   Intensity      A value Obs \n')
             for kdx in idx:
@@ -5408,7 +5408,7 @@ class ion:
         if hasattr(self, 'IoneqAll'):
             ioneqAll = self.IoneqAll
         else:
-            ioneqAll = util.ioneqRead(ioneqname = self.Defaults['ioneqfile'])
+            ioneqAll = io.ioneqRead(ioneqname = self.Defaults['ioneqfile'])
 #            if chInteractive:
             self.ioneqAll=self.IoneqAll
         #
@@ -5706,7 +5706,7 @@ class ion:
                 wvl0 = 1.e+8/(self.Elvlc['ecm'][l2] - self.Elvlc['ecm'][l1])
                 goodWvl = wvl > wvl0
                 y = wvl0/wvl[goodWvl]
-                dist = util.twophotonHRead()
+                dist = io.twophotonHRead()
                 avalue = dist['avalue'][self.Z-1]
                 asum = dist['asum'][self.Z-1]
                 distr1 = interpolate.splrep(dist['y0'], dist['psi0'][self.Z-1], s=0)
@@ -5728,7 +5728,7 @@ class ion:
                 wvl0 = 1.e+8/(self.Elvlc['ecm'][l2] - self.Elvlc['ecm'][l1])
                 goodWvl = wvl > wvl0
                 y = wvl0/wvl[goodWvl]
-                dist = util.twophotonHeRead()
+                dist = io.twophotonHeRead()
                 avalue = dist['avalue'][self.Z-1]
                 distr1 = interpolate.splrep(dist['y0'], dist['psi0'][self.Z-1], s=0)
                 distr = avalue*y*interpolate.splev(y, distr1)/wvl[goodWvl]
@@ -5796,7 +5796,7 @@ class ion:
                 goodWvl = wvl > wvl0
                 if goodWvl.sum() > 0:
                     y = wvl0/wvl[goodWvl]
-                    dist = util.twophotonHRead()
+                    dist = io.twophotonHRead()
                     avalue = dist['avalue'][self.Z-1]
                     asum = dist['asum'][self.Z-1]
                     distr1 = interpolate.splrep(dist['y0'], dist['psi0'][self.Z-1], s=0)
@@ -5820,7 +5820,7 @@ class ion:
                 goodWvl = wvl > wvl0
                 if goodWvl.sum() > 0:
                     y = wvl0/wvl[goodWvl]
-                    dist = util.twophotonHeRead()
+                    dist = io.twophotonHeRead()
                     avalue = dist['avalue'][self.Z-1]
                     distr1 = interpolate.splrep(dist['y0'], dist['psi0'][self.Z-1], s=0)
                     distr = avalue*y*interpolate.splev(y, distr1)/wvl[goodWvl]
@@ -5877,7 +5877,7 @@ class ion:
                 l1 = 1 - 1
                 l2 = 2 - 1
                 wvl0 = 1.e+8/(self.Elvlc['ecm'][l2] - self.Elvlc['ecm'][l1])
-                dist = util.twophotonHRead()
+                dist = io.twophotonHRead()
                 avalue = dist['avalue'][self.Z-1]
                 f = (avalue*const.light*const.planck*1.e+8)/wvl0
                 if nTempDens == 1:
@@ -5891,7 +5891,7 @@ class ion:
                 l1 = 1 - 1
                 l2 = 3 - 1
                 wvl0 = 1.e+8/(self.Elvlc['ecm'][l2] - self.Elvlc['ecm'][l1])
-                dist = util.twophotonHeRead()
+                dist = io.twophotonHeRead()
                 avalue = dist['avalue'][self.Z-1]
                 f = (avalue*const.light*const.planck*1.e+8)/wvl0
                 if nTempDens == 1:
@@ -6664,7 +6664,7 @@ class ioneq(ion):
         read in an existing file ionization equilibrium file
         ioneqName should be something like 'chianti', or 'chianti_version6'
         '''
-        ioneqAll = util.ioneqRead(ioneqName)
+        ioneqAll = io.ioneqRead(ioneqName)
         self.Temperature = ioneqAll['ioneqTemperature']
         self.Ioneq = ioneqAll['ioneqAll'][self.Z - 1]
         #
@@ -6820,7 +6820,7 @@ class ioneq(ion):
         #
         if oplot:
             if oplot == 0:
-                result=util.ioneqRead(ioneqname='')
+                result=io.ioneqRead(ioneqname='')
                 print 'keys = ', result.keys()
                 if result != False:
                     atitle+='  & '+result['ioneqname'].replace('.ioneq', '')
@@ -6829,7 +6829,7 @@ class ioneq(ion):
                         pl.plot(result['ioneqTemperature'], result['ioneqAll'][self.Z-1, iz-1],linestyle[1], lw=lw)
             elif type(oplot) == type('string'):
                 atitle+='  & ' + oplot
-                result = util.ioneqRead(ioneqname=oplot)
+                result = io.ioneqRead(ioneqname=oplot)
                 print 'keys = ', result.keys()
 #                print result
                 if result != False:
@@ -6837,7 +6837,7 @@ class ioneq(ion):
                         pl.plot(result['ioneqTemperature'], result['ioneqAll'][self.Z-1, iz-1],linestyle[1], lw=lw)
             elif type(oplot) == type([]):
                 for iplot in range(len(oplot)):
-                    result = util.ioneqRead(ioneqname=oplot[iplot])
+                    result = io.ioneqRead(ioneqname=oplot[iplot])
                     print 'keys = ', result.keys()
                     if result != False:
                         atitle+='  & '+oplot[iplot]+' '+linestyle[iplot%3]

@@ -186,7 +186,8 @@ class spectrum():
                     ionstageTest = ionstage > 1
                     if ionstageTest and ioneqTest and doContinuum:
                         # ionS is the target ion, cannot be the neutral for the continuum
-                        print((' calculating continuum for :  ',  ionS))
+                        if verbose:
+                            print(' calculating continuum for :  %s'%(ionS))
                         cont = chianti.core.continuum(ionS, temperature, abundanceName=self.AbundanceName)
                         cont.freeFree(wavelength)
     #                   print dir(thisIon)
@@ -206,7 +207,8 @@ class spectrum():
                                 for iTempDen in range(nTempDen):
                                     freeBound[iTempDen] += cont.FreeBound['rate'][iTempDen]
                     if masterListTest and wvlTestMin and wvlTestMax and ioneqTest:
-                        print((' calculating spectrum for  :  ', ionS))
+                        if verbose:
+                            print(' calculating spectrum for  :  %s'%(ionS))
                         #
                         thisIon = chianti.core.ion(ionS, temperature, eDensity, abundanceName=self.AbundanceName)
                         ionsCalculated.append(ionS)
@@ -238,7 +240,8 @@ class spectrum():
                             twoPhoton += thisIon.TwoPhoton['rate']
                     # get dielectronic lines
                     if masterListTestD and wvlTestMinD and wvlTestMaxD and ioneqTestD:
-                        print(' calculating spectrum for  :  ', ionSd)
+                        if verbose:
+                            print(' calculating spectrum for  :  ', ionSd)
                         #
                         thisIon = chianti.core.ion(ionSd, temperature, eDensity, abundanceName=self.AbundanceName)
                         ionsCalculated.append(ionSd)
@@ -404,7 +407,7 @@ class spectrum():
         #
         #
         idx = np.argsort(wvl)
-        fmt = '%5s %5i %5i %25s - %25s %12.3f %12.3e %12.2e %1s'
+        fmt = '%5s %5i %5i %25s - %25s %12.4f %12.3e %12.2e %1s'
         print('   ')
         print(' ------------------------------------------')
         print('   ')
@@ -418,7 +421,7 @@ class spectrum():
         self.Intensity['wvlTop'] = wvl[idx]
         self.Intensity['intensityTop'] = intensity[idx]
         if outFile:
-            fmt = '%5s %5i %5i %25s - %25s %12.3f %12.3e %1s \n'
+            fmt = '%5s %5i %5i %25s - %25s %12.4f %12.3e %1s \n'
             outpt = open(outFile, 'w')
             outpt.write('Ion lvl1  lvl2         lower                       upper                   Wvl(A)   Intensity       Obs \n')
             for kdx in idx:
