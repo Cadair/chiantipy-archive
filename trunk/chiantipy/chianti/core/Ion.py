@@ -6,7 +6,7 @@ import time
 #
 import chianti.data as chdata
 import chianti.sources as sources
-import chianti.archival as archival
+#import chianti.archival as archival
 #chInteractive = chdata.chInteractive
 import pylab as pl
 #if chInteractive:
@@ -1476,8 +1476,9 @@ class ion:
         if self.IonStr in MasterList:
             if dir:
                 fileName = os.path.join(dir, self.IonStr)
-                self.Elvlc = archival.elvlcRead('',filename=fileName+'.elvlc')
-                self.Wgfa = archival.wgfaRead('',filename=fileName+'.wgfa', elvlcname=fileName+'.elvlc')
+                print(' filename = %s'%(fileName))
+                self.Elvlc = io.elvlcRead('',filename=fileName+'.elvlc')
+                self.Wgfa = io.wgfaRead('',filename=fileName+'.wgfa', elvlcname=fileName+'.elvlc')
                 self.Nwgfa=len(self.Wgfa['lvl1'])
                 nlvlWgfa = max(self.Wgfa['lvl2'])
                 nlvlList =[nlvlWgfa]
@@ -3739,10 +3740,8 @@ class ion:
                     #
                     popmat[-1,  ci] += self.EDensity[idens]*self.IonizRate['rate']
                     popmat[ci, ci] -= self.EDensity[idens]*self.IonizRate['rate']
-                    popmat[ci, -1] += self.EDensity[idens]*(higher.RecombRate['rate']
-                        - recTot - dielTot)
-                    popmat[-1, -1] -= self.EDensity[idens]*(higher.RecombRate['rate']
-                        - recTot - dielTot)
+                    popmat[ci, -1] += self.EDensity[idens]*(higher.RecombRate['rate'] - recTot)
+                    popmat[-1, -1] -= self.EDensity[idens]*(higher.RecombRate['rate'] - recTot)
 #                    popmat[ci, -1] += self.EDensity[idens]*higher.RecombRate['rate']
 #                    popmat[-1, -1] -= self.EDensity[idens]*higher.RecombRate['rate']
                     #
@@ -5082,17 +5081,19 @@ class ion:
         #        self.Emiss={"temperature":temperature,"density":density,"wvl":wvl,"emiss":em,
         #        "plotLabels":plotLabels}
         #
-        if hasattr(self, 'Intensity'):
-            doIntensity = False
-            intens = self.Intensity
-        else:
-            doIntensity = True
         #
+        if not hasattr(self, 'Intensity'):
+            try:
+                self.intensity()
+            except:
+                print ' intensities not calculated and emiss() is unable to calculate them'
+                print ' perhaps the temperature and/or eDensity are not set'
+                return
         #
-        if doIntensity:
-            # new values of temperature or eDensity
-            self.intensity()
-            intens = self.Intensity
+        # everything in self.Intensity should be a numpy array
+        #
+        intens = copy.copy(self.Intensity)
+        intensity = intens['intensity']
         #
         #
         fontsize=14
