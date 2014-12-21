@@ -54,7 +54,7 @@ def abundanceRead(abundancename=''):
     gz=np.nonzero(abundance)
     abs=10.**(abundance[gz]-abundance[0])
     abundance.put(gz,abs)
-    abundanceRef=s1[nlines+1:-2]
+    abundanceRef=s1[nlines+1:]
     return {'abundancename':abundancename,'abundance':abundance,'abundanceRef':abundanceRef}
     #
     # -------------------------------------------------------------------------------------
@@ -340,7 +340,7 @@ def eaRead(ions, filename=0):
                 splups[i].put(list(range(5)),inpt[6:])
         #
         ref=[]
-        for i in range(nsplups+1,len(s1)-1):
+        for i in range(nsplups+1,len(s1)):
             s1a=s1[i][:-1]
             ref.append(s1a.strip())
 #        self.EaParams={"lvl1":lvl1,"lvl2":lvl2,"ttype":ttype,"gf":gf,"de":de,"cups":cups
@@ -436,8 +436,8 @@ def elvlcRead(ions, filename=0, getExtended=0, verbose=0,  useTh=1):
     erydth = [x*const.invCm2ryd for x in ecmth]
     ref=[]
     # this should skip the last '-1' in the file
-    for i in range(nlvls+1,len(s1) -1):
-        s1a=s1[i][:-1]
+    for i in range(nlvls+1,len(s1)):
+        s1a=s1[i]
         ref.append(s1a.strip())
 #    self.const.Elvlc={"lvl":lvl,"conf":conf,"term":term,"spin":spin,"l":l,"spd":spd,"j":j
 #            ,"mult":mult,"ecm":ecm,"eryd":eryd,"ecmth":ecmth,"erydth":erydth,"ref":ref}
@@ -513,7 +513,6 @@ def elvlcWrite(info, outfile=0, addLvl=0, includeRyd=0):
 #        out.write(one+'\n')
     for aref in info['ref']:
         out.write(aref + '\n')
-    out.write(' -1\n')
     out.close()
     return
     #
@@ -775,7 +774,7 @@ def ioneqRead(ioneqname='', verbose=0):
         ion=out[1]
         ioneqAll[iz-1,ion-1].put(list(range(nTemperature)),np.asarray(out[2:],'Float64'))
     ioneqRef = []
-    for one in s1[nlines+1:-1]:
+    for one in s1[nlines+1:]:
         ioneqRef.append(one[:-1])  # gets rid of the \n
     del s1
     return {'ioneqname':ioneqname,'ioneqAll':ioneqAll,'ioneqTemperature':ioneqTemperature,'ioneqRef':ioneqRef}
@@ -1395,8 +1394,8 @@ def wgfaRead(ions, filename=0, elvlcname=-1, total=0, verbose=0):
 
     ref=[]
     # should skip the last '-1' in the file
-    for i in range(nwvl+1,len(s1) -1):
-        s1a=s1[i][:-1]
+    for i in range(nwvl+1,len(s1)):
+        s1a=s1[i]
         ref.append(s1a.strip())
     Wgfa={"lvl1":lvl1,"lvl2":lvl2,"wvl":wvl,"gf":gf,"avalue":avalue,"ref":ref, 'ionS':ions, 'filename':wgfaname}
     if total:
@@ -1472,5 +1471,4 @@ def wgfaWrite(info, outfile = 0, minBranch = 0.):
     out.write('%filename:  ' + wgfaname + '\n')
     for one in info['ref']:
         out.write(one+'\n')
-    out.write(' -1\n')
     out.close()
