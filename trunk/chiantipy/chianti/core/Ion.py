@@ -1916,6 +1916,9 @@ class ion:
             aspectrum = np.zeros_like(wavelength)
             if not 'errorMessage' in self.Intensity.keys():
                 idx = util.between(self.Intensity['wvl'], [wavelength.min(), wavelength.max()])
+                if len(idx) == 0:
+                    print(' no lines in wavelength range %12.2f - %12.2f'%(wavelength.min(), wavelength.max()))
+                    return
                 for iwvl in idx:
                     wvlCalc = self.Intensity['wvl'][iwvl]
                     aspectrum += useFilter(wavelength, wvlCalc, factor=useFactor)*intensity['intensity'][iwvl]
@@ -1924,6 +1927,9 @@ class ion:
             aspectrum = np.zeros((nVar, wavelength.size), 'float64')
             if not 'errorMessage' in self.Intensity.keys():
                 idx = util.between(self.Intensity['wvl'], [wavelength.min(), wavelength.max()])
+                if len(idx) == 0:
+                    print(' no lines in wavelength range %12.2f - %12.2f'%(wavelength.min(), wavelength.max()))
+                    return
                 for itemp in xrange(nVar):
                     for iwvl in idx:
                         wvlCalc = self.Intensity['wvl'][iwvl]
@@ -5112,10 +5118,16 @@ class ion:
         #
         if wvlRange:
             igvl=util.between(wvl,wvlRange)
+            if len(igvl) == 0:
+                print('no lines in wavelength range %12.2f - %12.2f'%(wvlRange[0], wvlRange[1]))
+                return
         elif wvlRanges:
             igvl = []
             for awvlRange in wvlRanges:
                 igvl.extend(util.between(wvl,awvlRange))
+            if len(igvl) == 0:
+                print('no lines in wavelength ranges specified ')
+                return
         else:
             igvl=range(len(wvl))
         #
