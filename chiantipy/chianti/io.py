@@ -1380,6 +1380,8 @@ def wgfaRead(ions, filename=0, elvlcname=-1, total=0, verbose=0):
     #
     wgfaFormat='(2i5,f15.3,2e15.3)'
     for ivl in range(nwvl):
+        if verbose:
+            print(' index %5i  %s'%(ivl, s1[ivl]))
         inpt=FortranLine(s1[ivl],wgfaFormat)
         lvl1[ivl]=inpt[0]
         lvl2[ivl]=inpt[1]
