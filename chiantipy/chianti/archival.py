@@ -1,6 +1,5 @@
 import os
 from .FortranFormat import *
-import chianti.constants as const
 from .util import ion2filename
     #
     # -------------------------------------------------------------------------------------

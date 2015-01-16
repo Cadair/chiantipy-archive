@@ -10,13 +10,39 @@ except ImportError:
     import ConfigParser as configparser
 #from ConfigParser import *
 import numpy as np
+import pylab as pl
 import chianti.util as util
 import chianti.constants as const
 from .FortranFormat import *
+if pl.rcParams['backend'].lower() == 'qt4agg':
+    import chianti.gui_qt.gui as gui
+elif pl.rcParams['backend'].lower() == 'wxagg':
+    import chianti.gui_wx.gui as gui
+elif pl.rcParams['backend'].lower() == 'gtkagg':
+    import chianti.gui_cl.gui as gui
+elif pl.rcParams['backend'].lower() == 'agg':
+    import chianti.gui_cl.gui as gui
+elif pl.rcParams['backend'].lower() == 'agg':
+    import chianti.gui_cl.gui as gui
+elif pl.rcParams['backend'].lower() == 'macosx':
+    import chianti.gui_cl.gui as gui
+else:
+    print(' - Warning - \n' \
+          + ' - in order to use the various gui dialogs, the matlpotlib/pylab backend needs \n' \
+          +' - to be either Qt4Agg or WXAgg - \n' \
+         +' - in order to use the command line dialogs, the matlpotlib/pylab backend needs \n' \
+         +' - to be GTKAgg or MacOSX - \n' \
+        + ' - current backend is %s \n '%(pl.rcParams['backend']))
+    print(' - the full functionality of the chianti.core.ion class may not be available \n')
+    print(' - it would probably be better to set your matplotlib backend to either \n')
+    print(' - Qt4Agg, WXAgg, GTKAgg, or MacOSX \n')
+    print(' - using the command line dialogs for now but there could be problems - \n')
+    import gui_cl.gui as gui
+
     #
     # -------------------------------------------------------------------------------------
     #
-def abundanceRead(abundancename=''):
+def abundanceRead(abundancename='', verbose=0):
     """ read an abundanc file and returns the abundance values relative to hydrogen"""
     abundance=np.zeros((50),'Float64')
     xuvtop=os.environ["XUVTOP"]
@@ -27,7 +53,7 @@ def abundanceRead(abundancename=''):
         # the user will select an abundance file
         abundir=os.path.join(xuvtop,'abundance')
         abundlabel = 'ChiantiPy - Select an abundance file'
-        fname = chianti.gui.chpicker(abundir, filter='*.abund', label=abundlabel)
+        fname = gui.chpicker(abundir, filter='*.abund', label=abundlabel)
         if fname == None:
             print((' no abundance file selected'))
             return 0
@@ -44,6 +70,8 @@ def abundanceRead(abundancename=''):
     nlines=0
     idx=-1
     while idx <= 0:
+        if verbose:
+            print('%5i  %5i  %5i %s'%(idx, nlines, len(s1[nlines]), s1[nlines]))
         aline=s1[nlines][0:5]
         idx=aline.find('-1')
         nlines+=1
@@ -301,7 +329,7 @@ def eaRead(ions, filename=0):
     else:
         input=open(splupsname,'r')
         s1=input.readlines()
-        dum=input.close()
+        input.close()
         nsplups=0
         ndata=2
         while ndata > 1:
@@ -702,7 +730,7 @@ def ioneqRead(ioneqname='', verbose=0):
     ioneqdir = os.path.join(dir,'ioneq')
     if ioneqname == '':
         # the user will select an ioneq file
-        fname = chianti.gui.chpicker(ioneqdir,filter='*.ioneq',label = 'Select an Ionization Equilibrium file')
+        fname = gui.chpicker(ioneqdir,filter='*.ioneq',label = 'Select an Ionization Equilibrium file')
         if fname == None:
             print(' no ioneq file selected')
             return False
@@ -869,7 +897,7 @@ def masterListRead():
     fname=os.path.join(dir,'masterlist','masterlist.ions')
     input=open(fname,'r')
     s1=input.readlines()
-    dum=input.close()
+    input.close()
     masterlist=[]
     for i in range(0,len(s1)):
         s1a=s1[i][:-1]
@@ -991,7 +1019,7 @@ def scupsRead(ions, filename=0, verbose=0):
     if not os.path.isfile(scupsFileName):
         print((' elvlc file does not exist:  %s'%(scupsFileName)))
         return {'status':0}
-    status = 1
+#    status = 1
     #
     if os.path.isfile(scupsFileName):
         inpt = open(scupsFileName)
@@ -1001,8 +1029,8 @@ def scupsRead(ions, filename=0, verbose=0):
         print(('file does not exist: '+str(scupsFileName)))
         return {'errorMessage':'file does not exist' +str(scupsFileName)}
         return
-    ll = lines[1].split()
-    temp = np.asarray(ll[3:], 'float64')
+#    ll = lines[1].split()
+#    temp = np.asarray(ll[3:], 'float64')
     minusOne = 0
     counter = 0
     while not minusOne:
@@ -1010,7 +1038,7 @@ def scupsRead(ions, filename=0, verbose=0):
             minusOne = 1
         else:
             counter += 1
-    ntrans = (counter)/3
+    ntrans = (counter)//3
     #print(' counter %i4 ntrans %i4'%(counter, ntrans))
     lvl1 = []
     lvl2 = []
@@ -1070,7 +1098,7 @@ def splomRead(ions, ea=0, filename=None):
     input=open(splomname,'r')
     #  need to read first line and see how many elements
     line1=input.readline()
-    indices=line1[0:15]
+#    indices=line1[0:15]
     remainder=line1[16:]
     nom=remainder.split(' ')
     format=FortranFormat('5i3,'+str(len(nom))+'E10.2')
@@ -1086,7 +1114,7 @@ def splomRead(ions, ea=0, filename=None):
     de=[]
     f=[]
     splom=[]
-    ntrans=0
+#    ntrans=0
     while data > 1:
         splomdat=FortranLine(lines[iline],format)
         l1=splomdat[2]
@@ -1129,7 +1157,7 @@ def splupsRead(ions, filename=0, prot=0, ci=0,  diel=0):
     if filename:
         splupsname = filename
     else:
-        fname=ion2filename(ions)
+        fname = util.ion2filename(ions)
         if prot:
             splupsname=fname+'.psplups'
         elif ci:
@@ -1328,7 +1356,7 @@ def wgfaRead(ions, filename=0, elvlcname=-1, total=0, verbose=0):
     if filename:
         wgfaname = filename
         if elvlcname < 0:
-            elvlcnamee = 0
+            elvlcname = 0
             elvlc = 0
         elif not elvlcname:
             elvlcname = os.path.splitext(wgfaname)[0] + '.elvlc'
@@ -1439,7 +1467,7 @@ def wgfaWrite(info, outfile = 0, minBranch = 0.):
     if minBranch > 0.:
         info['ref'].append(' minimum branching ratio = %10.2e'%(minBranch))
     out = open(wgfaname, 'w')
-    ntrans = len(info['lvl1'])
+#    ntrans = len(info['lvl1'])
     nlvl = max(info['lvl2'])
     totalAvalue = np.zeros(nlvl, 'float64')
     if 'pretty1' in info:

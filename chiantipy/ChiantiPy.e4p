@@ -1,19 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Project SYSTEM "Project-4.6.dtd">
-<!-- eric4 project file for project ChiantiPy -->
-<!-- Saved: 2012-11-16, 12:24:58 -->
-<!-- Copyright (C) 2012 Ken Dere, kdere@gmu.edu -->
-<Project version="4.6">
+<!DOCTYPE Project SYSTEM "Project-5.1.dtd">
+<!-- eric5 project file for project ChiantiPy -->
+<!-- Saved: 2015-01-09, 17:03:00 -->
+<!-- Copyright (C) 2015 Ken Dere, kdere@gmu.edu -->
+<Project version="5.1">
   <Language></Language>
-  <ProgLanguage mixed="0">Python</ProgLanguage>
+  <Hash>7f1718a6a310ca5fa831a7ee24f84348c9eacc03</Hash>
+  <ProgLanguage mixed="0">Python2</ProgLanguage>
   <ProjectType>Qt4C</ProjectType>
   <Description>A Python package to provide computational access to the CHIANTI atomic database for astrophysical spectroscopy</Description>
   <Version>0.4.1</Version>
   <Author>Ken Dere</Author>
   <Email>kdere@gmu.edu</Email>
+  <Eol index="-1"/>
   <Sources>
     <Source>__init__.py</Source>
-    <Source>version.py</Source>
     <Source>chianti/core/Ion.py</Source>
     <Source>chianti/core/Mspectrum.py</Source>
     <Source>chianti/core/__init__.py</Source>
@@ -41,17 +42,13 @@
     <Source>setup.py</Source>
     <Source>chianti/test.py</Source>
     <Source>chianti/archival.py</Source>
+    <Source>chianti/io.py</Source>
   </Sources>
-  <Forms>
-  </Forms>
-  <Translations>
-  </Translations>
-  <Resources>
-  </Resources>
-  <Interfaces>
-  </Interfaces>
-  <Others>
-  </Others>
+  <Forms/>
+  <Translations/>
+  <Resources/>
+  <Interfaces/>
+  <Others/>
   <Vcs>
     <VcsType>None</VcsType>
     <VcsOptions>
@@ -166,13 +163,13 @@
     </VcsOtherData>
   </Vcs>
   <FiletypeAssociations>
-    <FiletypeAssociation pattern="*.idl" type="INTERFACES" />
-    <FiletypeAssociation pattern="*.qm" type="TRANSLATIONS" />
-    <FiletypeAssociation pattern="*.qrc" type="RESOURCES" />
-    <FiletypeAssociation pattern="*.pyw" type="SOURCES" />
-    <FiletypeAssociation pattern="*.ts" type="TRANSLATIONS" />
-    <FiletypeAssociation pattern="*.py" type="SOURCES" />
-    <FiletypeAssociation pattern="*.ptl" type="SOURCES" />
+    <FiletypeAssociation pattern="*.idl" type="INTERFACES"/>
+    <FiletypeAssociation pattern="*.ptl" type="SOURCES"/>
+    <FiletypeAssociation pattern="*.py" type="SOURCES"/>
+    <FiletypeAssociation pattern="*.pyw" type="SOURCES"/>
+    <FiletypeAssociation pattern="*.qm" type="TRANSLATIONS"/>
+    <FiletypeAssociation pattern="*.qrc" type="RESOURCES"/>
+    <FiletypeAssociation pattern="*.ts" type="TRANSLATIONS"/>
   </FiletypeAssociations>
   <Documentation>
     <DocumentationParams>
@@ -187,14 +184,14 @@
             </key>
             <value>
               <list>
-                <unicode></unicode>
+                <string></string>
               </list>
             </value>
             <key>
               <string>outputDirectory</string>
             </key>
             <value>
-              <unicode>/home/dere/python/chianti/trunk/eric_doc</unicode>
+              <string>/home/dere/python/chianti/trunk/eric_doc</string>
             </value>
             <key>
               <string>qtHelpEnabled</string>
@@ -207,7 +204,7 @@
             </key>
             <value>
               <list>
-                <unicode></unicode>
+                <string></string>
               </list>
             </value>
             <key>

@@ -19,7 +19,7 @@
 # With contributions from Andreas Prlic <andreas@came.sbg.ac.at>
 # last revision: 2006-6-23
 #
-#  revision by Ken Dere to make compatible with Python 3
+#  revision by Ken Dere to make compatible with Python 3.4 as of 1/2015
 
 """
 Fortran-style formatted input/output
@@ -53,7 +53,7 @@ Examples::
 
     '3.14159D+00    2.71828D+00'
 """
-
+# kpd:  this is a different module in Pyhton 3
 import string
 
 #
@@ -151,7 +151,9 @@ class FortranLine:
         @returns: C{True} if the line contains only whitespace
         @rtype: C{bool}
         """
-        return len(string.strip(self.text)) == 0
+#        return len(string.strip(self.text)) == 0
+        # kpd 1/2015
+        return len(self.text.strip()) == 0
 
     def _input(self):
         text = self.text
@@ -166,7 +168,9 @@ class FortranLine:
             if type == 'A':
                 value = s
             elif type == 'I':
-                s = string.strip(s)
+#                s = string.strip(s)
+                # kpd 1/2015
+                s = s.strip()
                 if len(s) == 0:
                     value = 0
                 else:
@@ -175,19 +179,25 @@ class FortranLine:
                     # e.g.: pdb2myd.ent.Z chain: - model: 0 : CONECT*****
                     # catch this and set value to None
                     try:
-                        value = string.atoi(s)
+                        value = int(s)
                     except:
                         value = None
             elif type == 'D' or type == 'E' or type == 'F' or type == 'G':
-                s = string.lower(string.strip(s))
-                n = string.find(s, 'd')
+#                s = string.lower(string.strip(s))
+                # kpd 1/2015
+                s = s.strip().lower()
+                # kpd 1/2015
+#                n = string.find(s, 'd')
+                n = s.find('d')
                 if n >= 0:
                     s = s[:n] + 'e' + s[n+1:]
                 if len(s) == 0:
                     value = 0.
                 else:
                     try:
-                        value = string.atof(s)
+#                        value = string.atof(s)
+                        # kpd 1/2015
+                        value = float(s)
                     except:
                         value = None
             if value is not None:
@@ -216,7 +226,9 @@ class FortranLine:
                         s = repr(value)
                     elif type == 'D':
                         s = ('%'+repr(length)+'.'+repr(fraction)+'e') % value
-                        n = string.find(s, 'e')
+#                        n = string.find(s, 'e')
+                        #  kpd 1/2015
+                        n = s.find('e')
                         s = s[:n] + 'D' + s[n+1:]
                     elif type == 'E':
                         s = ('%'+repr(length)+'.'+ repr(fraction)+'e') % value
@@ -226,9 +238,13 @@ class FortranLine:
                         s = ('%'+repr(length)+'.'+repr(fraction)+'g') % value
                     else:
                         raise ValueError('Not yet implemented')
-                    s = string.upper(s)
+#                    s = string.upper(s)
+                    # kpd 1/2015
+                    s = s.upper()
                     self.text = self.text + ((length*' ')+s)[-length:]
-        self.text = string.rstrip(self.text)
+#        self.text = string.rstrip(self.text)
+        # kpd 1/2015
+        self.text = self.text.rstrip()
 
 #
 # The class FortranFormat represents a format specification.
@@ -253,34 +269,48 @@ class FortranFormat:
         @param nested: I{for internal use}
         """
         fields = []
-        format = string.strip(format)
+#        format = string.strip(format)
+        # kpd 1/2015
+        format = format.strip()
         while format and format[0] != ')':
             n = 0
+            #  this use of string is python3 compatible - kpd
             while format[0] in string.digits:
-                n = 10*n + string.atoi(format[0])
+#                n = 10*n + string.atoi(format[0])
+                n = 10*n + int(format[0])
                 format = format[1:]
             if n == 0: n = 1
-            type = string.upper(format[0])
+#            type = string.upper(format[0])
+            # kpd 1/2015
+            type = format[0].upper()
             if type == "'":
-                eof = string.find(format, "'", 1)
+#                eof = string.find(format, "'", 1)
+                #  kpd 1/2015
+                eof = format.find( "'", 1)
                 text = format[1:eof]
                 format = format[eof+1:]
             else:
-                format = string.strip(format[1:])
+                format = format[1:].strip()
             if type == '(':
                 subformat = FortranFormat(format, 1)
                 fields = fields + n*subformat.fields
                 format = subformat.rest
-                eof = string.find(format, ',')
+#                eof = string.find(format, ',')
+                # kpd 1/2015
+                eof = format.find(',')
                 if eof >= 0:
                     format = format[eof+1:]
             else:
-                eof = string.find(format, ',')
+#                eof = string.find(format, ',')
+                # kpd 1/2015
+                eof = format.find(',')
                 if eof >= 0:
                     field = format[:eof]
                     format = format[eof+1:]
                 else:
-                    eof = string.find(format, ')')
+#                    eof = string.find(format, ')')
+                    # kpd 1/2015
+                    eof = format.find(')')
                     if eof >= 0:
                         field = format[:eof]
                         format = format[eof+1:]
@@ -290,14 +320,18 @@ class FortranFormat:
                 if type == "'":
                     field = (type, text)
                 else:
-                    dot = string.find(field, '.')
+#                    dot = string.find(field, '.')
+                    # kpd 1/2015
+                    dot = field.find('.')
                     if dot > 0:
-                        length = string.atoi(field[:dot])
-                        fraction = string.atoi(field[dot+1:])
+                        length = int(field[:dot])  # kpd 1/2015 
+                        fraction = int(field[dot+1:])  # kpd 1/2015
                         field = (type, length, fraction)
                     else:
                         if field:
-                            length = string.atoi(field)
+#                            length = string.atoi(field)
+                            # kpd 1/2015
+                            length = int(field)
                         else:
                             length = 1
                         field = (type, length)

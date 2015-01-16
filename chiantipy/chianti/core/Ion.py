@@ -5,7 +5,7 @@ from scipy import interpolate
 import time
 #
 import chianti.data as chdata
-import chianti.sources as sources
+#import chianti.sources as sources
 #import chianti.archival as archival
 #chInteractive = chdata.chInteractive
 import pylab as pl
@@ -410,7 +410,7 @@ class ion:
             return
         else:
             if not energy.all():
-                energy=self.Ip*10.**(0.05*arange(31))
+                energy=self.Ip*10.**(0.05*np.arange(31))
             try:
                 easplom=self.Easplom
             except:
@@ -504,7 +504,7 @@ class ion:
             self.IonizRate = {'rate':np.zeros_like(self.Temperature), 'temperature':self.Temperature}
             return
         if not energy.all():
-            energy = self.Ip*10.**(0.025*arange(401))
+            energy = self.Ip*10.**(0.025*np.arange(401))
         #
         self.diCross(energy)
         self.eaCross(energy)
@@ -650,7 +650,7 @@ class ion:
                 self.Reclvl = io.cireclvlRead(self.IonStr, '.'+lvlType)
                 lvl = self.Reclvl
             else:
-                self.ReclvlRate = {'rate':zeros_like(temperature)}
+                self.ReclvlRate = {'rate':np.zeros_like(temperature)}
                 return
         elif lvlType == 'cilvl':
             if hasattr(self, 'Cilvl'):
@@ -660,7 +660,7 @@ class ion:
                 self.Cilvl = io.cireclvlRead(self.IonStr, '.'+lvlType)
                 lvl = self.Cilvl
             else:
-                self.CilvlRate = {'rate':zeros_like(temperature)}
+                self.CilvlRate = {'rate':np.zeros_like(temperature)}
                 return
         elif lvlType == 'rrlvl':
             if hasattr(self, 'Rrlvl'):
@@ -670,7 +670,7 @@ class ion:
                 self.Rrlvl = io.cireclvlRead(self.IonStr, '.'+lvlType)
                 lvl = self.Rrlvl
             else:
-                self.RrlvlRate = {'rate':zeros_like(temperature)}
+                self.RrlvlRate = {'rate':np.zeros_like(temperature)}
                 return
         #
         #  the rates and temperatures in reclvl are not all the same

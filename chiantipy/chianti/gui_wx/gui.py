@@ -1,12 +1,13 @@
 '''
 wxWidget selection dialogs.
 '''
-import os
+
 import wx
-import chianti
 from chianti.gui_wx.ui import *
 #xuvtop = os.environ['XUVTOP']
 #ioneqdir = os.path.join(xuvtop,'ioneq')
+
+'wxWidget'
 
 def chpicker(dir,filter='All files (*.*)|*.*',title='ChiantiPy'):
     '''Select a filename using a gui dialog.'''

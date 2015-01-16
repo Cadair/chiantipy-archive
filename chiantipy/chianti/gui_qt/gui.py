@@ -1,8 +1,10 @@
 '''PyQt4 widget selection dialogs'''
 import sys,  os
-from PyQt4 import QtCore, QtGui
+from PyQt4 import QtGui
 import chianti
 from chianti.gui_qt.ui import *
+
+'PyQt4'
 
 def chpicker(dir, filter='*.*', label='ChiantiPy'):
     '''Select a filename using a Qt gui dialog.'''
@@ -112,7 +114,7 @@ class choice2Dialog(QtGui.QDialog):
         self.done(1)
 
     def reject(self):
-        print ' cancel button pushed'
+        print(' cancel button pushed')
         self.done(1)
 
 

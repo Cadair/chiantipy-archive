@@ -7,7 +7,7 @@ that is found in the LICENSE file
 
 
 '''
-import os, fnmatch
+import os
 #from types import *
 #try:
 #    # for Python 3 import
@@ -17,13 +17,13 @@ import os, fnmatch
 #    import ConfigParser as configparser
 ##from ConfigParser import *
 import pickle
-from datetime import date
+#from datetime import date
 import numpy as np
 from scipy import interpolate
 from .FortranFormat import *
 import chianti.constants as const
 #import chianti.io as io
-import chianti
+#import chianti
 #import chianti.gui as gui
 #
 #
@@ -90,7 +90,7 @@ def masterListInfo(force=0, verbose=0):
     dir=os.environ["XUVTOP"]
     infoPath = os.path.join(dir, 'masterlist')
     infoName=os.path.join(dir,'masterlist','masterlist_ions.pkl')
-    masterName=os.path.join(dir,'masterlist','masterlist.ions')
+#    masterName=os.path.join(dir,'masterlist','masterlist.ions')
     #
     makeNew = force == 1 or not os.path.isfile(infoName)
 #    if os.path.isfile(infoName):
@@ -756,65 +756,65 @@ def qrp(z,u):
     #
     # -------------------------------------------------------------------------------------
     #
-def easplomRead(ions, filename=0, extension='.splom'):
-    """
-    read chianti splom files and returns
-    {"lvl1":lvl1,"lvl2":lvl2,"deryd":de,"gf":gf,"eryd":eout,"omega":omout}
-    currently only works for 5 point spline fit files
-    splomRead probably does just as good a job - this function may be redundant
-    """
-    #
-    #
-    if filename:
-        input = open(filename)
-    else:
-        fname=ion2filename(ions)
-        omname=fname+extension
-        input=open(omname,'r')
-    lines=input.readlines()
-    input.close()
-    format=FortranFormat('5i3,8e10.3')
-    data=5
-    iline=0
-    lvl1=[]
-    lvl2=[]
-    ttype=[]
-    gf=[]
-    de=[]
-    om=[]
-    z=1
-    while z > 0:
-        omdat1=FortranLine(lines[iline],format)
-        z=omdat1[0]
-        if z > 0:
-            l1=omdat1[2]
-            l2=omdat1[3]
-            ttype1=omdat1[4]
-            gf1=omdat1[5]
-            de1=omdat1[6]
-            btf1=omdat1[7]
-            om1=omdat1[8:]
-            #
-            lvl1.append(l1)
-            lvl2.append(l2)
-            ttype.append(ttype1)
-            gf.append(gf1)
-            de.append(de1)
-            om.append(om1)
-        iline=iline+1
-    omout=np.asarray(om,'Float64')
-    ref=lines[iline:-1]
-#        omout=np.transpose(omout)
-#    if extension == '.omdat':
-#        Splom={"lvl1":lvl1,"lvl2":lvl2,'ttype':ttype,"gf":gf, "deryd":de,"omega":omout, 'ref':ref}
-#        return Splom
-#    elif  extension == '.easplom':
-#        Easplom={"lvl1":lvl1,"lvl2":lvl2,'ttype':ttype,"gf":gf, "deryd":de,"omega":omout, 'ref':ref}
-#        return Easplom
-    Splom={"lvl1":lvl1,"lvl2":lvl2,'ttype':ttype,"gf":gf, "deryd":de,"omega":omout, 'ref':ref}
-    return Splom
-
-    return
+#def easplomRead(ions, filename=0, extension='.splom'):
+#    """
+#    read chianti splom files and returns
+#    {"lvl1":lvl1,"lvl2":lvl2,"deryd":de,"gf":gf,"eryd":eout,"omega":omout}
+#    currently only works for 5 point spline fit files
+#    splomRead probably does just as good a job - this function may be redundant
+#    """
+#    #
+#    #
+#    if filename:
+#        input = open(filename)
+#    else:
+#        fname=ion2filename(ions)
+#        omname=fname+extension
+#        input=open(omname,'r')
+#    lines=input.readlines()
+#    input.close()
+#    format=FortranFormat('5i3,8e10.3')
+##    data=5
+#    iline=0
+#    lvl1=[]
+#    lvl2=[]
+#    ttype=[]
+#    gf=[]
+#    de=[]
+#    om=[]
+#    z=1
+#    while z > 0:
+#        omdat1=FortranLine(lines[iline],format)
+#        z=omdat1[0]
+#        if z > 0:
+#            l1=omdat1[2]
+#            l2=omdat1[3]
+#            ttype1=omdat1[4]
+#            gf1=omdat1[5]
+#            de1=omdat1[6]
+#            btf1=omdat1[7]
+#            om1=omdat1[8:]
+#            #
+#            lvl1.append(l1)
+#            lvl2.append(l2)
+#            ttype.append(ttype1)
+#            gf.append(gf1)
+#            de.append(de1)
+#            om.append(om1)
+#        iline=iline+1
+#    omout=np.asarray(om,'Float64')
+#    ref=lines[iline:-1]
+##        omout=np.transpose(omout)
+##    if extension == '.omdat':
+##        Splom={"lvl1":lvl1,"lvl2":lvl2,'ttype':ttype,"gf":gf, "deryd":de,"omega":omout, 'ref':ref}
+##        return Splom
+##    elif  extension == '.easplom':
+##        Easplom={"lvl1":lvl1,"lvl2":lvl2,'ttype':ttype,"gf":gf, "deryd":de,"omega":omout, 'ref':ref}
+##        return Easplom
+#    Splom={"lvl1":lvl1,"lvl2":lvl2,'ttype':ttype,"gf":gf, "deryd":de,"omega":omout, 'ref':ref}
+#    return Splom
+#
+#    return
     #
     #-----------------------------------------------------------
     #
@@ -1089,7 +1089,7 @@ def diCross(diParams, energy=0, verbose=0):
         qr = util.qrp(self.Z,u)*ff
         bb = 1.  # hydrogenic
         qh = bb*a_bohr*qr/ev1ryd**2
-        diCross = {'energy':energy, 'cross':qh}
+        return {'energy':energy, 'cross':qh}
     elif iso == 2 and self.Z >= 10:
         #  use
         ryd=27.2113845/2.
@@ -1104,7 +1104,7 @@ def diCross(diParams, energy=0, verbose=0):
         qr=util.qrp(self.Z,u)*ff
         bb=2.  # helium-like
         qh=bb*a_bohr*qr/ev1ryd**2
-        diCross={'energy':energy, 'cross':qh}
+        return {'energy':energy, 'cross':qh}
     else:
         cross=np.zeros(len(energy), 'Float64')
 
@@ -1130,77 +1130,77 @@ def diCross(diParams, energy=0, verbose=0):
     #
     # ------------------------------------------------------------------------------
     #
-def diCross1(diParams, energy=0, verbose=0):
-    '''
-    Calculate the direct ionization cross section.
-    diParams obtained by util.diRead with the following keys:
-    ['info', 'ysplom', 'xsplom', 'btf', 'ev1', 'ref', 'eaev']
-    Given as a function of the incident electron energy in eV
-    returns a dictionary - {'energy':energy, 'cross':cross}
-    this version tests whether using the seq and hstack works
-    so using a different approach
-    '''
-    iso=diParams['info']['iz'] - diParams['info']['ion'] + 1
-    energy = np.array(energy, 'float64')
-    if not energy.any():
-        btenergy=0.1*np.arange(10)
-        btenergy[0]=0.01
-        dum=np.ones(len(btenergy))
-        [energy, dum] = descale_bti(btenergy, dum, 2., diParams['ev1'][0])
-        energy=np.asarray(energy, 'float64')
-    #
-    if iso == 1 and self.Z >= 6:
-        #  hydrogenic sequence
-        ryd=27.2113845/2.
-        u=energy/self.Ip
-        ev1ryd=self.Ip/ryd
-        a0=0.5291772108e-8
-        a_bohr=const.pi*a0**2   # area of bohr orbit
-        if self.Z >= 20:
-            ff = (140.+(self.Z/20.)**3.2)/141.
-        else:
-            ff = 1.
-        qr = util.qrp(self.Z,u)*ff
-        bb = 1.  # hydrogenic
-        qh = bb*a_bohr*qr/ev1ryd**2
-        diCross = {'energy':energy, 'cross':qh}
-    elif iso == 2 and self.Z >= 10:
-        #  use
-        ryd=27.2113845/2.
-        u=energy/self.Ip
-        ev1ryd=self.Ip/ryd
-        a0=0.5291772108e-8
-        a_bohr=const.pi*a0**2   # area of bohr orbit
-        if self.Z >= 20:
-            ff=(140.+(self.Z/20.)**3.2)/141.
-        else:
-            ff=1.
-        qr=util.qrp(self.Z,u)*ff
-        bb=2.  # helium-like
-        qh=bb*a_bohr*qr/ev1ryd**2
-        diCross={'energy':energy, 'cross':qh}
-    else:
-        cross=np.zeros(len(energy), 'Float64')
-
-        for ifac in range(diParams['info']['nfac']):
-            # prob. better to do this with masked arrays
-            goode=energy > diParams['ev1'][ifac]
-            if goode.sum() > 0:
-                dum=np.ones(len(energy))
-                btenergy, btdum = scale_bti(energy[goode],dum[goode], diParams['btf'][ifac], diParams['ev1'][ifac])
-                # these interpolations were made with the scipy routine used here
-                y2=interpolate.splrep(diParams['xsplom'][ifac], diParams['ysplom'][ifac], s=0)
-                btcross=interpolate.splev(btenergy, y2, der=0)
-                energy1, cross1 = descale_bti(btenergy, btcross, diParams['btf'][ifac], diParams['ev1'][ifac] )
-                offset=len(energy)-goode.sum()
-                if verbose:
-                    pl.plot(diParams['xsplom'][ifac], diParams['ysplom'][ifac])
-                    pl.plot(btenergy, btcross)
-#                if offset > 0:
-#                    seq=[np.zeros(offset, 'Float64'), cross1]
-#                    cross1=np.hstack(seq)
-                cross[offset:]+=cross1*1.e-14
-        return {'energy':energy, 'cross':cross}
+#def diCross1(diParams, energy=0, verbose=0):
+#    '''
+#    Calculate the direct ionization cross section.
+#    diParams obtained by util.diRead with the following keys:
+#    ['info', 'ysplom', 'xsplom', 'btf', 'ev1', 'ref', 'eaev']
+#    Given as a function of the incident electron energy in eV
+#    returns a dictionary - {'energy':energy, 'cross':cross}
+#    this version tests whether using the seq and hstack works
+#    so using a different approach
+#    '''
+#    iso=diParams['info']['iz'] - diParams['info']['ion'] + 1
+#    energy = np.array(energy, 'float64')
+#    if not energy.any():
+#        btenergy=0.1*np.arange(10)
+#        btenergy[0]=0.01
+#        dum=np.ones(len(btenergy))
+#        [energy, dum] = descale_bti(btenergy, dum, 2., diParams['ev1'][0])
+#        energy=np.asarray(energy, 'float64')
+#    #
+#    if iso == 1 and self.Z >= 6:
+#        #  hydrogenic sequence
+#        ryd=27.2113845/2.
+#        u=energy/self.Ip
+#        ev1ryd=self.Ip/ryd
+#        a0=0.5291772108e-8
+#        a_bohr=const.pi*a0**2   # area of bohr orbit
+#        if self.Z >= 20:
+#            ff = (140.+(self.Z/20.)**3.2)/141.
+#        else:
+#            ff = 1.
+#        qr = util.qrp(self.Z,u)*ff
+#        bb = 1.  # hydrogenic
+#        qh = bb*a_bohr*qr/ev1ryd**2
+#        return {'energy':energy, 'cross':qh}
+#    elif iso == 2 and self.Z >= 10:
+#        #  use
+#        ryd=27.2113845/2.
+#        u=energy/self.Ip
+#        ev1ryd=self.Ip/ryd
+#        a0=0.5291772108e-8
+#        a_bohr=const.pi*a0**2   # area of bohr orbit
+#        if self.Z >= 20:
+#            ff=(140.+(self.Z/20.)**3.2)/141.
+#        else:
+#            ff=1.
+#        qr=util.qrp(self.Z,u)*ff
+#        bb=2.  # helium-like
+#        qh=bb*a_bohr*qr/ev1ryd**2
+#        return {'energy':energy, 'cross':qh}
+#    else:
+#        cross=np.zeros(len(energy), 'Float64')
+#
+#        for ifac in range(diParams['info']['nfac']):
+#            # prob. better to do this with masked arrays
+#            goode=energy > diParams['ev1'][ifac]
+#            if goode.sum() > 0:
+#                dum=np.ones(len(energy))
+#                btenergy, btdum = scale_bti(energy[goode],dum[goode], diParams['btf'][ifac], diParams['ev1'][ifac])
+#                # these interpolations were made with the scipy routine used here
+#                y2=interpolate.splrep(diParams['xsplom'][ifac], diParams['ysplom'][ifac], s=0)
+#                btcross=interpolate.splev(btenergy, y2, der=0)
+#                energy1, cross1 = descale_bti(btenergy, btcross, diParams['btf'][ifac], diParams['ev1'][ifac] )
+#                offset=len(energy)-goode.sum()
+#                if verbose:
+#                    pl.plot(diParams['xsplom'][ifac], diParams['ysplom'][ifac])
+#                    pl.plot(btenergy, btcross)
+##                if offset > 0:
+##                    seq=[np.zeros(offset, 'Float64'), cross1]
+##                    cross1=np.hstack(seq)
+#                cross[offset:]+=cross1*1.e-14
+#        return {'energy':energy, 'cross':cross}
 #    #
 #    #-----------------------------------------------------------
 #    #
