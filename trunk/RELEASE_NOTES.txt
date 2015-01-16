@@ -1,0 +1,44 @@
+==============================
+ Release notes for ChiantiPy
+==============================
+
+:Author: Ken Dere
+:Contact: kdere@gmu.edu
+
+Changes from 0.4 to 0.4.1
+=========================
+
+Modifications have been made to remain compatible with the CHIANTI database Version 7.0.
+
+The structure of the ChiantiPy distribution has changed so that any version of ChiantiPy prior to 0.4.1 must be removed before install the current version, 0.4.1.
+
+
+Changes from 0.3.1 to 0.4
+=========================
+
+added radLoss class to calculate radiative losses and plot the results.
+
+ion.popPlot now plots a histogram of level populations if only a single value of temperature and density are specified.
+
+Bug fixes.
+
+
+Changes from 0.3 to 0.3.1
+=========================
+
+Bug fixes
+
+Changes from 0.2 to 0.3
+=======================
+
+Added class mspectrum to calculate spectra using multiple processors.
+
+Bug fixes
+
+
+Changes from 0.1 to 0.2
+=======================
+
+Added photo-excitation
+
+Added two-photon continuum
