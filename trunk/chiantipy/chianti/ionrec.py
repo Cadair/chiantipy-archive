@@ -55,24 +55,26 @@ class ioneq(ch.ion):
         #
         # --------------------------------------
         #
-    def getIoneqFromStatic(self):
-        '''gets the ionization equilibrium for the specified ion at the specified temperature
-        not as accurate as getIoneq since this methods uses a matrix inversion which can result in
-        nonphysical values (usually small) that are zero'd out '''
-        z = self.Z
-        self.getEvolver(self.Temperature)
-        b = np.zeros((z+1),'float64')
-        b[0] = 1.
-        static = self.Static
-        ioneq = np.linalg.solve(evolver,b)
-        ioneq = np.where(ioneq >= 0., ioneq, 0.)
-        self.Ioneq = ioneq
+#    def getIoneqFromStatic(self):
+#        '''gets the ionization equilibrium for the specified ion at the specified temperature
+#        not as accurate as getIoneq since this methods uses a matrix inversion which can result in
+#        nonphysical values (usually small) that are zero'd out
+#        not implemented'''
+#        z = self.Z
+#        self.getEvolver(self.Temperature)
+#        b = np.zeros((z+1),'float64')
+#        b[0] = 1.
+#        static = self.Static
+#        ioneq = np.linalg.solve(evolver,b)
+#        ioneq = np.where(ioneq >= 0., ioneq, 0.)
+#        self.Ioneq = ioneq
         #
         # --------------------------------------
         #
-
     def getStatic(self):
-        ''' calculate the static matrix for the specified temperature'''
+        '''
+        calculate the static matrix for the specified temperature
+        '''
         temperature = self.Temperature
         z = self.Z
         ionList=[]

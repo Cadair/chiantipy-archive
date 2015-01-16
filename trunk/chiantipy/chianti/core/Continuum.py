@@ -2,16 +2,43 @@ import os
 import types
 import numpy as np
 from scipy import interpolate
-try:
-    from matplotlib.delaunay.triangulate import Triangulation
-except:
-    from scikits.delaunay.triangulate import Triangulation
+import pylab as pl
+
+#try:
+#    from matplotlib.tri.Triangulation import Triangulation
+#except:
+#    from scikits.delaunay.triangulate import Triangulation
+from matplotlib.tri.triangulation import Triangulation
 import chianti.data as chdata
 import chianti.util as util
 import chianti.io as io
 import chianti.constants as const
 ip = chdata.Ip
 MasterList = chdata.MasterList
+if pl.rcParams['backend'].lower() == 'qt4agg':
+    import chianti.gui_qt.gui as gui
+elif pl.rcParams['backend'].lower() == 'wxagg':
+    import chianti.gui_wx.gui as gui
+elif pl.rcParams['backend'].lower() == 'gtkagg':
+    import chianti.gui_cl.gui as gui
+elif pl.rcParams['backend'].lower() == 'agg':
+    import chianti.gui_cl.gui as gui
+elif pl.rcParams['backend'].lower() == 'agg':
+    import chianti.gui_cl.gui as gui
+elif pl.rcParams['backend'].lower() == 'macosx':
+    import chianti.gui_cl.gui as gui
+else:
+    print(' - Warning - \n' \
+          + ' - in order to use the various gui dialogs, the matlpotlib/pylab backend needs \n' \
+          +' - to be either Qt4Agg or WXAgg - \n' \
+         +' - in order to use the command line dialogs, the matlpotlib/pylab backend needs \n' \
+         +' - to be GTKAgg or MacOSX - \n' \
+        + ' - current backend is %s \n '%(pl.rcParams['backend']))
+    print(' - the full functionality of the chianti.core.ion class may not be available \n')
+    print(' - it would probably be better to set your matplotlib backend to either \n')
+    print(' - Qt4Agg, WXAgg, GTKAgg, or MacOSX \n')
+    print(' - using the command line dialogs for now but there could be problems - \n')
+    import gui_cl.gui as gui
 #import chianti
 class continuum:
     '''The top level class for continuum calculations.
@@ -120,7 +147,6 @@ class continuum:
         #
         #
         ipcm = self.Ip/const.invCm2Ev
-        wecm = ipcm-ecm
         #
         # get Karzas-Latter Gaunt factors
         try:
@@ -303,7 +329,7 @@ class continuum:
                 rFblvl = {'mult':[1., 1.]}
             else:
                 rfblvlname = util.zion2filename(self.Z,self.Ion)+'.fblvl'
-                self.rFblvl = io.fblvlRead(fblvlname)
+                self.rFblvl = io.fblvlRead(rfblvlname)
                 rFblvl = self.rFblvl
             if 'errorMessage' in rFblvl.keys():
                 self.FreeBound = fblvl
@@ -341,7 +367,7 @@ class continuum:
 #       ipcm = self.Ip/const.invCm2Ev
         #
         #
-        wecm=1.e+8/(ipcm-ecm)
+#        wecm=1.e+8/(ipcm-ecm)
         #
         # get karzas-latter Gaunt factors
         try:
@@ -608,7 +634,7 @@ class continuum:
             vernerDat = self.VernerDat
         z = self.Z
         stage = self.Ion
-        ip = self.Ip
+#        ip = self.Ip
         ipcm = self.Ip/const.invCm2Ev
         ecm = self.Fblvl['ecm']
         #

@@ -9,8 +9,8 @@ radTemperature is the radiation temperature of central source
 rStar is the distance of the plasma from the source in units of the sources radius
 distance is the distance from the central source
 '''
-import os, fnmatch
-from  . import util
+import os
+#from  . import util
 from . import io
 
 ###
