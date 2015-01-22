@@ -115,7 +115,7 @@ class choice2Dialog(QtGui.QDialog):
         self.done(1)
 
     def reject(self):
-        print ' cancel button pushed'
+        print(' cancel button pushed')
         self.done(1)
 
 
