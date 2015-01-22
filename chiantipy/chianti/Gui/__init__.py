@@ -20,12 +20,12 @@ except:
         print(' using cli')
 #
 if hasPyQt4:
-    from gui_qt import gui 
+    from .gui_qt import gui 
     print(' using PyQt4 widgets')
 elif hasWx:
-    from gui_wx import gui
+    from .gui_wx import gui
     print(' using Wx widgets')
 else:
-    from gui_cl import gui 
+    from .gui_cl import gui 
     print(' using CLI for selections')
 
