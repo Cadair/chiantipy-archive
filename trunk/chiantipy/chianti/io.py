@@ -517,6 +517,7 @@ def elvlcWrite(info, outfile=0, addLvl=0, includeRyd=0):
 #        out.write(one+'\n')
     for aref in info['ref']:
         out.write(aref + '\n')
+    out.write(' -1 \n')
     out.close()
     return
     #
@@ -1478,4 +1479,5 @@ def wgfaWrite(info, outfile = 0, minBranch = 0.):
     out.write('%filename:  ' + wgfaname + '\n')
     for one in info['ref']:
         out.write(one+'\n')
+    out.write(' -1 \n')
     out.close()
