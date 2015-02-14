@@ -6,13 +6,15 @@ import chianti.data as chdata
 import chianti.constants as const
 import chianti.filters as chfilters
 import chianti.util as util
+import chianti.io as chio
 #
 import chianti.Gui as chGui
 #
+from ._IonTrails import _ionTrails
 
 defaults = chdata.Defaults
 
-class spectrum():
+class spectrum(_ionTrails):
     '''
     Calculate the emission spectrum as a function of temperature and density.
 
@@ -123,7 +125,7 @@ class spectrum():
         if minAbund < minAbundAll:
             minAbund = minAbundAll
         self.minAbund = minAbund
-        ionInfo = util.masterListInfo()
+        ionInfo = chio.masterListInfo()
         wavelength = np.asarray(wavelength)
         nWvl = wavelength.size
         self.Wavelength = wavelength
@@ -258,149 +260,150 @@ class spectrum():
             self.Spectrum ={'wavelength':wavelength, 'intensity':total.squeeze(), 'filter':filter[0].__name__,   'width':filter[1], 'integrated':integrated, 'em':em, 'ions':ionsCalculated, 'Abundance':self.AbundanceName}
         else:
             self.Spectrum ={'wavelength':wavelength, 'intensity':total.squeeze(), 'filter':filter[0].__name__,   'width':filter[1], 'ions':ionsCalculated, 'Abundance':self.AbundanceName}
-    #
-    # ---------------------------------------------------------------------------
-    #
-    def intensityList(self, index=-1,  wvlRange=None, wvlRanges=None,   top=10, relative=0, outFile=0 ):
-        '''
-        List the line intensities
-
-        wvlRange, a 2 element tuple, list or array determines the wavelength range
-
-        Top specifies to plot only the top strongest lines, default = 10
-
-        normalize = 1 specifies whether to normalize to strongest line, default = 0
-        rewrite of emissList
-        this has been directly copied from ion -- not the right way to do this
-        '''
-        #
-        #
-        #
-        if not hasattr(self, 'Intensity'):
-            try:
-                self.intensity()
-            except:
-                print(' intensities not calculated and emiss() is unable to calculate them')
-                print(' perhaps the temperature and/or eDensity are not set')
-                return
-        #
-        # everything in self.Intensity should be a numpy array
-        #
-        intens = copy.copy(self.Intensity)
-        intensity = intens['intensity']
-        ionS = intens['ionS']
-        wvl = intens['wvl']
-        lvl1 = intens['lvl1']
-        lvl2 = intens['lvl2']
-        pretty1 = intens['pretty1']
-        pretty2 = intens['pretty2']
-        obs = intens['obs']
-        avalue = intens['avalue']
-        #
-        temperature = self.Temperature
-        eDensity = self.EDensity
-        #
-            #
-        ndens = eDensity.size
-        ntemp = temperature.size
-        #
-        if ndens == 1 and ntemp == 1:
-            dstr = ' -  Density = %10.2e (cm$^{-3}$)' %(eDensity)
-            tstr = ' -  T = %10.2e (K)' %(temperature)
-            print(dstr+tstr)
-        elif ndens == 1 and ntemp > 1:
-            if index < 0:
-                index = ntemp/2
-            print('using index = %5i specifying temperature =  %10.2e'%(index, temperature[index]))
-
-            self.Message = 'using index = %5i specifying temperature =  %10.2e'%(index, temperature[index])
-            intensity=intensity[index]
-        elif ndens > 1 and ntemp == 1:
-            if index < 0:
-                index = ndens/2
-            print('using index =%5i specifying eDensity = %10.2e'%(index, eDensity[index]))
-            self.Message = 'using index =%5i specifying eDensity = %10.2e'%(index, eDensity[index])
-            intensity=intensity[index]
-        elif ndens > 1 and ntemp > 1:
-            if index < 0:
-                index = ntemp/2
-            print('using index = %5i specifying temperature = %10.2e, eDensity =  %10.2e'%(index, temperature[index], eDensity[index]))
-            self.Message = 'using index = %5i specifying temperature = %10.2e, eDensity =  %10.2e'%(index, temperature[index], eDensity[index])
-            intensity=intensity[index]
-        #
-        if wvlRange:
-            wvlIndex=util.between(wvl,wvlRange)
-        elif wvlRanges:
-            wvlIndex = []
-            for awvlRange in wvlRanges:
-                wvlIndex.extend(util.between(wvl,awvlRange))
-        else:
-            wvlIndex = list(range(wvl.size))
-        #
-        #
-        #  get lines in the specified wavelength range
-        #
-        intensity = intensity[wvlIndex]
-        ionS = ionS[wvlIndex]
-        wvl = wvl[wvlIndex]
-        lvl1 = lvl1[wvlIndex]
-        lvl2 = lvl2[wvlIndex]
-        avalue = avalue[wvlIndex]
-        pretty1 = pretty1[wvlIndex]
-        pretty2 = pretty2[wvlIndex]
-        obs = obs[wvlIndex]
-        #
-        self.Error = 0
-        if wvl.size == 0:
-            print('No lines in this wavelength interval')
-            self.Error = 1
-            self.Message = 'No lines in this wavelength interval'
-            return
-        #
-        elif top == 0:
-            top = wvl.size
-        elif top > wvl.size:
-            top = wvl.size
+#    #
+#    # ---------------------------------------------------------------------------
+#    #
+#    def intensityList(self, index=-1,  wvlRange=None, wvlRanges=None,   top=10, relative=0, outFile=0 ):
+#        '''
+#        List the line intensities
 #
-        #
-        # sort by intensity
-        #
-        isrt = np.argsort(intensity)
-        #
-        ionS = ionS[isrt[-top:]]
-        wvl = wvl[isrt[-top:]]
-        lvl1 = lvl1[isrt[-top:]]
-        lvl2 = lvl2[isrt[-top:]]
-        obs = obs[isrt[-top:]]
-        intensity = intensity[isrt[-top:]]
-        avalue = avalue[isrt[-top:]]
-        pretty1 = pretty1[isrt[-top:]]
-        pretty2 = pretty2[isrt[-top:]]
-        #
-    # must follow setting top
-        #
-        if relative:
-            intensity = intensity/intensity[:top].max()
-        #
-        #
-        idx = np.argsort(wvl)
-        fmt = '%5s %5i %5i %25s - %25s %12.4f %12.3e %12.2e %1s'
-        print('   ')
-        print(' ------------------------------------------')
-        print('   ')
-        print(' Ion   lvl1  lvl2         lower                     upper                   Wvl(A)   Intensity       Obs')
-        for kdx in idx:
-            print(fmt%(ionS[kdx], lvl1[kdx], lvl2[kdx], pretty1[kdx], pretty2[kdx], wvl[kdx], intensity[kdx], avalue[kdx], obs[kdx]))
-        print('   ')
-        print(' ------------------------------------------')
-        print('   ')
-        #
-        self.Intensity['wvlTop'] = wvl[idx]
-        self.Intensity['intensityTop'] = intensity[idx]
-        if outFile:
-            fmt = '%5s %5i %5i %25s - %25s %12.4f %12.3e %1s \n'
-            outpt = open(outFile, 'w')
-            outpt.write('Ion lvl1  lvl2         lower                       upper                   Wvl(A)   Intensity       Obs \n')
-            for kdx in idx:
-                outpt.write(fmt%(ionS[kdx], lvl1[kdx], lvl2[kdx], pretty1[kdx], pretty2[kdx], wvl[kdx], intensity[kdx], avalue[kdx], obs[kdx]))
-            outpt.close()
+#        wvlRange, a 2 element tuple, list or array determines the wavelength range
+#
+#        Top specifies to plot only the top strongest lines, default = 10
+#
+#        normalize = 1 specifies whether to normalize to strongest line, default = 0
+#        rewrite of emissList
+#        this has been directly copied from ion -- not the right way to do this
+#        '''
+#        #
+#        #
+#        #
+#        if not hasattr(self, 'Intensity'):
+#            try:
+#                self.intensity()
+#            except:
+#                print(' intensities not calculated and emiss() is unable to calculate them')
+#                print(' perhaps the temperature and/or eDensity are not set')
+#                return
+#        #
+#        # everything in self.Intensity should be a numpy array
+#        #
+#        intens = copy.copy(self.Intensity)
+#        intensity = intens['intensity']
+#        ionS = intens['ionS']
+#        wvl = intens['wvl']
+#        lvl1 = intens['lvl1']
+#        lvl2 = intens['lvl2']
+#        pretty1 = intens['pretty1']
+#        pretty2 = intens['pretty2']
+#        obs = intens['obs']
+#        avalue = intens['avalue']
+#        #
+#        temperature = self.Temperature
+#        eDensity = self.EDensity
+#        #
+#            #
+#        ndens = eDensity.size
+#        ntemp = temperature.size
+#        #
+#        if ndens == 1 and ntemp == 1:
+#            dstr = ' -  Density = %10.2e (cm$^{-3}$)' %(eDensity)
+#            tstr = ' -  T = %10.2e (K)' %(temperature)
+#            print(dstr+tstr)
+#        elif ndens == 1 and ntemp > 1:
+#            if index < 0:
+#                index = ntemp/2
+#            print('using index = %5i specifying temperature =  %10.2e'%(index, temperature[index]))
+#
+#            self.Message = 'using index = %5i specifying temperature =  %10.2e'%(index, temperature[index])
+#            intensity=intensity[index]
+#        elif ndens > 1 and ntemp == 1:
+#            if index < 0:
+#                index = ndens/2
+#            print('using index =%5i specifying eDensity = %10.2e'%(index, eDensity[index]))
+#            self.Message = 'using index =%5i specifying eDensity = %10.2e'%(index, eDensity[index])
+#            intensity=intensity[index]
+#        elif ndens > 1 and ntemp > 1:
+#            if index < 0:
+#                index = ntemp/2
+#            print('using index = %5i specifying temperature = %10.2e, eDensity =  %10.2e'%(index, temperature[index], eDensity[index]))
+#            self.Message = 'using index = %5i specifying temperature = %10.2e, eDensity =  %10.2e'%(index, temperature[index], eDensity[index])
+#            intensity=intensity[index]
+#        #
+#        if wvlRange:
+#            wvlIndex=util.between(wvl,wvlRange)
+#        elif wvlRanges:
+#            wvlIndex = []
+#            for awvlRange in wvlRanges:
+#                wvlIndex.extend(util.between(wvl,awvlRange))
+#        else:
+#            wvlIndex = list(range(wvl.size))
+#        #
+#        #
+#        #  get lines in the specified wavelength range
+#        #
+#        intensity = intensity[wvlIndex]
+#        ionS = ionS[wvlIndex]
+#        wvl = wvl[wvlIndex]
+#        lvl1 = lvl1[wvlIndex]
+#        lvl2 = lvl2[wvlIndex]
+#        avalue = avalue[wvlIndex]
+#        pretty1 = pretty1[wvlIndex]
+#        pretty2 = pretty2[wvlIndex]
+#        obs = obs[wvlIndex]
+#        #
+#        self.Error = 0
+#        if wvl.size == 0:
+#            print('No lines in this wavelength interval')
+#            self.Error = 1
+#            self.Message = 'No lines in this wavelength interval'
+#            return
+#        #
+#        elif top == 0:
+#            top = wvl.size
+#        elif top > wvl.size:
+#            top = wvl.size
+##
+#        #
+#        # sort by intensity
+#        #
+#        isrt = np.argsort(intensity)
+#        #
+#        ionS = ionS[isrt[-top:]]
+#        wvl = wvl[isrt[-top:]]
+#        lvl1 = lvl1[isrt[-top:]]
+#        lvl2 = lvl2[isrt[-top:]]
+#        obs = obs[isrt[-top:]]
+#        intensity = intensity[isrt[-top:]]
+#        avalue = avalue[isrt[-top:]]
+#        pretty1 = pretty1[isrt[-top:]]
+#        pretty2 = pretty2[isrt[-top:]]
+#        #
+#    # must follow setting top
+#        #
+#        if relative:
+#            intensity = intensity/intensity[:top].max()
+#        #
+#        #
+#        idx = np.argsort(wvl)
+#        fmt = '%5s %5i %5i %25s - %25s %12.4f %12.3e %12.2e %1s'
+#        print('   ')
+#        print(' ------------------------------------------')
+#        print('   ')
+#        print(' Ion   lvl1  lvl2         lower                     upper                   Wvl(A)   Intensity       Obs')
+#        for kdx in idx:
+#            print(fmt%(ionS[kdx], lvl1[kdx], lvl2[kdx], pretty1[kdx], pretty2[kdx], wvl[kdx], intensity[kdx], avalue[kdx], obs[kdx]))
+#        print('   ')
+#        print(' ------------------------------------------')
+#        print('   ')
+#        #
+#        self.Intensity['wvlTop'] = wvl[idx]
+#        self.Intensity['intensityTop'] = intensity[idx]
+#        if outFile:
+#            fmt = '%5s %5i %5i %25s - %25s %12.4f %12.3e %1s \n'
+#            outpt = open(outFile, 'w')
+#            outpt.write('Ion lvl1  lvl2         lower                       upper                   Wvl(A)   Intensity       Obs \n')
+#            for kdx in idx:
+#                outpt.write(fmt%(ionS[kdx], lvl1[kdx], lvl2[kdx], pretty1[kdx], pretty2[kdx], wvl[kdx], intensity[kdx], avalue[kdx], obs[kdx]))
+#            outpt.close()
+#        return

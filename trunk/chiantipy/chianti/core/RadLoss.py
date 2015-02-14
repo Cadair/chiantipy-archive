@@ -1,12 +1,12 @@
-import types
 from datetime import datetime
 import numpy as np
+import pylab as pl
 np.seterr(over='ignore')
 import chianti.core
 import chianti.data as chdata
 import chianti.constants as const
-import chianti.filters as chfilters
 import chianti.util as util
+import chianti.Gui as chgui
 #
 defaults = chdata.Defaults
 #chInteractive = chdata.chInteractive
@@ -49,7 +49,7 @@ class radLoss:
     em [for emission measure], can be a float or an array of the same length as the
     temperature/density.
     '''
-    def __init__(self, temperature, density, ionList = 0, minAbund=0, doContinuum=1, abund=0, verbose=0, allLines=1):
+    def __init__(self, temperature, density, ionList = 0, minAbund=0, doContinuum=1, abundanceName=0, verbose=0, allLines=1):
         t1 = datetime.now()
         masterlist = chdata.MasterList
         # use the ionList but make sure the ions are in the database
@@ -61,7 +61,7 @@ class radLoss:
                 else:
                     if verbose:
                         pstring = ' %s not in CHIANTI database'%(one)
-                        print('')
+                        print(pstring)
             masterlist = alist
         self.Defaults=defaults
         self.Temperature = np.asarray(temperature, 'float64')
@@ -70,16 +70,16 @@ class radLoss:
         nDen = self.Density.size
         nTempDen = max([nTemp, nDen])
 
-        if not abund:
+        if not abundanceName:
             self.AbundanceName = self.Defaults['abundfile']
         else:
-            if abund in chdata.Abundance.keys():
-                self.AbundanceName = abund
+            if abundanceName in sorted(chdata.Abundance.keys()):
+                self.AbundanceName = abundanceName
             else:
-                abundChoices = chdata.Abundance.keys()
+                abundChoices = sorted(chdata.Abundance.keys())
 #                for one in wvl[topLines]:
 #                    wvlChoices.append('%12.3f'%(one))
-                abundChoice = gui.selectorDialog(abundChoices,label='Select Abundance name')
+                abundChoice = chgui.gui.selectorDialog(abundChoices,label='Select Abundance name')
                 abundChoice_idx = abundChoice.selectedIndex
                 self.AbundanceName = abundChoices[abundChoice_idx[0]]
                 abund = self.AbundanceName
@@ -104,25 +104,25 @@ class radLoss:
         for iz in range(31):
             abundance = chdata.Abundance['abundance'][iz-1]
             if abundance >= minAbund:
-                print ' %5i %5s abundance = %10.2e '%(iz, const.El[iz-1],  abundance)
+                print(' %5i %5s abundance = %10.2e '%(iz, const.El[iz-1],  abundance))
                 #
                 for ionstage in range(1, iz+2):
                     ionS = util.zion2name(iz, ionstage)
 #                   print ' ionS = ', ionS
                     masterListTest = ionS in masterlist
-                    masterListInfoTest = ionS in ionInfo.keys()
+                    masterListInfoTest = ionS in sorted(ionInfo.keys())
                     if masterListTest or masterListInfoTest:
                         ioneqTest = (self.Temperature.max() >= ionInfo[ionS]['tmin']) and (self.Temperature.min() <= ionInfo[ionS]['tmax'])
                     # construct similar test for the dielectronic files
                     ionSd = util.zion2name(iz, ionstage, dielectronic=1)
                     masterListTestD = ionSd in masterlist
-                    masterListInfoTestD = ionSd in ionInfo.keys()
+                    masterListInfoTestD = ionSd in sorted(ionInfo.keys())
                     if masterListTestD or masterListInfoTestD:
                         ioneqTestD = (self.Temperature.max() >= ionInfo[ionSd]['tmin']) and (self.Temperature.min() <=ionInfo[ionSd]['tmax'])
                     ionstageTest = ionstage > 1
                     if ionstageTest and ioneqTest and doContinuum:
                         # ionS is the target ion, cannot be the neutral for the continuum
-                        print ' calculating continuum for :  ',  ionS
+                        print(' calculating continuum for %s'%(ionS))
                         cont = chianti.core.continuum(ionS, temperature, abund=abund)
                         cont.freeFreeLoss()
     #                   print dir(thisIon)
@@ -134,20 +134,20 @@ class radLoss:
 #                                freeFreeLoss[iTempDen] += cont.FreeFreeLoss['rate'][iTempDen]
                     #
                         cont.freeBoundLoss()
-                        if 'errorMessage' not in cont.FreeBoundLoss.keys():
+                        if 'errorMessage' not in sorted(cont.FreeBoundLoss.keys()):
                             #  an fblvl file exists for this ions
 #                            if nTempDen == 1:
                             freeBoundLoss += cont.FreeBoundLoss['rate']
 #                            else:
 #                                freeBound[iTempDen] += cont.FreeBound['rate'][iTempDen]
                     if masterListTest and ioneqTest:
-                        print ' calculating spectrum for  :  ', ionS
+                        print(' calculating spectrum for  %s  '%(ionS))
                         thisIon = chianti.core.ion(ionS, temperature, density, abund=abund)
 #                       print ' dir = ', dir(thisIon)
 #                        thisIon.emiss(wvlRange = wvlRange, allLines=allLines)
                         thisIon.boundBoundLoss( allLines=allLines)
                         # check that there are lines in this wavelength range
-                        if 'errorMessage' not in  thisIon.BoundBoundLoss.keys():
+                        if 'errorMessage' not in  sorted(thisIon.BoundBoundLoss.keys()):
                             thisIon.boundBoundLoss()
 #                           intensity = thisIon.Intensity['intensity']
 #                            if nTempDen == 1:
@@ -161,14 +161,14 @@ class radLoss:
                             twoPhotonLoss += thisIon.TwoPhotonLoss['rate']
                     # get dielectronic lines
                     if masterListTestD and ioneqTestD:
-                        print ' calculating spectrum for  :  ', ionSd
+                        print(' calculating spectrum for  %s '%(ionSd))
                         thisIon = chianti.core.ion(ionSd, temperature, density, abund=abund)
 #                       print ' dir = ', dir(thisIon)
 #                       have to do all lines for the dielectronic satellites
 #                        thisIon.emiss(allLines=1)
                         thisIon.intensity(allLines=allLines)
                         # check that there are lines in this wavelength range - probably not redundant
-                        if 'errorMessage' not in  thisIon.Intensity.keys():
+                        if 'errorMessage' not in  sorted(thisIon.Intensity.keys()):
                             thisIon.boundBoundLoss()
 #                            if nTempDen == 1:
                             boundBoundLoss += thisIon.BoundBoundLoss['rate']
@@ -183,7 +183,7 @@ class radLoss:
         total = freeFreeLoss + freeBoundLoss + boundBoundLoss + twoPhotonLoss
         t2 = datetime.now()
         dt=t2-t1
-        print ' elapsed seconds = ', dt.seconds
+        print(' elapsed seconds = %10.2e'%(dt.seconds))
         self.RadLoss ={'rate':total, 'temperature':self.Temperature, 'density':self.Density, 'minAbund':minAbund, 'abundance':self.AbundanceName}
     #
     # -------------------------------------------------------------------
@@ -191,7 +191,7 @@ class radLoss:
     def radLossPlot(self):
         ''' to plot the radiative losses vs temperature'''
         if not hasattr(self, 'RadLoss'):
-            print ' must first calculate radiation losses with radLoss'
+            print(' must first calculate radiation losses with radLoss')
             return
         else:
             fontsize = 16

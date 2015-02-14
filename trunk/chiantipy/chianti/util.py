@@ -21,9 +21,9 @@ from datetime import date
 import numpy as np
 from scipy import interpolate
 from .FortranFormat import *
-import chianti.constants as const
-#import chianti.io as io
 import chianti
+import chianti.constants as const
+#import chianti.io as chio
 #import chianti.gui as gui
 #
 #
@@ -74,114 +74,114 @@ def between(array,limits):
 #        ion=int(s2[1])
 #        ip[iz-1, ion-1]=float(s2[2])
 #    return ip*const.invCm2Ev
-    #
-    # -------------------------------------------------------------------------------------
-    #
-def masterListInfo(force=0, verbose=0):
-    """
-    returns information about ions in masterlist
-    the reason for this file is to speed up multi-ion spectral calculations
-    the information is stored in a pickled file 'masterlist_ions.pkl'
-    if the file is not found, one will be created and the following information
-    returned for each ion
-    wmin, wmax :  the minimum and maximum wavelengths in the wgfa file
-    tmin, tmax :  the minimum and maximum temperatures for which the ionization balance is nonzero
-    """
-    dir=os.environ["XUVTOP"]
-    infoPath = os.path.join(dir, 'masterlist')
-    infoName=os.path.join(dir,'masterlist','masterlist_ions.pkl')
-    masterName=os.path.join(dir,'masterlist','masterlist.ions')
-    #
-    makeNew = force == 1 or not os.path.isfile(infoName)
-#    if os.path.isfile(infoName):
-    if not makeNew:
-#       print ' file exists - ',  infoName
-        pfile = open(infoName, 'r')
-        masterListInfo = pickle.load(pfile)
-        pfile.close
-    elif os.access(infoPath, os.W_OK):
-        # the file does not exist but we have write access and will create it
-        defaults = io.defaultsRead()
-        print((' defaults = %s'%(str(defaults))))
-        ioneqName = defaults['ioneqfile']
-        ioneq = ioneqRead(ioneqname = ioneqName)
-        masterList = io.masterListRead()
-        masterListInfo = {}
-        haveZ = [0]*31
-        haveStage = np.zeros((31, 31), 'Int32')
-        haveDielectronic = np.zeros((31, 31), 'Int32')
-        for one in masterList:
-            if verbose:
-                print((' ion = %s'%(one)))
-            ionInfo = convertName(one)
-            z = ionInfo['Z']
-            stage = ionInfo['Ion']
-            haveZ[z] = 1
-            dielectronic = ionInfo['Dielectronic']
-            if dielectronic:
-                haveDielectronic[z, stage] = 1
-            else:
-                haveStage[z, stage] = 1
-            thisIoneq = ioneq['ioneqAll'][z- 1, stage - 1 + dielectronic]
-            good = thisIoneq > 0.
-            goodTemp = ioneq['ioneqTemperature'][good]
-            tmin = goodTemp.min()
-            tmax = goodTemp.max()
-            vgood = thisIoneq == thisIoneq.max()
-            vgoodTemp = ioneq['ioneqTemperature'][vgood][0]
-            wgfa = wgfaRead(one)
-            nZeros = wgfa['wvl'].count(0.)
-            # two-photon transitions are denoted by a wavelength of zero (0.)
-            while nZeros > 0:
-                wgfa['wvl'].remove(0.)
-                nZeros = wgfa['wvl'].count(0.)
-            # unobserved lines are denoted with a negative wavelength
-            wvl = np.abs(np.asarray(wgfa['wvl'], 'float64'))
-            wmin = wvl.min()
-            wmax = wvl.max()
-            masterListInfo[one] = {'wmin':wmin, 'wmax':wmax, 'tmin':tmin, 'tmax':tmax, 'tIoneqMax':vgoodTemp}
-        masterListInfo['haveZ'] = haveZ
-        masterListInfo['haveStage'] = haveStage
-        masterListInfo['haveDielectronic'] = haveDielectronic
-        #  now do the bare ions from H thru Zn
-        #  these are only involved in the continuum
-        for iz in range(1, 31):
-            ions = zion2name(iz, iz+1)
-            thisIoneq = ioneq['ioneqAll'][iz-1, iz]
-            good = thisIoneq > 0.
-            goodTemp = ioneq['ioneqTemperature'][good]
-            tmin = goodTemp.min()
-            tmax = goodTemp.max()
-            wmin=0.
-            wmax = 1.e+30
-            masterListInfo[ions] = {'wmin':wmin, 'wmax':wmax, 'tmin':tmin, 'tmax':tmax}
-        pfile = open(infoName, 'w')
-        pickle.dump(masterListInfo, pfile)
-        pfile.close
-    else:
-        # the file does not exist and we do NOT have write access to creat it
-        # will just make an inefficient, useless version
-        masterListInfo = {}
-        for one in masterList:
-            ionInfo = convertName(one)
-            z = ionInfo['Z']
-            stage = ionInfo['Ion']
-            dielectronic = ionInfo['Dielectronic']
-            wmin=0.
-            wmax = 1.e+30
-            masterListInfo[one] = {'wmin':wmin, 'wmax':wmax, 'tmin':1.e+4, 'tmax':1.e+9}
-        #  now do the bare ions from H thru Zn
-        #  these are only involved in the continuum
-        for iz in range(1, 31):
-            ions = zion2name(iz, iz+1)
-            wmin=0.
-            wmax = 1.e+30
-            masterListInfo[ions] = {'wmin':wmin, 'wmax':wmax, 'tmin':1.e+4, 'tmax':1.e+9}
-        pfile = open(infoName, 'w')
-        pickle.dump(masterListInfo, pfile)
-        pfile.close
-        masterListInfo = {'noInfo':'none'}
-    return masterListInfo
+#    #
+#    # -------------------------------------------------------------------------------------
+#    #
+#def masterListInfo(force=0, verbose=0):
+#    """
+#    returns information about ions in masterlist
+#    the reason for this file is to speed up multi-ion spectral calculations
+#    the information is stored in a pickled file 'masterlist_ions.pkl'
+#    if the file is not found, one will be created and the following information
+#    returned for each ion
+#    wmin, wmax :  the minimum and maximum wavelengths in the wgfa file
+#    tmin, tmax :  the minimum and maximum temperatures for which the ionization balance is nonzero
+#    """
+#    dir=os.environ["XUVTOP"]
+#    infoPath = os.path.join(dir, 'masterlist')
+#    infoName=os.path.join(dir,'masterlist','masterlist_ions.pkl')
+#    masterName=os.path.join(dir,'masterlist','masterlist.ions')
+#    #
+#    makeNew = force == 1 or not os.path.isfile(infoName)
+##    if os.path.isfile(infoName):
+#    if not makeNew:
+##       print ' file exists - ',  infoName
+#        pfile = open(infoName, 'r')
+#        masterListInfo = pickle.load(pfile)
+#        pfile.close
+#    elif os.access(infoPath, os.W_OK):
+#        # the file does not exist but we have write access and will create it
+#        defaults = io.defaultsRead()
+#        print((' defaults = %s'%(str(defaults))))
+#        ioneqName = defaults['ioneqfile']
+#        ioneq = chio.ioneqRead(ioneqname = ioneqName)
+#        masterList = chio.masterListRead()
+#        masterListInfo = {}
+#        haveZ = [0]*31
+#        haveStage = np.zeros((31, 31), 'Int32')
+#        haveDielectronic = np.zeros((31, 31), 'Int32')
+#        for one in masterList:
+#            if verbose:
+#                print((' ion = %s'%(one)))
+#            ionInfo = convertName(one)
+#            z = ionInfo['Z']
+#            stage = ionInfo['Ion']
+#            haveZ[z] = 1
+#            dielectronic = ionInfo['Dielectronic']
+#            if dielectronic:
+#                haveDielectronic[z, stage] = 1
+#            else:
+#                haveStage[z, stage] = 1
+#            thisIoneq = ioneq['ioneqAll'][z- 1, stage - 1 + dielectronic]
+#            good = thisIoneq > 0.
+#            goodTemp = ioneq['ioneqTemperature'][good]
+#            tmin = goodTemp.min()
+#            tmax = goodTemp.max()
+#            vgood = thisIoneq == thisIoneq.max()
+#            vgoodTemp = ioneq['ioneqTemperature'][vgood][0]
+#            wgfa = chio.wgfaRead(one)
+#            nZeros = wgfa['wvl'].count(0.)
+#            # two-photon transitions are denoted by a wavelength of zero (0.)
+#            while nZeros > 0:
+#                wgfa['wvl'].remove(0.)
+#                nZeros = wgfa['wvl'].count(0.)
+#            # unobserved lines are denoted with a negative wavelength
+#            wvl = np.abs(np.asarray(wgfa['wvl'], 'float64'))
+#            wmin = wvl.min()
+#            wmax = wvl.max()
+#            masterListInfo[one] = {'wmin':wmin, 'wmax':wmax, 'tmin':tmin, 'tmax':tmax, 'tIoneqMax':vgoodTemp}
+#        masterListInfo['haveZ'] = haveZ
+#        masterListInfo['haveStage'] = haveStage
+#        masterListInfo['haveDielectronic'] = haveDielectronic
+#        #  now do the bare ions from H thru Zn
+#        #  these are only involved in the continuum
+#        for iz in range(1, 31):
+#            ions = zion2name(iz, iz+1)
+#            thisIoneq = ioneq['ioneqAll'][iz-1, iz]
+#            good = thisIoneq > 0.
+#            goodTemp = ioneq['ioneqTemperature'][good]
+#            tmin = goodTemp.min()
+#            tmax = goodTemp.max()
+#            wmin=0.
+#            wmax = 1.e+30
+#            masterListInfo[ions] = {'wmin':wmin, 'wmax':wmax, 'tmin':tmin, 'tmax':tmax}
+#        pfile = open(infoName, 'w')
+#        pickle.dump(masterListInfo, pfile)
+#        pfile.close
+#    else:
+#        # the file does not exist and we do NOT have write access to creat it
+#        # will just make an inefficient, useless version
+#        masterListInfo = {}
+#        for one in masterList:
+#            ionInfo = convertName(one)
+#            z = ionInfo['Z']
+#            stage = ionInfo['Ion']
+#            dielectronic = ionInfo['Dielectronic']
+#            wmin=0.
+#            wmax = 1.e+30
+#            masterListInfo[one] = {'wmin':wmin, 'wmax':wmax, 'tmin':1.e+4, 'tmax':1.e+9}
+#        #  now do the bare ions from H thru Zn
+#        #  these are only involved in the continuum
+#        for iz in range(1, 31):
+#            ions = zion2name(iz, iz+1)
+#            wmin=0.
+#            wmax = 1.e+30
+#            masterListInfo[ions] = {'wmin':wmin, 'wmax':wmax, 'tmin':1.e+4, 'tmax':1.e+9}
+#        pfile = open(infoName, 'w')
+#        pickle.dump(masterListInfo, pfile)
+#        pfile.close
+#        masterListInfo = {'noInfo':'none'}
+#    return masterListInfo
 #    #
 #    # -------------------------------------------------------------------------------------
 #    #
@@ -1086,7 +1086,8 @@ def diCross(diParams, energy=0, verbose=0):
             ff = (140.+(self.Z/20.)**3.2)/141.
         else:
             ff = 1.
-        qr = util.qrp(self.Z,u)*ff
+#        qr = util.qrp(self.Z,u)*ff
+        qr = qrp(self.Z,u)*ff
         bb = 1.  # hydrogenic
         qh = bb*a_bohr*qr/ev1ryd**2
         diCross = {'energy':energy, 'cross':qh}
@@ -1101,8 +1102,9 @@ def diCross(diParams, energy=0, verbose=0):
             ff=(140.+(self.Z/20.)**3.2)/141.
         else:
             ff=1.
-        qr=util.qrp(self.Z,u)*ff
-        bb=2.  # helium-like
+#        qr=util.qrp(self.Z,u)*ff
+        qr = qrp(self.Z,u)*ff
+        bb = 2.  # helium-like
         qh=bb*a_bohr*qr/ev1ryd**2
         diCross={'energy':energy, 'cross':qh}
     else:
@@ -1160,7 +1162,8 @@ def diCross1(diParams, energy=0, verbose=0):
             ff = (140.+(self.Z/20.)**3.2)/141.
         else:
             ff = 1.
-        qr = util.qrp(self.Z,u)*ff
+#        qr = util.qrp(self.Z,u)*ff
+        qr = qrp(self.Z,u)*ff
         bb = 1.  # hydrogenic
         qh = bb*a_bohr*qr/ev1ryd**2
         diCross = {'energy':energy, 'cross':qh}
@@ -1175,7 +1178,8 @@ def diCross1(diParams, energy=0, verbose=0):
             ff=(140.+(self.Z/20.)**3.2)/141.
         else:
             ff=1.
-        qr=util.qrp(self.Z,u)*ff
+#        qr=util.qrp(self.Z,u)*ff
+        qr = qrp(self.Z,u)*ff
         bb=2.  # helium-like
         qh=bb*a_bohr*qr/ev1ryd**2
         diCross={'energy':energy, 'cross':qh}
