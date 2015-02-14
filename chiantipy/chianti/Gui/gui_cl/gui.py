@@ -17,10 +17,10 @@ def chpicker(path,  filter='*.*', label=None):
 #            pattern="All files (*.*)"
     allNames=os.listdir(path)
     names = fnmatch.filter(allNames, filter)
-    print ' - make a selection from one of these - '
+    print(' - make a selection from one of these - ')
     for i, one in enumerate(names):
-        print '%6i %s '%(i, one)
-    raw = raw_input(' type the index of your selection >>. ')
+        print('%6i %s '%(i, one))
+    raw = input(' type the index of your selection >>. ')
     fileName = os.path.join(path, names[int(raw)])
     return fileName
 
@@ -34,11 +34,11 @@ class selectorDialog:
     the label and parent keywords are for consistency with other modules but do nothing'''
     def __init__(self, items, label=None ,  parent=None):
         #
-        print ' - make a selection from these - '
+        print(' - make a selection from these - ')
         for i, one in enumerate(items):
-            print '%6i %s ' %( i, one)
-        print ' type the comma-separated index/indices of your selection'
-        raw = raw_input('>>> ')
+            print('%6i %s '%( i, one))
+        print(' type the comma-separated index/indices of your selection')
+        raw = input('>>> ')
         #
         sraw = list(raw.split(','))
         self.selectedIndex = []
@@ -57,11 +57,11 @@ class choice2Dialog:
     the keywords label and parent are there for consistency with real gui dialogs'''
     def __init__(self, items,  label=None ,  parent=None):
         #
-        print ' - select the numerator line(s) from these - '
+        print(' - select the numerator line(s) from these - ')
         for i, one in enumerate(items):
-            print '%6i %s ' %( i, one)
-        print ' type the comma-separated index/indices of your selection'
-        raw = raw_input('>>> ')
+            print('%6i %s ' %( i, one))
+        print(' type the comma-separated index/indices of your selection')
+        raw = input('>>> ')
         #
         sraw = list(raw.split(','))
         self.numIndex = []
@@ -70,11 +70,11 @@ class choice2Dialog:
             self.numIndex.append(int(one))
             self.numText.append(items[int(one)])
         #
-        print ' - select the denominator line(s) from these - '
+        print(' - select the denominator line(s) from these - ')
         for i, one in enumerate(items):
-            print '%6i %s ' %( i, one)
-        print ' type the comma-separated index/indices of your selection'
-        raw = raw_input('>>> ')
+            print('%6i %s ' %( i, one))
+        print(' type the comma-separated index/indices of your selection')
+        raw = input('>>> ')
         #
         sraw = list(raw.split(','))
         self.denIndex = []

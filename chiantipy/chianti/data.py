@@ -11,21 +11,21 @@ distance is the distance from the central source
 '''
 import os
 
-from . import io
+import chianti.io as chio
 
 ###
 xuvtop = os.environ['XUVTOP']
 #chInteractive=1
-Defaults = io.defaultsRead()
-Ip = io.ipRead()
-MasterList = io.masterListRead()
-IoneqAll = io.ioneqRead(ioneqname = Defaults['ioneqfile'])
+Defaults = chio.defaultsRead()
+Ip = chio.ipRead()
+MasterList = chio.masterListRead()
+IoneqAll = chio.ioneqRead(ioneqname = Defaults['ioneqfile'])
 # gets the ChianitPy version
 # gets the version of the CHIANTI database
-ChiantiVersion = io.versionRead()
+ChiantiVersion = chio.versionRead()
 keywordArgs = ['temperature','eDensity','hDensity', 'pDensity','radTemperature', 'rStar', 'distance']
 #
-AbundanceDefault = io.abundanceRead(abundancename = Defaults['abundfile'])
+AbundanceDefault = chio.abundanceRead(abundancename = Defaults['abundfile'])
 abunddir = os.path.join(xuvtop,'abundance')
 filelist = os.listdir(abunddir)
 #
@@ -36,7 +36,7 @@ for one in filelist:
         AbundanceList.append(os.path.splitext(one)[0])
 #for one in abundList:
 #    print(one)
-Abundance = {AbundanceList[0]:io.abundanceRead(abundancename = AbundanceList[0])}
+Abundance = {AbundanceList[0]:chio.abundanceRead(abundancename = AbundanceList[0])}
 for one in AbundanceList[1:]:
-    Abundance[one] = io.abundanceRead(abundancename = one)
+    Abundance[one] = chio.abundanceRead(abundancename = one)
 

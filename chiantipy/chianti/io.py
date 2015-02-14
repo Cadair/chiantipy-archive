@@ -1,7 +1,9 @@
 '''
 a collection of reading and writing functions
+seems to be Python 2.7 and Python 3.4 compatible
 '''
 import os, fnmatch
+import pickle
 try:
     # for Python 3 import
     import configparser
@@ -13,7 +15,7 @@ import numpy as np
 import chianti.util as util
 import chianti.constants as const
 import chianti.Gui as chgui
-from .FortranFormat import *
+from  chianti.fortranformat import FortranRecordReader
     #
     # -------------------------------------------------------------------------------------
     #
@@ -63,6 +65,46 @@ def abundanceRead(abundancename=''):
     #
     # -------------------------------------------------------------------------------------
     #
+def zion2name(z,ion, dielectronic=False):
+    """
+    convert Z, ion to generic name  26, 13 -> fe_13
+    a duplicate of teh routine in util but needed by masterList Info
+    """
+    if ion == 0:
+        thisone = 0
+    elif ion == z+2:
+        thisone = 0
+    elif (z-1 < len(const.El)) and (ion <= z+1):
+        thisone=const.El[z-1]+'_'+str(ion)
+        if dielectronic:
+            thisone+='d'
+    else:
+        # this should not actually happen
+        thisone = 0
+    return thisone
+    #
+    # -------------------------------------------------------------------------------------
+    #
+def convertName(name):
+    """ 
+    convert ion name string to Z and Ion 
+    a duplicate of teh routine in util but needed by masterList Info
+    """
+    s2=name.split('_')
+    els=s2[0].strip()
+    i1=const.El.index(els)+1
+    ions=s2[1].strip()
+    d=ions.find('d')
+    if d >0 :
+        dielectronic=True
+        ions=ions.replace('d','')
+    else: dielectronic=False
+    higher = zion2name(int(i1), int(ions)+1)
+    lower = zion2name(int(i1), int(ions)-1)
+    return {'Z':int(i1),'Ion':int(ions),'Dielectronic':dielectronic, 'Element':els, 'higher':higher, 'lower':lower}
+    #
+    # -------------------------------------------------------------------------------------
+    #
 def cireclvlRead(ions, filename=0, cilvl=0, reclvl=0, rrlvl=0):
     '''
     to read Chianti cilvl and reclvl files and return data
@@ -71,7 +113,7 @@ def cireclvlRead(ions, filename=0, cilvl=0, reclvl=0, rrlvl=0):
     if filename:
         fname = filename
     else:
-        fname = ion2filename(ions)
+        fname = util.ion2filename(ions)
     if cilvl:
         paramname=fname+'.cilvl'
     elif reclvl:
@@ -204,7 +246,10 @@ def diRead(ions, filename=0):
     nfac=int(indices[3])
     neaev=int(indices[4])
     nspl=int(nspl)
-    format=FortranFormat(str(nspl+1)+'E10.2')
+#    format=FortranFormat(str(nspl+1)+'E10.2')
+    header_line = FortranRecordReader(str(nspl+1)+'E10.2')
+#    inpt =header_line.read(s1[i][0:115])
+
     #
     ev1=np.zeros(nfac,'Float64')
     btf=np.zeros(nfac,'Float64')
@@ -213,11 +258,13 @@ def diRead(ions, filename=0):
     #
     for ifac in range(nfac):
         line=input.readline()
-        paramdat=FortranLine(line,format)
+#        paramdat=FortranLine(line,format)
+        paramdat = header_line.read(line)
         btf[ifac]=paramdat[0]
         xsplom[ifac]=paramdat[1:]
         line=input.readline()
-        paramdat=FortranLine(line,format)
+#        paramdat=FortranLine(line,format)
+        paramdat = header_line.read(line)
         ev1[ifac]=paramdat[0]
         ysplom[ifac]=paramdat[1:]
     if neaev:
@@ -263,14 +310,22 @@ def drRead(ions):
         #
         if drtype == 1:
             # a Badnell type
-            fmt=FortranFormat('2i5,8e12.4')
-            eparams=np.asarray(FortranLine(lines[1],fmt)[2:], 'float64')
-            cparams=np.asarray(FortranLine(lines[2],fmt)[2:], 'float64')
+#            fmt=FortranFormat('2i5,8e12.4')
+            header_line =  FortranRecordReader('2i5,8e12.4')
+            inpt1 = header_line.read(lines[1])
+#            eparams=np.asarray(FortranLine(lines[1],fmt)[2:], 'float64')
+            eparams = np.asarray(inpt1[2:], 'float64')
+            inpt2 = header_line.read(lines[2])
+#            cparams=np.asarray(FortranLine(lines[2],fmt)[2:], 'float64')
+            cparams = np.asarray(inpt2[2:], 'float64')
             DrParams={'drtype':drtype, 'eparams':eparams,'cparams':cparams,  'ref':ref}
         elif drtype == 2:
             # shull type
-            fmt=FortranFormat('2i5,4e12.4')
-            params=np.asarray(FortranLine(lines[1],fmt)[2:], 'float64')
+#            fmt=FortranFormat('2i5,4e12.4')
+            header_line =  FortranRecordReader('2i5,4e12.4')
+            inpt1 = header_line.read(lines[1])
+#            params=np.asarray(FortranLine(lines[1],fmt)[2:], 'float64')
+            params = np.asarray(inpt1[2:], 'float64')
             DrParams={'drtype':drtype, 'params':params, 'ref':ref}
         else:
             DrParams = None
@@ -299,7 +354,6 @@ def eaRead(ions, filename=0):
         splupsname = fname+'.easplups'
     if not os.path.exists(splupsname):
         print((' could not find file:  ', splupsname))
-        self.Splups={"lvl1":-1}
         return {"lvl1":-1}
     # there is splups/psplups data
     else:
@@ -322,14 +376,19 @@ def eaRead(ions, filename=0):
         cups=[0.]*nsplups
         nspl=[0]*nsplups
         splups=np.zeros((nsplups,9),'Float64')
-        splupsFormat1='(6x,3i3,8e10.0)'
-        splupsFormat2='(6x,3i3,12e10.0)'
+#        splupsFormat1='(6x,3i3,8e10.0)'
+#        splupsFormat2='(6x,3i3,12e10.0)'
         #
+        header_line1 = FortranRecordReader('6x,3i3,8e10.0')
+        header_line2 = FortranRecordReader('6x,3i3,12e10.0')
+        
         for i in range(0,nsplups):
             try:
-                inpt=FortranLine(s1[i],splupsFormat1)
+                inpt = header_line1.read(s1[i])               
+#                inpt=FortranLine(s1[i],splupsFormat1)
             except:
-                inpt=FortranLine(s1[i],splupsFormat2)
+                inpt = header_line2.read(s1[i])               
+#                inpt=FortranLine(s1[i],splupsFormat2)
             lvl1[i]=inpt[0]
             lvl2[i]=inpt[1]
             ttype[i]=inpt[2]
@@ -370,8 +429,8 @@ def elvlcRead(ions, filename=0, getExtended=0, verbose=0,  useTh=1):
     #
     '%7i%30s%5s%5i%5s%5.1f%15.3f%15.3f \n'
     #
-    fstring='i7,a30,a5,i5,a5,f5.1,2f15.3'
-    elvlcFormat  = FortranFormat(fstring)
+    header_line = FortranRecordReader('i7,a30,a5,i5,a5,f5.1,2f15.3')
+#    elvlcFormat  = FortranFormat(fstring)
     #
     #
     if filename:
@@ -415,7 +474,8 @@ def elvlcRead(ions, filename=0, getExtended=0, verbose=0,  useTh=1):
     for i in range(0,nlvls):
         if verbose:
             print((s1[i][0:115]))
-        inpt = FortranLine(s1[i][0:115],elvlcFormat)
+#        inpt = FortranLine(s1[i][0:115],elvlcFormat)       
+        inpt =header_line.read(s1[i][0:115])
         lvl[i]=inpt[0]
         term[i]=inpt[1].strip()
         label[i] = inpt[2]
@@ -531,7 +591,8 @@ def fblvlRead(filename, verbose=0):
     """
 #        #  ,format='(i5,a20,2i5,a3,i5,2f20.3)'
     fstring='i5,a20,2i5,a3,i5,2f20.3'
-    elvlcFormat=FortranFormat(fstring)
+#    elvlcFormat=FortranFormat(fstring)
+    header_line = FortranRecordReader(fstring)
     #
     if os.path.exists(filename):
         input=open(filename,'r')
@@ -558,7 +619,8 @@ def fblvlRead(filename, verbose=0):
         for i in range(0,nlvls):
             if verbose:
                 print((s1[i]))
-            inpt=FortranLine(s1[i],elvlcFormat)
+#            inpt=FortranLine(s1[i],elvlcFormat)
+            inpt = header_line.read(s1[i])
             lvl[i]=inpt[0]
             conf[i]=inpt[1].strip()
             pqn[i]=inpt[2]
@@ -758,10 +820,12 @@ def ioneqRead(ioneqname='', verbose=0):
     nTemperature=int(ntemp)
     nElement=int(nele)
     #
-    tformat=FortranFormat(str(nTemperature)+'f6.2')
-    ioneqTemperature=FortranLine(s1[1],tformat)
-    ioneqTemperature=np.asarray(ioneqTemperature[:],'Float64')
-    ioneqTemperature=10.**ioneqTemperature
+#    tformat=FortranFormat(str(nTemperature)+'f6.2')
+    header_linet = FortranRecordReader(str(nTemperature)+'f6.2')
+#    ioneqTemperature=FortranLine(s1[1],tformat)
+    ioneqTemperature = header_linet.read(s1[1])
+    ioneqTemperature = np.asarray(ioneqTemperature[:],'Float64')
+    ioneqTemperature = 10.**ioneqTemperature
     nlines=0
     idx=-1
     while idx < 0:
@@ -771,11 +835,13 @@ def ioneqRead(ioneqname='', verbose=0):
     nlines -= 1
     #
     #
-    ioneqformat=FortranFormat('2i3,'+str(nTemperature)+'e10.2')
+#    ioneqformat=FortranFormat('2i3,'+str(nTemperature)+'e10.2')
+    header_lineq = FortranRecordReader('2i3,'+str(nTemperature)+'e10.2')
     #
     ioneqAll=np.zeros((nElement,nElement+1,nTemperature),'Float64')
     for iline in range(2,nlines):
-        out=FortranLine(s1[iline],ioneqformat)
+#        out=FortranLine(s1[iline],ioneqformat)
+        out = header_lineq.read(s1[iline])
         iz=out[0]
         ion=out[1]
         ioneqAll[iz-1,ion-1].put(list(range(nTemperature)),np.asarray(out[2:],'Float64'))
@@ -885,6 +951,114 @@ def masterListRead():
     #
     # -------------------------------------------------------------------------------------
     #
+def masterListInfo(force=0, verbose=0):
+    """
+    returns information about ions in masterlist
+    the reason for this file is to speed up multi-ion spectral calculations
+    the information is stored in a pickled file 'masterlist_ions.pkl'
+    if the file is not found, one will be created and the following information
+    returned for each ion
+    wmin, wmax :  the minimum and maximum wavelengths in the wgfa file
+    tmin, tmax :  the minimum and maximum temperatures for which the ionization balance is nonzero
+    """
+    dir=os.environ["XUVTOP"]
+    infoPath = os.path.join(dir, 'masterlist')
+    infoName=os.path.join(dir,'masterlist','masterlist_ions.pkl')
+    masterName=os.path.join(dir,'masterlist','masterlist.ions')
+    #
+    makeNew = force == 1 or not os.path.isfile(infoName)
+#    if os.path.isfile(infoName):
+    if not makeNew:
+#       print ' file exists - ',  infoName
+        pfile = open(infoName, 'r')
+        masterListInfo = pickle.load(pfile)
+        pfile.close
+    elif os.access(infoPath, os.W_OK):
+        # the file does not exist but we have write access and will create it
+        defaults = defaultsRead()
+        print((' defaults = %s'%(str(defaults))))
+        ioneqName = defaults['ioneqfile']
+        ioneq = ioneqRead(ioneqname = ioneqName)
+        masterList = masterListRead()
+        masterListInfo = {}
+        haveZ = [0]*31
+        haveStage = np.zeros((31, 31), 'Int32')
+        haveDielectronic = np.zeros((31, 31), 'Int32')
+        for one in masterList:
+            if verbose:
+                print((' ion = %s'%(one)))
+            ionInfo = convertName(one)
+            z = ionInfo['Z']
+            stage = ionInfo['Ion']
+            haveZ[z] = 1
+            dielectronic = ionInfo['Dielectronic']
+            if dielectronic:
+                haveDielectronic[z, stage] = 1
+            else:
+                haveStage[z, stage] = 1
+            thisIoneq = ioneq['ioneqAll'][z- 1, stage - 1 + dielectronic]
+            good = thisIoneq > 0.
+            goodTemp = ioneq['ioneqTemperature'][good]
+            tmin = goodTemp.min()
+            tmax = goodTemp.max()
+            vgood = thisIoneq == thisIoneq.max()
+            vgoodTemp = ioneq['ioneqTemperature'][vgood][0]
+            wgfa = wgfaRead(one)
+            nZeros = wgfa['wvl'].count(0.)
+            # two-photon transitions are denoted by a wavelength of zero (0.)
+            while nZeros > 0:
+                wgfa['wvl'].remove(0.)
+                nZeros = wgfa['wvl'].count(0.)
+            # unobserved lines are denoted with a negative wavelength
+            wvl = np.abs(np.asarray(wgfa['wvl'], 'float64'))
+            wmin = wvl.min()
+            wmax = wvl.max()
+            masterListInfo[one] = {'wmin':wmin, 'wmax':wmax, 'tmin':tmin, 'tmax':tmax, 'tIoneqMax':vgoodTemp}
+        masterListInfo['haveZ'] = haveZ
+        masterListInfo['haveStage'] = haveStage
+        masterListInfo['haveDielectronic'] = haveDielectronic
+        #  now do the bare ions from H thru Zn
+        #  these are only involved in the continuum
+        for iz in range(1, 31):
+            ions = zion2name(iz, iz+1)
+            thisIoneq = ioneq['ioneqAll'][iz-1, iz]
+            good = thisIoneq > 0.
+            goodTemp = ioneq['ioneqTemperature'][good]
+            tmin = goodTemp.min()
+            tmax = goodTemp.max()
+            wmin=0.
+            wmax = 1.e+30
+            masterListInfo[ions] = {'wmin':wmin, 'wmax':wmax, 'tmin':tmin, 'tmax':tmax}
+        pfile = open(infoName, 'w')
+        pickle.dump(masterListInfo, pfile)
+        pfile.close
+    else:
+        # the file does not exist and we do NOT have write access to creat it
+        # will just make an inefficient, useless version
+        masterListInfo = {}
+        for one in masterList:
+            ionInfo = convertName(one)
+            z = ionInfo['Z']
+            stage = ionInfo['Ion']
+            dielectronic = ionInfo['Dielectronic']
+            wmin=0.
+            wmax = 1.e+30
+            masterListInfo[one] = {'wmin':wmin, 'wmax':wmax, 'tmin':1.e+4, 'tmax':1.e+9}
+        #  now do the bare ions from H thru Zn
+        #  these are only involved in the continuum
+        for iz in range(1, 31):
+            ions = zion2name(iz, iz+1)
+            wmin=0.
+            wmax = 1.e+30
+            masterListInfo[ions] = {'wmin':wmin, 'wmax':wmax, 'tmin':1.e+4, 'tmax':1.e+9}
+        pfile = open(infoName, 'w')
+        pickle.dump(masterListInfo, pfile)
+        pfile.close
+        masterListInfo = {'noInfo':'none'}
+    return masterListInfo
+    #
+    # -------------------------------------------------------------------------------------
+    #
 def photoxRead(ions):
     """
     read chianti photoionization .photox files and return
@@ -893,12 +1067,12 @@ def photoxRead(ions):
         the photox files are not in any released version of the CHIANTI database
     """
     #
-    zion=convertName(ions)
+    zion = util.convertName(ions)
     if zion['Z'] < zion['Ion']:
         print((' this is a bare nucleus that has no ionization rate'))
         return
     #
-    fname=ion2filename(ions)
+    fname = util.ion2filename(ions)
     paramname=fname+'.photox'
     input=open(paramname,'r')
     lines = input.readlines()
@@ -959,18 +1133,24 @@ def rrRead(ions):
         #
         if rrtype == 1:
             # a Badnell type
-            fmt=FortranFormat('3i5,e12.4,f10.5,2e12.4')
-            params=FortranLine(lines[1],fmt)
+#            fmt=FortranFormat('3i5,e12.4,f10.5,2e12.4')
+            header_line =  FortranRecordReader('3i5,e12.4,f10.5,2e12.4')
+#            params=FortranLine(lines[1],fmt)
+            params = header_line.read(lines[1])
             RrParams={'rrtype':rrtype, 'params':params, 'ref':ref}
         elif rrtype == 2:
             # a Badnell type
-            fmt=FortranFormat('3i5,e12.4,f10.5,2e11.4,f10.5,e12.4')
-            params=FortranLine(lines[1],fmt)
+#            fmt=FortranFormat('3i5,e12.4,f10.5,2e11.4,f10.5,e12.4')
+            header_line =  FortranRecordReader('3i5,e12.4,f10.5,2e11.4,f10.5,e12.4')
+#            params=FortranLine(lines[1],fmt)
+            params = header_line.read(lines[1])
             RrParams={'rrtype':rrtype, 'params':params, 'ref':ref}
         elif rrtype == 3:
             # a Shull type
-            fmt=FortranFormat('2i5,2e12.4')
-            params=FortranLine(lines[1],fmt)
+#            fmt=FortranFormat('2i5,2e12.4')
+            header_line =  FortranRecordReader('2i5,2e12.4')
+#            params=FortranLine(lines[1],fmt)
+            params = header_line.read(lines[1])
             RrParams={'rrtype':rrtype, 'params':params, 'ref':ref}
         else:
             RrParams=None
@@ -1062,11 +1242,11 @@ def splomRead(ions, ea=0, filename=None):
     """
     read chianti .splom files and return
     {"lvl1":lvl1,"lvl2":lvl2,"ttype":ttype,"gf":gf,"deryd":de,"c":c,"splom":splomout,"ref":hdr}
-    probably no longer used
+    still needed for ionization cross sections
     """
     #
     if type(filename) == type(None):
-        fname=ion2filename(ions)
+        fname = util.ion2filename(ions)
         if ea:
             splomname=fname+'.easplom'
         else:
@@ -1079,7 +1259,8 @@ def splomRead(ions, ea=0, filename=None):
     #indices=line1[0:15]
     remainder=line1[16:]
     nom=remainder.split(' ')
-    format=FortranFormat('5i3,'+str(len(nom))+'E10.2')
+#    format=FortranFormat('5i3,'+str(len(nom))+'E10.2')
+    header_line = FortranRecordReader('5i3,'+str(len(nom))+'E10.2')
     #  go back to the beginning
     input.seek(0)
     lines=input.readlines()
@@ -1094,7 +1275,8 @@ def splomRead(ions, ea=0, filename=None):
     splom=[]
     #ntrans=0
     while data > 1:
-        splomdat=FortranLine(lines[iline],format)
+#        splomdat=FortranLine(lines[iline],format)
+        splomdat = header_line.read(lines[iline])
         l1=splomdat[2]
         l2=splomdat[3]
         tt1=splomdat[4]
@@ -1135,22 +1317,22 @@ def splupsRead(ions, filename=0, prot=0, ci=0,  diel=0):
     if filename:
         splupsname = filename
     else:
-        fname=ion2filename(ions)
+        fname = util.ion2filename(ions)
         if prot:
             splupsname=fname+'.psplups'
         elif ci:
             splupsname=fname+'.cisplups'
         elif diel:
-            splupsname=fname+'.dielsplups'
+            splupsname=fname+'.splups'
         else:
             splupsname=fname+'.splups'
     if not os.path.exists(splupsname):
         if prot:
-            return None
+            return {'file not found':splupsname}
         elif ci:
-            return None
+            return {'file not found':splupsname}
         else:
-            return None
+            return {'file not found':splupsname}
     # there is splups/psplups data
     else:
         input=open(splupsname,'r')
@@ -1175,13 +1357,15 @@ def splupsRead(ions, filename=0, prot=0, ci=0,  diel=0):
         splups = [0.]*nsplups
         if prot:
 #            splupsFormat1 = FortranFormat('3i3,8e10.3')
-            splupsFormat2 = FortranFormat('3i3,3e10.3')
+#            splupsFormat2 = FortranFormat('3i3,3e10.3')
+            header_line = FortranRecordReader('3i3,3e10.3')
         else:
 #            splupsFormat1='(6x,3i3,8e10.3)'
-            splupsFormat2 = FortranFormat('6x,3i3,3e10.3')
-        #
+#            splupsFormat2 = FortranFormat('6x,3i3,3e10.3')
+            header_line = FortranRecordReader('6x,3i3,3e10.3')        #
         for i in range(0,nsplups):
-            inpt=FortranLine(s1[i],splupsFormat2)
+#            inpt=FortranLine(s1[i],splupsFormat2)
+            inpt = header_line.read(s1[i])
             lvl1[i]=inpt[0]
             lvl2[i]=inpt[1]
             ttype[i]=inpt[2]
@@ -1192,10 +1376,12 @@ def splupsRead(ions, filename=0, prot=0, ci=0,  diel=0):
                 as1 = s1[i][39:].rstrip()
             else:
                 as1 = s1[i][45:].rstrip()
-            nspl[i] = len(as1)/10
-            splupsFormat3 = FortranFormat(str(nspl[i])+'E10.2')
+            nspl[i] = len(as1)//10
+#            splupsFormat3 = FortranFormat(str(nspl[i])+'E10.2')
 #            splupsFormat3 = '(' + str(nspl[i]) + 'e10.3' + ')'
-            inpt = FortranLine(as1, splupsFormat3)
+            header_line3 = FortranRecordReader(str(nspl[i])+'e10.3' )
+#            inpt = FortranLine(as1, splupsFormat3)
+            inpt = header_line3.read(as1)
             spl1 = np.asarray(inpt[:], 'float64')
             splups[i] = spl1
         #
@@ -1291,10 +1477,12 @@ def vernerRead():
     yw = np.zeros((maxZ,maxNel),'float64')
     #
     fstring='i2,i3,i2,i2,6f11.3'
-    vernerFormat=FortranFormat(fstring)
+    header_line = FortranRecordReader(fstring)
+#    vernerFormat=FortranFormat(fstring)
     #
     for iline in range(nlines):
-        out=FortranLine(lines[iline],vernerFormat)
+#        out=FortranLine(lines[iline],vernerFormat)
+        out = header_line.read(lines[iline])
         z = out[0]
         nel = out[1]
         stage = z - nel + 1
@@ -1385,10 +1573,12 @@ def wgfaRead(ions, filename=0, elvlcname=-1, total=0, verbose=0):
         print((' nwvl = %10i'%(nwvl)))
     #
     wgfaFormat='(2i5,f15.3,2e15.3)'
+    header_line = FortranRecordReader(wgfaFormat)
     for ivl in range(nwvl):
         if verbose:
             print(' index %5i  %s'%(ivl, s1[ivl]))
-        inpt=FortranLine(s1[ivl],wgfaFormat)
+#        inpt=FortranLine(s1[ivl],wgfaFormat)
+        inpt = header_line.read(s1[ivl])
         lvl1[ivl]=inpt[0]
         lvl2[ivl]=inpt[1]
         wvl[ivl]=inpt[2]
@@ -1440,7 +1630,9 @@ def wgfaWrite(info, outfile = 0, minBranch = 0.):
     if outfile:
         wgfaname = outfile
     else:
-        wgfaname = gname + '.wgfa'
+        print(' output filename not specified, no file will be created')
+        return
+#        wgfaname = gname + '.wgfa'
     print((' wgfa file name = ', wgfaname))
     if minBranch > 0.:
         info['ref'].append(' minimum branching ratio = %10.2e'%(minBranch))

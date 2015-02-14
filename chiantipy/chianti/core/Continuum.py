@@ -1,15 +1,16 @@
 import os
-import types
+#import types
 import numpy as np
 from scipy import interpolate
 try:
-    from matplotlib.delaunay.triangulate import Triangulation
+    from matplotlib.tri import Triangulation
 except:
     from scikits.delaunay.triangulate import Triangulation
 import chianti.data as chdata
 import chianti.util as util
 import chianti.io as io
 import chianti.constants as const
+import chianti.Gui as chgui
 ip = chdata.Ip
 MasterList = chdata.MasterList
 #import chianti
@@ -20,7 +21,7 @@ class continuum:
 
     can specify the abundance file with abund='cosmic_1973_allen', for example (the .ioneq suffix should not be included
     '''
-    def __init__(self, ionStr,  temperature=None,  density=None, abund=0, abundanceName=0):
+    def __init__(self, ionStr,  temperature=0,  density=0, abund=0, abundanceName=0):
         nameDict = util.convertName(ionStr)
         self.Z = nameDict['Z']
         self.Ion = nameDict['Ion']
@@ -31,13 +32,13 @@ class continuum:
         if not abund:
             self.AbundanceName = self.Defaults['abundfile']
         else:
-            if abund in chdata.Abundance.keys():
+            if abund in sorted(chdata.Abundance.keys()):
                 self.AbundanceName = abund
             else:
-                abundChoices = chdata.Abundance.keys()
+                abundChoices = sorted(chdata.Abundance.keys())
 #                for one in wvl[topLines]:
 #                    wvlChoices.append('%12.3f'%(one))
-                abundChoice = gui.selectorDialog(abundChoices,label='Select Abundance name')
+                abundChoice = chgui.gui.selectorDialog(abundChoices,label='Select Abundance name')
                 abundChoice_idx = abundChoice.selectedIndex
                 self.AbundanceName = abundChoices[abundChoice_idx[0]]
                 abund = self.AbundanceName
@@ -52,13 +53,13 @@ class continuum:
         if self.Ion > 1:
             self.Ip=ip[self.Z-1, self.Ion-2]
         else:
-            print ' in continuum, trying to use the neutral ion'
+            print(' in continuum, trying to use the neutral ion')
             return
         #
-        if type(temperature) != types.NoneType:
+        if temperature:
             self.Temperature = np.array(temperature,'float64')
         #
-        if type(density) != types.NoneType:
+        if density:
             self.Density = np.asarray(density,'float64')
         #
         #----------------------------------------------------------------------------------------
@@ -80,7 +81,7 @@ class continuum:
         if hasattr(self, 'Temperature'):
             temperature = self.Temperature
         else:
-            print ' temperature undefined'
+            print(' temperature undefined')
             return
         #
         if hasattr(self, 'Fblvl'):
@@ -113,14 +114,14 @@ class continuum:
         # energy level in inverse cm
         ecm = fblvl['ecm']
         for i in range(nlvls):
-            print ' lvl ecm wvl = ',i, ecm[i], 1.e+8/(ipcm-ecm[i])
+            print(' lvl %5i ecm %12.3f  wvl %12.4f'%(i, ecm[i], 1.e+8/(ipcm-ecm[i])))
         # statistical weigths/multiplicities
-        mult = fblvl['mult']
+        multu = fblvl['mult']
         multr = rFblvl['mult']
         #
         #
         ipcm = self.Ip/const.invCm2Ev
-        wecm = ipcm-ecm
+#        wecm = ipcm-ecm
         #
         # get Karzas-Latter Gaunt factors
         try:
@@ -147,7 +148,7 @@ class continuum:
                 self.vernerCross(wvl)
                 vCross = self.VernerCross
             #
-            ratg[0] = float(mult[0])/float(multr[0])
+            ratg[0] = float(multu[0])/float(multr[0])
             ipLvlEv = self.Ip - const.invCm2Ev*ecm[0]
             ipLvlErg = const.ev2Erg*ipLvlEv
             for itemp in range(nTemp):
@@ -161,7 +162,7 @@ class continuum:
                 thisGf = klgfb['klgfb'][pqn[ilvl]-1, l[ilvl]]
                 spl = interpolate.splrep(klgfb['pe'], thisGf)
                 gf = np.exp(interpolate.splev(scaledE, spl))
-                ratg[ilvl] = float(mult[ilvl])/float(multr[0]) # ratio of statistical weights
+                ratg[ilvl] = float(multu[ilvl])/float(multr[0]) # ratio of statistical weights
             #
                 for itemp in range(nTemp):
                     expf[ilvl] = np.exp((ipLvlErg - 1.e+8*const.planck*const.light/wvl)/(const.boltzmann*temperature[itemp]))
@@ -186,9 +187,9 @@ class continuum:
                 vCross = self.VernerCross
                 #
                 mask[0] = 1.e+8/wvl < (ipcm - ecm[0])
-                ratg[0] = float(mult[0])/float(multr[0])
+                ratg[0] = float(multu[0])/float(multr[0])
                 ipLvlEv = self.Ip - const.invCm2Ev*ecm[0]
-                print ' verner ipLvlEv =', ipLvlEv
+                print(' verner ipLvlEv = %10.3e'%(ipLvlEv))
                 ipLvlErg = const.ev2Erg*ipLvlEv
                 expf[0] = np.exp((ipLvlErg - 1.e+8*const.planck*const.light/wvl)/(const.boltzmann*temperature))
                 fbrate[0] = (const.planck*const.light/(1.e-8*wvl))**5*const.verner*ratg[0]*vCross/temperature**1.5
@@ -203,7 +204,7 @@ class continuum:
                 spl = interpolate.splrep(klgfb['pe'], thisGf)
                 gf = np.exp(interpolate.splev(scaledE, spl))
                 mask[ilvl] = 1.e+8/wvl < (ipcm - ecm[ilvl])
-                ratg[ilvl] = float(mult[ilvl])/float(multr[0]) # ratio of statistical weights
+                ratg[ilvl] = float(multu[ilvl])/float(multr[0]) # ratio of statistical weights
                 ipLvlErg = const.ev2Erg*ipLvlEv
                 expf[ilvl] = np.exp((ipLvlErg - 1.e+8*const.planck*const.light/wvl)/(const.boltzmann*temperature))
                 fbrate[ilvl] = const.freeBound*ratg[ilvl]*(ipLvlErg**2/float(pqn[ilvl]))*gf/(temperature**1.5*(wvl)**2)
@@ -231,7 +232,7 @@ class continuum:
                 vCross = self.VernerCross
             #
             mask[0] = 1.e+8/wvl < (ipcm - ecm[0])
-            ratg[0] = float(mult[0])/float(multr[0])
+            ratg[0] = float(multu[0])/float(multr[0])
             ipLvlEv = self.Ip - const.invCm2Ev*ecm[0]
             ipLvlErg = const.ev2Erg*ipLvlEv
             expf[0] = np.exp((ipLvlErg - 1.e+8*const.planck*const.light/wvl)/(const.boltzmann*temperature))
@@ -244,7 +245,7 @@ class continuum:
                 spl = interpolate.splrep(klgfb['pe'], thisGf)
                 gf = np.exp(interpolate.splev(scaledE, spl))
                 mask[ilvl] = 1.e+8/wvl < (ipcm - ecm[ilvl])
-                ratg[ilvl] = float(mult[ilvl])/float(multr[0]) # ratio of statistical weights
+                ratg[ilvl] = float(multu[ilvl])/float(multr[0]) # ratio of statistical weights
                 ipLvlErg = const.ev2Erg*ipLvlEv
                 expf[ilvl] = np.exp((ipLvlErg - 1.e+8*const.planck*const.light/wvl)/(const.boltzmann*temperature))
                 fbrate[ilvl] = const.freeBound*ratg[ilvl]*(ipLvlErg**2/float(pqn[ilvl]))*expf[ilvl]*gf/(temperature**1.5*(wvl)**2)
@@ -275,13 +276,13 @@ class continuum:
         if self.Ion > 1 :
             self.Ip=ip[self.Z-1, self.Ion-2]
         else:
-            print ' in freeBound, trying to use the neutral ion as the recombining ion'
+            print(' in freeBound, trying to use the neutral ion as the recombining ion')
             self.FreeBound={}
             return
         try:
             temperature = self.Temperature
         except:
-            print ' temperature undefined'
+            print(' temperature undefined')
             return
         # the recombined ion contains that data for fblvl
         try:
@@ -291,7 +292,7 @@ class continuum:
             self.Fblvl = io.fblvlRead(fblvlname)
             fblvl = self.Fblvl
             # in case there is no fblvl file
-            if 'errorMessage' in fblvl.keys():
+            if 'errorMessage' in fblvl:
                 self.FreeBound = fblvl
                 return
         #  need data for the current/recombining ion
@@ -303,9 +304,9 @@ class continuum:
                 rFblvl = {'mult':[1., 1.]}
             else:
                 rfblvlname = util.zion2filename(self.Z,self.Ion)+'.fblvl'
-                self.rFblvl = io.fblvlRead(fblvlname)
+                self.rFblvl = io.fblvlRead(rfblvlname)
                 rFblvl = self.rFblvl
-            if 'errorMessage' in rFblvl.keys():
+            if 'errorMessage' in rFblvl:
                 self.FreeBound = fblvl
                 return
         try:
@@ -341,7 +342,7 @@ class continuum:
 #       ipcm = self.Ip/const.invCm2Ev
         #
         #
-        wecm=1.e+8/(ipcm-ecm)
+#        wecm=1.e+8/(ipcm-ecm)
         #
         # get karzas-latter Gaunt factors
         try:
@@ -493,13 +494,13 @@ class continuum:
         if hasattr(self, 'Temperature'):
             temperature = self.Temperature
         else:
-            print ' temperature undefined'
+            print(' temperature undefined')
             return
         #
         if self.Ion > 1:
             self.Ip=ip[self.Z-1, self.Ion-2]
         else:
-            print ' in freeBound, trying to use the neutral ion as the recombining ion'
+            print(' in freeBound, trying to use the neutral ion as the recombining ion')
             self.FreeBound={}
             return
         #
@@ -563,7 +564,8 @@ class continuum:
         #wecm=1.e+8/(ipcm-ecm)
         #
         # sometime the rFblvl file does not exist
-        if fblvl.has_key('mult') and rFblvl.has_key('mult'):
+        if 'mult' in fblvl and 'mult' in rFblvl:
+#        if fblvl.has_key('mult') and rFblvl.has_key('mult'):
             #
             nlvls = len(fblvl['lvl'])
             # pqn = principle quantum no. n
@@ -608,7 +610,7 @@ class continuum:
             vernerDat = self.VernerDat
         z = self.Z
         stage = self.Ion
-        ip = self.Ip
+#        ip = self.Ip
         ipcm = self.Ip/const.invCm2Ev
         ecm = self.Fblvl['ecm']
         #
@@ -641,7 +643,7 @@ class continuum:
             #
             ffi = self.itoh(wvl)
             ff = ffs['suthFf']
-            if not 'errorMessage' in ffi.keys():
+            if not 'errorMessage' in ffi:
                 iff = ffi['itohFf']
                 itohMask = np.logical_not(iff.mask)
                 ff[itohMask] = iff[itohMask]
@@ -651,7 +653,7 @@ class continuum:
         except:
             self.ioneqOne()
             gIoneq = self.IoneqOne
-        if type(gIoneq) == types.FloatType:
+        if type(gIoneq) == float:
             # only one temperature specified
             if gIoneq == 0.:
                 ffRate = np.zeros(wvl.size)
@@ -692,7 +694,7 @@ class continuum:
             ffs = self.sutherland(wvl)
             ff = ffs['suthFf']
             ffi = self.itoh(wvl)
-            if 'errorMessage' not in ffi.keys():
+            if 'errorMessage' not in ffi:
                 iff = ffi['itohFf']
                 itohMask = np.logical_not(iff.mask)
                 ff[itohMask] = iff[itohMask]
@@ -717,7 +719,7 @@ class continuum:
             if hasattr(self, 'Temperature'):
                 temperature = self.Temperature
             else:
-                print ' temperature undefined'
+                print(' temperature undefined')
                 return
             if hasattr(self, 'Gffint'):
                 gffint = self.Gffint['gffint']
@@ -785,16 +787,23 @@ class continuum:
         except:
             self.ItohCoef = io.itohRead()['itohCoef'][self.Z-1].reshape(11, 11)
             itohCoef = self.ItohCoef
-        try:
-            t = (np.log10(self.Temperature) -7.25)/1.25
-        except:
+#        try:
+#            t = (np.log10(self.Temperature) -7.25)/1.25
+#        except:
+        if hasattr(self, 'Temperature'):
+            if type(self.Temperature) == float:
+                nTemp = 1
+            else:
+                nTemp = self.Temperature.size
+        else:
             errorMessage = ' temperature undefined in continuum.itoh'
             print(errorMessage)
             return {'errorMessage':errorMessage}
-        if type(self.Temperature) == types.FloatType:
-            nTemp = 1
-        else:
-            nTemp = self.Temperature.size
+        #
+#        if type(self.Temperature) == float:
+#            nTemp = 1
+#        else:
+#            nTemp = self.Temperature.size
         #
         nWvl = wvl.size
         #
@@ -929,7 +938,7 @@ class continuum:
         nonValidGg1 = np.log10(gga) < -4.
         nonValidGg2 = np.log10(gga) > 4.
         nonValidGg = np.logical_or(nonValidGg1, nonValidGg2)
-        ggOut = np.ma.array(gga, mask = nonValidGg, fill_value=True)
+#        ggOut = np.ma.array(gga, mask = nonValidGg, fill_value=True)
         iGg = np.ma.array((np.log10(gga) + 4.)*5., mask=nonValidGg,  fill_value=0.)
         #
         if nonValidGg.sum():
