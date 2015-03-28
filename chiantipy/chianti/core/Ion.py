@@ -52,7 +52,9 @@ class ion(_ionTrails):
         #
         self.Defaults=chdata.Defaults
         #
-        if abundanceName:
+        if abundance:
+            self.Abundance=abundance
+        elif abundanceName:
             if abundanceName in chdata.AbundanceList:
                 self.AbundanceName = abundanceName
                 self.Abundance = chdata.Abundance[self.AbundanceName]['abundance'][self.Z-1]
@@ -950,6 +952,9 @@ class ion(_ionTrails):
             temperature=self.Temperature
         else:
             temperature = self.IoneqAll['ioneqTemperature']
+        if not hasattr(self, 'AbundanceName'):
+            self.AbundanceName = self.Defaults['abundfile']
+        #
 #                temperature=self.IoneqTemperature
 #        else:  temperature=np.asarray(temperature,'float32')
         #
@@ -1811,7 +1816,10 @@ class ion(_ionTrails):
         if os.path.isfile(elvlcname):
             self.Elvlc = io.elvlcRead('',elvlcname)
         else:
-            print(' Elvlc file missing for '+self.IonStr)
+            zstuff = util.convertName(self.IonStr)
+            if zstuff['Ion'] - zstuff['Z'] != 1:
+                # don't expect one for the bare ion
+                print(' Elvlc file missing for '+self.IonStr)
             return
         #
         file = fileName +'.cilvl'
@@ -1843,7 +1851,7 @@ class ion(_ionTrails):
         #
         # -------------------------------------------------------------------------
         #
-    def spectrum(self, wavelength, filter=(chfilters.gaussianR,1000.)):
+    def spectrum(self, wavelength, filter=(chfilters.gaussianR,1000.), label=0):
         '''
         Calculates the line emission spectrum for the specified ion.
 
@@ -1854,6 +1862,13 @@ class ion(_ionTrails):
         spectrum the same.
 
         includes ionization equilibrium and elemental abundances
+        
+        can be called multiple times to use different filters and widths
+        uses label to keep the separate applications of spectrum sorted by the label
+        for example, do .spectrum( .... labe='test1')
+        and do          .spectrum( ....  label = 'test2')
+        then will get self.Spectrum.keys() = test1, test2 and
+        self.Spectrum['test1'] = {'intensity':aspectrum,  'wvl':wavelength, 'filter':useFilter.__name__, 'filterWidth':useFactor}
 
         Note:  scipy.ndimage.filters also includes a range of filters.
         '''
@@ -1895,7 +1910,14 @@ class ion(_ionTrails):
                         aspectrum[itemp] += useFilter(wavelength, wvlCalc, factor=useFactor)*self.Intensity['intensity'][itemp, iwvl]
     #                    for iwvl, wvlCalc in enumerate(self.Intensity['wvl']):
     #                        aspectrum[itemp] += useFilter(wavelength, wvlCalc, factor=useFactor)*self.Intensity['intensity'][itemp, iwvl]
-        self.Spectrum = {'intensity':aspectrum,  'wvl':wavelength, 'filter':useFilter.__name__, 'filterWidth':useFactor}
+        if type(label) == type(''):
+            if hasattr(self, 'Spectrum'):
+                self.Spectrum[label] = {'intensity':aspectrum,  'wvl':wavelength, 'filter':useFilter.__name__, 'filterWidth':useFactor}
+            else:
+                self.Spectrum = {label:{'intensity':aspectrum,  'wvl':wavelength, 'filter':useFilter.__name__, 'filterWidth':useFactor}}
+            
+        else:
+            self.Spectrum = {'intensity':aspectrum,  'wvl':wavelength, 'filter':useFilter.__name__, 'filterWidth':useFactor}
         #
         # -------------------------------------------------------------------------------------
         #

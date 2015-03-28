@@ -2,10 +2,7 @@ import os
 #import types
 import numpy as np
 from scipy import interpolate
-try:
-    from matplotlib.tri import Triangulation
-except:
-    from scikits.delaunay.triangulate import Triangulation
+from matplotlib.tri import Triangulation, LinearTriInterpolator
 import chianti.data as chdata
 import chianti.util as util
 import chianti.io as io
@@ -21,7 +18,7 @@ class continuum:
 
     can specify the abundance file with abund='cosmic_1973_allen', for example (the .ioneq suffix should not be included
     '''
-    def __init__(self, ionStr,  temperature=0,  density=0, abund=0, abundanceName=0):
+    def __init__(self, ionStr,  temperature,  density=0, abundance=0, abundanceName=0):
         nameDict = util.convertName(ionStr)
         self.Z = nameDict['Z']
         self.Ion = nameDict['Ion']
@@ -29,11 +26,12 @@ class continuum:
         self.Dielectronic = 0
         self.Defaults = chdata.Defaults
         #
-        if not abund:
-            self.AbundanceName = self.Defaults['abundfile']
-        else:
-            if abund in sorted(chdata.Abundance.keys()):
-                self.AbundanceName = abund
+        if abundance:
+            self.Abundance = abundance
+        elif abundanceName:
+            if abundanceName in sorted(chdata.Abundance.keys()):
+                self.AbundanceName = abundanceName
+                self.Abundance = chdata.Abundance[self.AbundanceName]['abundance'][self.Z-1]
             else:
                 abundChoices = sorted(chdata.Abundance.keys())
 #                for one in wvl[topLines]:
@@ -41,10 +39,15 @@ class continuum:
                 abundChoice = chgui.gui.selectorDialog(abundChoices,label='Select Abundance name')
                 abundChoice_idx = abundChoice.selectedIndex
                 self.AbundanceName = abundChoices[abundChoice_idx[0]]
-                abund = self.AbundanceName
+                abundanceName = self.AbundanceName
                 print(' Abundance chosen:  %s '%(self.AbundanceName))
+                self.Abundance = chdata.Abundance[self.AbundanceName]['abundance'][self.Z-1]
+        else:
+            self.AbundanceName = self.Defaults['abundfile']
+            self.Abundance = chdata.Abundance[self.AbundanceName]['abundance'][self.Z-1]
+
         #
-        self.Abundance = chdata.Abundance[self.AbundanceName]['abundance'][self.Z-1]
+#        self.Abundance = chdata.Abundance[self.AbundanceName]['abundance'][self.Z-1]
         #
         self.IoneqName = self.Defaults['ioneqfile']
         #
@@ -56,10 +59,12 @@ class continuum:
             print(' in continuum, trying to use the neutral ion')
             return
         #
-        if temperature:
-            self.Temperature = np.array(temperature,'float64')
+        self.Temperature = np.array(temperature,'float64')
         #
-        if density:
+        if type(density) != int:
+#            if type(density) == float:
+#                self.Density = density
+#            elif density.all():
             self.Density = np.asarray(density,'float64')
         #
         #----------------------------------------------------------------------------------------
@@ -323,7 +328,8 @@ class continuum:
         #except:
             #self.AbundanceAll = io.abundanceRead(abundancename = self.AbundanceName)
             #self.Abundance = self.AbundanceAll['abundance'][self.Z-1]
-        abund = chdata.Abundance[self.AbundanceName]['abundance'][self.Z-1]
+#        abund = chdata.Abundance[self.AbundanceName]['abundance'][self.Z-1]
+        abund = self.Abundance
         #
         ipcm = self.Ip/const.invCm2Ev
         iperg = self.Ip*const.ev2Erg
@@ -476,7 +482,7 @@ class continuum:
             fbrma.mask =  mask
             fbrma.fill_value = 0.
             # factor of 1.e-8 converts to Angstrom^-1, otherwise it would be cm^-1
-            fbRate = abund*gIoneq*(fbrma).sum(axis=0)
+            fbRate = self.Abundance*gIoneq*(fbrma).sum(axis=0)
             fbRate.fill_value = 0.
             self.FreeBound = {'rate':fbRate.data, 'temperature':temperature,'wvl':wvl}
         #
@@ -542,7 +548,7 @@ class continuum:
         #else:
             #self.AbundanceAll = io.abundanceRead(abundancename = self.AbundanceName)
             #self.Abundance = self.AbundanceAll['abundance'][self.Z-1]
-        abund = chdata.Abundance[self.AbundanceName]['abundance'][self.Z-1]
+#        abund = chdata.Abundance[self.AbundanceName]['abundance'][self.Z-1]
         #
         #ipcm = self.Ip/const.invCm2Ev
         # get log of photon energy relative to the ionization potential
@@ -591,7 +597,7 @@ class continuum:
                 ratg[ilvl] = float(mult[ilvl])/float(multr[0]) # ratio of statistical weights
                 ipLvlErg = const.ev2Erg*ipLvlEv
                 fbrate[ilvl] = ratg[ilvl]*(ipLvlErg**2/float(pqn[ilvl]))*gf/np.sqrt(temperature)
-            fbRate = abund*gIoneq*const.freeBoundLoss*(fbrate.sum(axis=0))
+            fbRate = self.Abundance*gIoneq*const.freeBoundLoss*(fbrate.sum(axis=0))
         else:
             fbRate = np.zeros((nTemp),'float64')
         self.FreeBoundLoss = {'rate':fbRate, 'temperature':temperature}
@@ -667,7 +673,7 @@ class continuum:
 #       print ' gIoneq = ', gIoneq
         if wvl.size > 1:
             gIoneq = gIoneq.repeat(wvl.size).reshape(self.Temperature.size,wvl.size)
-            abund = chdata.Abundance[self.AbundanceName]['abundance'][self.Z-1]
+#            abund = chdata.Abundance[self.AbundanceName]['abundance'][self.Z-1]
             #
             #try:
                 #abund = self.Abundance
@@ -676,7 +682,7 @@ class continuum:
                 #self.Abundance = self.AbundanceAll['abundance'][self.Z-1]
                 #abund = self.Abundance
                 #
-            ffRate = (const.freeFree*(self.Z)**2*abund*gIoneq*ff).squeeze()
+            ffRate = (const.freeFree*(self.Z)**2*self.Abundance*gIoneq*ff).squeeze()
             self.FreeFree = {'rate':ffRate, 'temperature':self.Temperature,'wvl':wvl}
         #
         # ----------------------------------------------------------------------------------------
@@ -740,7 +746,7 @@ class continuum:
                 self.ioneqOne()
                 gIoneq = self.IoneqOne
             #
-            abund = chdata.Abundance[self.AbundanceName]['abundance'][self.Z-1]
+#            abund = chdata.Abundance[self.AbundanceName]['abundance'][self.Z-1]
             #if hasattr(self, 'Abundance'):
                 #abund = self.Abundance
             #else:
@@ -748,7 +754,7 @@ class continuum:
                 #self.Abundance = self.AbundanceAll['abundance'][self.Z-1]
                 #abund = self.Abundance
                 #
-            ffRate = const.freeFreeLoss*(self.Z)**2*abund*gIoneq*gff*np.sqrt(temperature)
+            ffRate = const.freeFreeLoss*(self.Z)**2*self.Abundance*gIoneq*gff*np.sqrt(temperature)
             self.FreeFreeLoss = {'rate':ffRate, 'temperature':temperature}
         #
         # ----------------------------------------------------------------------------------------
@@ -930,8 +936,8 @@ class continuum:
             ig=(np.log10(gff['g21d']) + 4.)*5.
             gaunt = gff['gff']
             #tr=Triangulation(iu.flatten(),ig.flatten())
-            tr=Triangulation(iu,ig)
-            self.GffInterpolator = tr.nn_interpolator(gaunt.flatten())
+            tr = Triangulation(iu,ig)
+            self.GffInterpolator = LinearTriInterpolator(tr, gaunt.flatten())
             gffInterpolator = self.GffInterpolator
     #
         gga = np.array((float(self.Z)**2*const.ryd2erg/const.boltzmann)*(1./temperature),'float64')
@@ -950,7 +956,7 @@ class continuum:
         #iGg = (np.log10(gg) + 4.)*5.
         #print ' iGg.shape = ',iGg, iGg.shape
             #
-            nWvl = wvl.size
+            nWvl = len(wvl)
             nTemp = temperature.size
             #
             if (nTemp > 1) and (nWvl > 1):
@@ -966,7 +972,7 @@ class continuum:
                     gffOutMask[iwvl] = nonValidUu
                     uuOut[iwvl] = np.ma.array(uu, mask=nonValidUu, fill_value=True)
                     iUu = np.ma.array((np.log10(uu) + 4.)*10., mask=nonValidUu,  fill_value=0.)
-                    gffOut1[iwvl] = gffInterpolator(iUu, iGg)
+                    gffOut1[iwvl] = gffInterpolator.__call__(iUu, iGg)
                     wvlt = 1./(wvl[iwvl]**2*np.sqrt(temperature))  # was sortedTemperature
                     ff[iwvl] = (np.exp(-uuOut[iwvl])*gffOut1[iwvl]*wvlt)
                 gffOut1.mask = gffOutMask
@@ -983,7 +989,7 @@ class continuum:
                 nonValidUu = np.logical_or(nonValidUu1, nonValidUu2)
                 gffOutMask = nonValidUu
                 iUu = (np.log10(uu) + 4.)*10.
-                gffOut1 = gffInterpolator(iUu, iGg.repeat(nWvl))
+                gffOut1 = gffInterpolator.__call__(iUu, iGg.repeat(nWvl))
                 wvlt = 1./(wvl**2*np.sqrt(temperature))
                 ff = np.ma.array(np.exp(-uu)*gffOut1*wvlt)
                 ff.mask=gffOutMask
@@ -1006,7 +1012,7 @@ class continuum:
                 #iUu = np.ma.array((np.log10(uu) + 4.)*10., mask=nonValidUu,  fill_value=0.)
                 iUu = (np.log10(uu) + 4.)*10.
                 #print ' iUu.shape = ',iUu.shape
-                gffOut1 = gffInterpolator(iUu, iGg.flatten())
+                gffOut1 = gffInterpolator.__call__(iUu, iGg.flatten())
                 #
                 wvlt = 1./(wvl**2*np.sqrt(temperature))
                 ff1 = np.exp(-uuOut)*gffOut1*wvlt
