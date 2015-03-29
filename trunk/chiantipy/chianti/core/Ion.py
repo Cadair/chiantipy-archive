@@ -2234,7 +2234,8 @@ class ion(_ionTrails):
                 pop = fullpop[ci:ci+nlvls]
             except np.linalg.LinAlgError:
                 pop = np.zeros(nlvls, 'float64')
-#                print ' error in matrix inversion, setting populations to zero at T = ', ('%8.2e')%(temperature)
+                if verbose:
+                    print(' error in matrix inversion, setting populations to zero at T = %10.2e'%(temperature))
             #
         #   next, in case of a single eDensity value
 #            pop = np.linalg.solve(popmat,b)
@@ -2343,7 +2344,8 @@ class ion(_ionTrails):
                     pop[itemp] = thispop[ci:ci+nlvls]
                 except np.linalg.LinAlgError:
                     pop[itemp] = np.zeros(nlvls, 'float64')
-#                    print ' error in matrix inversion, setting populations to zero at T = ', ('%8.2e')%(temperature[itemp])
+                    if verbose:
+                        print(' error in matrix inversion, setting populations to zero at T = %10.2e'%(temperature[itemp]))
             #
         elif ntemp == 1:
 #            pop=np.zeros((ndens,nlvls),"float64")
@@ -2470,7 +2472,8 @@ class ion(_ionTrails):
                     pop[idens] = thispop[ci:ci+nlvls]
                 except np.linalg.LinAlgError:
                     pop[idens] = np.zeros(nlvls, 'float64')
-#                    print ' error in matrix inversion, setting populations to zero at eDensity = ', ('%8.2e')%(eDensity[idens])
+                    if verbose:
+                        print(' error in matrix inversion, setting populations to zero at eDensity = %10.2e'%(eDensity[idens]))
 #                thispop=np.linalg.solve(popmat,b)
 #                if rec:
 #                    pop[idens] = thispop[ci:ci+nlvls+rec-1]
@@ -2601,7 +2604,8 @@ class ion(_ionTrails):
                     pop[itemp] = thispop[ci:ci+nlvls]
                 except np.linalg.LinAlgError:
                     pop[itemp] = np.zeros(nlvls, 'float64')
-#                    print ' error in matrix inversion, setting populations to zero at T = ', ('%8.2e')%(temperature[itemp])
+                    if verbose:
+                        print(' error in matrix inversion, setting populations to zero at T = %10.2e'%(temperature[itemp]))
 #                thispop=np.linalg.solve(popmat,b)
 #                if rec:
 #                    pop[itemp] = thispop[ci:ci+nlvls+rec-1]
@@ -2912,7 +2916,8 @@ class ion(_ionTrails):
             except np.linalg.LinAlgError:
                 pop = np.zeros(nlvls, 'float64')
                 popHigher = 0.
-#                print ' error in matrix inversion, setting populations to zero at T = ', ('%8.2e')%(temperature)
+                if verbose:
+                    print(' error in matrix inversion, setting populations to zero at T = %10.2e'%(temperature))
         #
         # ------------- ntemp = 1 ---------------------------------------------------------
         #
@@ -3019,7 +3024,8 @@ class ion(_ionTrails):
                 except np.linalg.LinAlgError:
                     pop[itemp] = np.zeros(nlvls, 'float64')
                     popHigher[itemp] = 0.
-#                    print ' error in matrix inversion, setting populations to zero at T = ', ('%8.2e')%(temperature[itemp])
+                    if verbose:
+                        print(' error in matrix inversion, setting populations to zero at T = %10.2e'%(temperature[itemp]))
             #
         elif ntemp == 1:
             pop=np.zeros((ndens,nlvls),"float64")
@@ -3110,7 +3116,8 @@ class ion(_ionTrails):
                 except np.linalg.LinAlgError:
                     pop[idens] = np.zeros(nlvls, 'float64')
                     popHigher[idens] = 0.
-#                    print ' error in matrix inversion, setting populations to zero at eDensity = ', ('%8.2e')%(eDensity[idens])
+                    if verbose:
+                        print(' error in matrix inversion, setting populations to zero at eDensity = %10.2e'%(eDensity[idens]))
                 #
         elif ntemp>1  and ntemp==ndens:
             pop=np.zeros((ntemp,nlvls),"float64")
@@ -3204,7 +3211,8 @@ class ion(_ionTrails):
                 except np.linalg.LinAlgError:
                     pop[itemp] = np.zeros(nlvls, 'float64')
                     popHigher[itemp] = 0.
-#                    print ' error in matrix inversion, setting populations to zero at T = ', ('%8.2e')%(temperature[itemp])
+                    if verbose:
+                        print(' error in matrix inversion, setting populations to zero at T = %10.2e'%(temperature[itemp]))
             #
         pop=np.where(pop >0., pop,0.)
         self.Population={"temperature":temperature, "eDensity":eDensity, "population":pop, "protonDensity":protonDensity, "ci":ci, "rec":rec, 'popmat':popmata, 'b':b, 'rad':rad}
@@ -3544,7 +3552,8 @@ class ion(_ionTrails):
                 pop = fullpop[ci:ci+nlvls]
             except np.linalg.LinAlgError:
                 pop = np.zeros(nlvls, 'float64')
-#                print ' error in matrix inversion, setting populations to zero at T = ', ('%8.2e')%(temperature)
+                if verbose:
+                    print(' error in matrix inversion, setting populations to zero at T = %%8.2e'%(temperature))
             #
             # ----------------------------------------------------------------------------------
         #   next, in case of a single eDensity value
@@ -3657,7 +3666,8 @@ class ion(_ionTrails):
                     pop[itemp] = thispop[ci:ci+nlvls]
                 except np.linalg.LinAlgError:
                     pop[itemp] = np.zeros(nlvls, 'float64')
-#                    print ' error in matrix inversion, setting populations to zero at T = ', ('%8.2e')%(temperature[itemp])
+                    if verbose:
+                        print(' error in matrix inversion, setting populations to zero at T = %10.2e'%(temperature[itemp]))
             #
         elif ntemp == 1:
 #            pop=np.zeros((ndens,nlvls),"float64")
@@ -3786,7 +3796,8 @@ class ion(_ionTrails):
                     pop[idens] = thispop[ci:ci+nlvls]
                 except np.linalg.LinAlgError:
                     pop[idens] = np.zeros(nlvls, 'float64')
-#                    print ' error in matrix inversion, setting populations to zero at eDensity = ', ('%8.2e')%(eDensity[idens])
+                    if verbose:
+                        print(' error in matrix inversion, setting populations to zero at eDensity = %10.2e'%(eDensity[idens]))
 #                thispop=np.linalg.solve(popmat,b)
 #                if rec:
 #                    pop[idens] = thispop[ci:ci+nlvls+rec-1]
@@ -3918,7 +3929,8 @@ class ion(_ionTrails):
                     pop[itemp] = thispop[ci:ci+nlvls]
                 except np.linalg.LinAlgError:
                     pop[itemp] = np.zeros(nlvls, 'float64')
-#                    print ' error in matrix inversion, setting populations to zero at T = ', ('%8.2e')%(temperature[itemp])
+                    if verbose:
+                        print(' error in matrix inversion, setting populations to zero at T = %10.2e'%(temperature[itemp]))
 #                thispop=np.linalg.solve(popmat,b)
 #                if rec:
 #                    pop[itemp] = thispop[ci:ci+nlvls+rec-1]
