@@ -82,6 +82,7 @@ class ion(_ionTrails):
         #  ip in eV, but don't read for bare ions
         if self.Ion <= self.Z:
             self.Ip=chdata.Ip[self.Z-1, self.Ion-1-self.Dielectronic]
+            self.FIP = chdata.Ip[self.Z-1, 0]
             if self.Dielectronic:
                 self.UpperIp=chdata.Ip[self.Z-1, self.Ion-1]
         #
