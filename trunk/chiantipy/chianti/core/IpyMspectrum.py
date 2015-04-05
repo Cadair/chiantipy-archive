@@ -1,8 +1,6 @@
 from datetime import datetime
-import time
 import copy
 #
-
 #
 import numpy as np
 import pylab as pl
@@ -15,18 +13,19 @@ import chianti.Gui as chgui
 
 #
 from ._IonTrails import _ionTrails
+from ._SpecTrails import _specTrails
 
 try:
     from IPython import parallel
 #    from chianti import mputil
     import chianti.ipymputil as mputil
 except:
-    print(' your version of IPython does not support multiprocessing \n you will not be able to use mspectrum')
+    print(' your version of IPython does not support multiprocessing \n you will not be able to use ipymspectrum')
 #
 defaults = chdata.Defaults
 #
 #
-class ipymspectrum(_ionTrails):
+class ipymspectrum(_ionTrails, _specTrails):
     '''
     this is the multiprocessing version of spectrum for using inside an IPython Qtconsole or notebook.
 
@@ -72,7 +71,7 @@ class ipymspectrum(_ionTrails):
     proc = the number of processors to use
     timeout - a small but non-zero value seems to be necessary
     '''
-    def __init__(self, temperature, eDensity, wavelength, filter=(chfilters.gaussianR, 1000.), elementList = 0, ionList = 0, minAbund=0., doContinuum=1, allLines = 1, em = None,  proc=3,  abund=0, verbose = 0,  timeout=0.1):
+    def __init__(self, temperature, eDensity, wavelength, filter=(chfilters.gaussianR, 1000.), label=0, elementList = 0, ionList = 0, minAbund=0., doContinuum=1, allLines = 1, em = 0,  proc=3,  abundanceName=0, verbose = 0,  timeout=0.1):
         #
         t1 = datetime.now()
         #
@@ -117,7 +116,8 @@ class ipymspectrum(_ionTrails):
         self.EDensity = np.asarray(eDensity, 'float64')
         nDen = self.EDensity.size
         nTempDen = max([nTemp, nDen])
-        if type(em) != type(None):
+        self.NTempDen = nTempDen
+        if em != 0:
             if isinstance(em, float):
                 if nTempDen > 1:
                     em = np.ones_like(self.Temperature)*em
@@ -131,22 +131,27 @@ class ipymspectrum(_ionTrails):
                     print(' the emission measure array must be the same size as the temperature/density array')
                     return
             self.Em = em
+        else:
+                nEm = 0
+        self.NEm = nEm
+        self.Em = em
         self.AllLines = allLines
         #
-        if not abund:
+        if not abundanceName:
             self.AbundanceName = self.Defaults['abundfile']
         else:
-            if abund in sorted(chdata.Abundance.keys()):
-                self.AbundanceName = abund
+            if abundanceName in chdata.Abundance:
+                self.AbundanceName = abundanceName
             else:
-                abundChoices = chdata.Abundance.keys()
+                abundChoices = list(chdata.Abundance.keys())
 #                for one in wvl[topLines]:
 #                    wvlChoices.append('%12.3f'%(one))
                 abundChoice = chgui.gui.selectorDialog(abundChoices,label='Select Abundance name')
                 abundChoice_idx = abundChoice.selectedIndex
                 self.AbundanceName = abundChoices[abundChoice_idx[0]]
-                abund = self.AbundanceName
+                abundanceName = self.AbundanceName
                 print(' Abundance chosen:  %s '%(self.AbundanceName))
+        #
         #
         abundAll = chdata.Abundance[self.AbundanceName]['abundance']
         #
@@ -166,24 +171,14 @@ class ipymspectrum(_ionTrails):
         twoPhoton = np.zeros((nTempDen, nWvl), 'float64').squeeze()
         lineSpectrum = np.zeros((nTempDen, nWvl), 'float64').squeeze()
         #
-        #  free-free multiprocessing setup
-#        ffWorkerQ = mp.Queue()
-#        ffDoneQ = mp.Queue()
-        #
-        #  free-bound multiprocessing setup
-        #
-#        fbWorkerQ = mp.Queue()
-#        fbDoneQ = mp.Queue()
-        #
-        #  ion multiprocessing setup
-#        ionWorkerQ = mp.Queue()
-#        ionDoneQ = mp.Queue()
-        #
+         #
         ffInpt = []
         fbInpt = []
         ionInpt = []
         #
-        ionsCalculated = []
+        self.IonsCalculated = []
+        self.IonInstances = {}
+        self.Finished = []
         #
         self.Todo = []
         for iz in range(31):
@@ -213,24 +208,24 @@ class ipymspectrum(_ionTrails):
                         # ionS is the target ion, cannot be the neutral for the continuum
                         if verbose:
                             print(' setting up continuum calculation for %s  '%(ionS))
-                        ffinpt.append([ionS, temperature, wavelength, abund])
-                        fbinpt.append([ionS, temperature, wavelength, abund])
+                        ffinpt.append([ionS, temperature, wavelength, abundance])
+                        fbinpt.append([ionS, temperature, wavelength, abundance])
                         #
                     if masterListTest and wvlTestMin and wvlTestMax and ioneqTest:
                         if verbose:
                             print(' setting up spectrum calculation for  %s'%(ionS))
-                        ionInpt.append([ionS, temperature, eDensity, wavelength, filter, allLines, abund])
+                        ionInpt.append([ionS, temperature, eDensity, wavelength, filter, allLines, abundance])
                         self.Todo.append(ionS)
-                        ionsCalculated.append(ionS)
+                        self.IonsCalculated.append(ionS)
                     # get dielectronic lines
                     if masterListTestD and wvlTestMinD and wvlTestMaxD and ioneqTestD:
                         if verbose:
                             print(' setting up  spectrum calculation for  %s '%(ionSd))
 #                        dielWorkerQ.put((ionSd, temperature, density, wavelength, filter))
                         # set allLines fo dielectronic
-                        ionInpt.append([ionSd, temperature, eDensity, wavelength, filter, 1, abund])
+                        ionInpt.append([ionSd, temperature, eDensity, wavelength, filter, 1, abundance])
                         self.Todo.append(ionSd)
-                        ionsCalculated.append(ionS)
+                        self.IonsCalculated.append(ionS)
         #
         if doContinuum:
             for anInpt in ffInpt:
@@ -279,33 +274,37 @@ class ipymspectrum(_ionTrails):
             ions = out[0]
             if verbose:
                 print(' collecting calculation for %s'%(ions))
-            aspectrum = out[1]
-            if not 'errorMessage' in sorted(out[2].keys()):
-                try:
-                    if setupIntensity:
-                        for akey in sorted(self.Intensity.keys()):
-                            self.Intensity[akey] = np.hstack((copy.copy(self.Intensity[akey]), out[2][akey]))
-                    else:
-                        setupIntensity = 1
-                        self.Intensity  = out[2]
-                    #
+            thisIon = out[1]
+            thisSpectrum = thisIon.Spectrum
+            thisIntensity = thisIon.Intensity
+            if not 'errorMessage' in sorted(thisIntensity.keys()):
+                self.Finished.append(ions)
+                self.IonInstances[ions] = copy.deepcopy(thisIon)
+#                self.IonInstances.append(copy.deepcopy(thisIon))
+                if setupIntensity:
+                    for akey in sorted(self.Intensity.keys()):
+                        self.Intensity[akey] = np.hstack((self.Intensity[akey], thisIntensity[akey]))
+                else:
+                    setupIntensity = 1
+                    self.Intensity  = thisIntensity
+                #
+                lineSpectrum += thisSpectrum['intensity']
+#                if nTempDen == 1:
+#                    lineSpectrum += thisSpectrum['intensity']
+#                else:
+#                    for iTempDen in range(nTempDen):
+#                        lineSpectrum[iTempDen] += thisSpectrum['intensity'][iTempDen]
+               # check for two-photon emission
+                if len(out) == 3:
+                    tp = out[2]
                     if nTempDen == 1:
-                        lineSpectrum += aspectrum['intensity']
+                        twoPhoton += tp['rate']
                     else:
                         for iTempDen in range(nTempDen):
-                            lineSpectrum[iTempDen] += aspectrum['intensity'][iTempDen]
-                   # check for two-photon emission
-                    if len(out) == 4:
-                        tp = out[3]
-                        if nTempDen == 1:
-                            twoPhoton += tp['rate']
-                        else:
-                            for iTempDen in range(nTempDen):
-                                twoPhoton[iTempDen] += tp['rate'][iTempDen]
-                except:
-                    print('  error with ion %s'%(ions))
-                    for akey in out[2]:
-                        print(akey)
+                            twoPhoton[iTempDen] += tp['rate'][iTempDen]
+            else:
+                if 'errorMessage' in sorted(thisIntensity.keys()):
+                    print(thisIntensity['errorMessage'])
         #
         #
         #
@@ -324,436 +323,25 @@ class ipymspectrum(_ionTrails):
         rcfb.purge_results('all')
         rcion.purge_results('all')
         #
-        if type(em) != type(None):
+        if nEm == 0:
+            integrated = total
+        else:
             if nEm == 1:
                 integrated = total*em
             else:
                 integrated = np.zeros_like(wavelength)
                 for iTempDen in range(nTempDen):
                     integrated += total[iTempDen]*em[iTempDen]
-            self.Spectrum ={'temperature':temperature, 'eDensity':eDensity, 'wavelength':wavelength, 'intensity':total.squeeze(), 'filter':filter[0].__name__,   'width':filter[1], 'integrated':integrated, 'em':em, 'minAbund':minAbund, 'masterlist':masterlist, 'ions':ionsCalculated, 'Abundance':self.AbundanceName}
+        #
+        if type(label) == type(''):
+            if hasattr(self, 'Spectrum'):
+                print(' hasattr = true')
+                self.Spectrum[label] = {'wavelength':wavelength, 'intensity':total.squeeze(), 'filter':filter[0].__name__,   'width':filter[1], 'integrated':integrated, 'em':em, 'ions':self.IonsCalculated, 'Abundance':self.AbundanceName}
+            else:
+                self.Spectrum = {label:{'wavelength':wavelength, 'intensity':total.squeeze(), 'filter':filter[0].__name__,   'width':filter[1], 'integrated':integrated, 'em':em, 'ions':self.IonsCalculated, 'Abundance':self.AbundanceName}}
         else:
-            self.Spectrum ={'temperature':temperature, 'eDensity':eDensity, 'wavelength':wavelength, 'intensity':total.squeeze(), 'filter':filter[0].__name__,   'width':filter[1], 'minAbund':minAbund, 'masterlist':masterlist, 'ions':ionsCalculated, 'abundance':self.AbundanceName}
-#    #
-#    # ---------------------------------------------------------------------------
-#    #
-#    def intensityList(self, index=-1,  wvlRange=None, wvlRanges=None,   top=10, relative=0, outFile=0 ):
-#        '''
-#        List the line intensities
-#
-#        wvlRange, a 2 element tuple, list or array determines the wavelength range
-#
-#        Top specifies to plot only the top strongest lines, default = 10
-#
-#        normalize = 1 specifies whether to normalize to strongest line, default = 0
-#        rewrite of emissList
-#        this has been directly copied from ion -- not the right way to do this
-#        '''
-#        #
-#        #
-#        #
-#        if not hasattr(self, 'Intensity'):
-#            print('intensities not calculated and emiss() is unable to calculate them')
-#            print(' perhaps the temperature and/or eDensity are not set')
-#            return
-#        #
-#        # everything in self.Intensity should be a numpy array
-#        #
-#        intens = copy.copy(self.Intensity)
-#        intensity = intens['intensity']
-#        ionS = intens['ionS']
-#        wvl = intens['wvl']
-#        lvl1 = intens['lvl1']
-#        lvl2 = intens['lvl2']
-#        pretty1 = intens['pretty1']
-#        pretty2 = intens['pretty2']
-#        obs = intens['obs']
-#        avalue = intens['avalue']
-#        #
-#        temperature = self.Temperature
-#        eDensity = self.EDensity
-#        #
-#            #
-#        ndens = eDensity.size
-#        ntemp = temperature.size
-#        #
-#        if ndens == 1 and ntemp == 1:
-#            dstr = ' -  Density = %10.2e (cm$^{-3}$)' %(eDensity)
-#            tstr = ' -  T = %10.2e (K)' %(temperature)
-#        elif ndens == 1 and ntemp > 1:
-#            if index < 0:
-#                index = ntemp/2
-#            print('using index = %5i specifying temperature =  %10.2e'%(index, temperature[index]))
-#            self.Message = 'using index = %5i specifying temperature =  %10.2e'%(index, temperature[index])
-#            intensity=intensity[index]
-#        elif ndens > 1 and ntemp == 1:
-#            if index < 0:
-#                index = ndens/2
-#            print('using index =%5i specifying eDensity = %10.2e'%(index, eDensity[index]))
-#            self.Message = 'using index =%5i specifying eDensity = %10.2e'%(index, eDensity[index])
-#            intensity=intensity[index]
-#        elif ndens > 1 and ntemp > 1:
-#            if index < 0:
-#                index = ntemp/2
-#            print('using index = %5i specifying temperature = %10.2e, eDensity =  %10.2e'%(index, temperature[index], eDensity[index]))
-#            self.Message = 'using index = %5i specifying temperature = %10.2e, eDensity =  %10.2e'%(index, temperature[index], eDensity[index])
-#            intensity=intensity[index]
-#        #
-#        if wvlRange:
-#            wvlIndex=util.between(wvl,wvlRange)
-#        elif wvlRanges:
-#            wvlIndex = []
-#            for awvlRange in wvlRanges:
-#                wvlIndex.extend(util.between(wvl,awvlRange))
-#        else:
-#            wvlIndex = list(range(wvl.size))
-#        #
-#        #
-#        #  get lines in the specified wavelength range
-#        #
-#        intensity = intensity[wvlIndex]
-#        ionS = ionS[wvlIndex]
-#        wvl = wvl[wvlIndex]
-#        lvl1 = lvl1[wvlIndex]
-#        lvl2 = lvl2[wvlIndex]
-#        avalue = avalue[wvlIndex]
-#        pretty1 = pretty1[wvlIndex]
-#        pretty2 = pretty2[wvlIndex]
-#        obs = obs[wvlIndex]
-#        #
-#        self.Error = 0
-#        if wvl.size == 0:
-#            print('No lines in this wavelength interval')
-#            self.Error = 1
-#            self.Message = 'No lines in this wavelength interval'
-#            return
-#        #
-#        elif top == 0:
-#            top = wvl.size
-#        elif top > wvl.size:
-#            top = wvl.size
-##
-#        #
-#        # sort by intensity
-#        #
-#        isrt = np.argsort(intensity)
-#        #
-#        ionS = ionS[isrt[-top:]]
-#        wvl = wvl[isrt[-top:]]
-#        lvl1 = lvl1[isrt[-top:]]
-#        lvl2 = lvl2[isrt[-top:]]
-#        obs = obs[isrt[-top:]]
-#        intensity = intensity[isrt[-top:]]
-#        avalue = avalue[isrt[-top:]]
-#        pretty1 = pretty1[isrt[-top:]]
-#        pretty2 = pretty2[isrt[-top:]]
-#        #
-#    # must follow setting top
-#        #
-#        if relative:
-#            intensity = intensity/intensity[:top].max()
-#        #
-#        #
-#        idx = np.argsort(wvl)
-#        fmt = '%5s %5i %5i %25s - %25s %12.4f %12.3e %12.2e %1s'
-#        print('   ')
-#        print(' ------------------------------------------')
-#        print('   ')
-#        print(' Ion   lvl1  lvl2         lower                     upper                   Wvl(A)   Intensity       Obs')
-#        for kdx in idx:
-#            print(fmt%(ionS[kdx], lvl1[kdx], lvl2[kdx], pretty1[kdx], pretty2[kdx], wvl[kdx], intensity[kdx], avalue[kdx], obs[kdx]))
-#        print('   ')
-#        print(' ------------------------------------------')
-#        print('   ')
-#        #
-#        self.Intensity['wvlTop'] = wvl[idx]
-#        self.Intensity['intensityTop'] = intensity[idx]
-#        if outFile:
-#            fmt = '%5s %5i %5i %25s - %25s %12.4f %12.3e %1s \n'
-#            outpt = open(outFile, 'w')
-#            outpt.write('Ion lvl1  lvl2         lower                       upper                   Wvl(A)   Intensity       Obs \n')
-#            for kdx in idx:
-#                outpt.write(fmt%(ionS[kdx], lvl1[kdx], lvl2[kdx], pretty1[kdx], pretty2[kdx], wvl[kdx], intensity[kdx], avalue[kdx], obs[kdx]))
-#            outpt.close()
-#        #
-#        # -------------------------------------------------------------------------------------
-#        #
-#    def intensityRatio(self,wvlRange=None, wvlRanges=None,top=10):
-#        """
-#        Plot the ratio of 2 lines or sums of lines.
-#        Shown as a function of density and/or temperature.
-#        For a single wavelength range, set wvlRange = [wMin, wMax]
-#        For multiple wavelength ranges, set wvlRanges = [[wMin1,wMax1],[wMin2,wMax2], ...]
-#        A plot of relative emissivities is shown and then a dialog appears for the user to
-#        choose a set of lines.
-#        """
-#        #
-#        #        self.Emiss={"temperature":temperature,"density":density,"wvl":wvl,"emiss":em,
-#        #        "plotLabels":plotLabels}
-#        #
-#        if hasattr(self, 'Intensity'):
-#            doIntensity = False
-#            intens = self.Intensity
-#        else:
-#            doIntensity = True
-#        #
-#        #
-#        if doIntensity:
-#            # new values of temperature or eDensity
-#            self.intensity()
-#            intens = self.Intensity
-#        #
-#        #
-#        fontsize=14
-#        #
-##        temperature = self.Temperature
-#        eDensity = self.EDensity
-#        intensity = intens['intensity']
-#        ionS = intens['ionS']
-#        wvl = intens["wvl"]
-##        plotLabels = intens["plotLabels"]
-##        xLabel = plotLabels["xLabel"]
-##        yLabel = plotLabels["yLabel"]
-#        #
-#        # find which lines are in the wavelength range if it is set
-#        #
-#        #
-#        if wvlRange:
-#            igvl=util.between(wvl,wvlRange)
-#        elif wvlRanges:
-#            igvl = []
-#            for awvlRange in wvlRanges:
-#                igvl.extend(util.between(wvl,awvlRange))
-#        else:
-#            igvl=range(len(wvl))
-#        #
-#        nlines=len(igvl)
-#        #
-##        print ' nlines = ',nlines
-##        print ' iglv = ',igvl
-#        igvl=np.take(igvl,wvl[igvl].argsort())
-#        # find the top most intense lines
-#        #
-#        if top > nlines:
-#            top=nlines
-#            #
-#        maxIntens = np.zeros(nlines,'Float64')
-#        for iline in range(nlines):
-#            maxIntens[iline] = intensity[:, igvl[iline]].max()
-#        for iline in range(nlines):
-#            if maxIntens[iline]==maxIntens.max():
-#                maxAll=intensity[:, igvl[iline]]
-##        line=range(nlines)
-#        igvlsort=np.take(igvl,np.argsort(maxIntens))
-##        print 'igvlsort = ', igvlsort
-#        topLines=igvlsort[-top:]
-##        print ' topLines = ', topLines
-#        maxWvl='%5.3f' % wvl[topLines[-1]]
-##        maxline=topLines[-1]
-#        #
-#        topLines=topLines[wvl[topLines].argsort()]
-#        #
-#        #
-#        # need to make sure there are no negative values before plotting
-#        good = intensity > 0.
-#        intensMin = intensity[good].min()
-#        bad = intensity <= 0.
-#        intensity[bad] = intensMin
-#        #
-#        #
-#        ntemp=self.Temperature.size
-#        #
-#        ndens=self.EDensity.size
-#        #
-#        ylabel='Emissivity relative to '+maxWvl
-##        title=self.Spectroscopic
-#        title = ' No title'
-#        #
-#        #
-#        if ndens==1 and ntemp==1:
-#            print(' only a single temperature and eDensity')
-#            return
-#        elif ndens == 1:
-#            xlabel='Temperature (K)'
-#            xvalues=self.Temperature
-#            outTemperature=self.Temperature
-#            outDensity=np.zeros(ntemp,'Float64')
-#            outDensity.fill(self.EDensity)
-#            desc_str=' at  Density = %10.2e (cm)$^{-3}$' % self.EDensity
-#        elif ntemp == 1:
-#            xvalues=self.EDensity
-#            outTemperature=np.zeros(ndens,'Float64')
-#            outTemperature.fill(self.Temperature)
-#            outDensity=self.EDensity
-#            xlabel=r'$\rm{Electron Density (cm)^{-3}}$'
-#            desc_str=' at Temp = %10.2e (K)' % self.Temperature
-#        else:
-#            outTemperature=self.Temperature
-#            outDensity=self.EDensity
-#            xlabel='Temperature (K)'
-#            xvalues=self.Temperature
-#            desc_str=' for variable Density'
-#        #
-#        # put all actual plotting here
-#        #
-#        pl.ion()
-##        if chInteractive:
-##            pl.ion()
-##        else:
-##            pl.ioff()
-#        #
-#        #  maxAll is an array
-#        ymax = np.max(intensity[:, topLines[0]]/maxAll)
-#        ymin = ymax
-#        pl.figure()
-#        ax = pl.subplot(111)
-#        nxvalues=len(xvalues)
-#        for iline in range(top):
-#            tline=topLines[iline]
-#            pl.loglog(xvalues,intensity[:, tline]/maxAll)
-#            if np.min(intensity[:, tline]/maxAll) < ymin:
-#                ymin = np.min(intensity[:, tline]/maxAll)
-#            if np.max(intensity[:, tline]/maxAll) > ymax:
-#                ymax = np.max(intensity[:, tline]/maxAll)
-#            skip=2
-#            start=divmod(iline,nxvalues)[1]
-#            for ixvalue in range(start,nxvalues,nxvalues/skip):
-#                pl.text(xvalues[ixvalue], intensity[ixvalue, tline]/maxAll[ixvalue], str(wvl[tline]))
-#        pl.xlim(xvalues.min(),xvalues.max())
-##        pl.ylim(ymin, ymax)
-#        pl.xlabel(xlabel,fontsize=fontsize)
-#        pl.ylabel(ylabel,fontsize=fontsize)
-#        if ndens == ntemp and ntemp > 1:
-#            pl.text(0.07, 0.5,title, horizontalalignment='left', verticalalignment='center', fontsize=fontsize,  transform = ax.transAxes)
-#            #
-#            ax2 = pl.twiny()
-#            xlabelDen=r'Electron Density (cm$^{-3}$)'
-#            pl.xlabel(xlabelDen, fontsize=fontsize)
-#            pl.loglog(eDensity,intensity[:, topLines[top-1]]/maxAll, visible=False)
-#            ax2.xaxis.tick_top()
-#            pl.ylim(ymin/1.2, 1.2*ymax)
-#        else:
-#            pl.ylim(ymin/1.2, 1.2*ymax)
-#            pl.title(title+desc_str,fontsize=fontsize)
-#        pl.draw()
-#        #  need time to let matplotlib finish plotting
-#        time.sleep(0.5)
-#        #
-#        # get line selection
-#        #
-#        selectTags = []
-#        for itop in topLines:
-#            selectTags.append(ionS[itop]+ ' '+ str(wvl[itop]))
-#        #
-#        numden = chgui.gui.choice2Dialog(wvl[topLines])
-#        #
-#        # num_idx and den_idx are tuples
-#        #
-#        num_idx=numden.numIndex
-#        if len(num_idx) == 0:
-#            print(' no numerator lines were selected')
-#            return
-#        #
-#        den_idx=numden.denIndex
-#        if len(den_idx) == 0:
-#            print(' no denominator lines were selected')
-#            return
-#        #
-#        numIntens=np.zeros(len(xvalues),'Float64')
-#        for aline in num_idx:
-#            numIntens += intensity[:, topLines[aline]]
-#        #
-#        denIntens = np.zeros(len(xvalues),'Float64')
-#        for aline in den_idx:
-#            denIntens += intensity[:, topLines[aline]]
-#        #
-#        # plot the desired ratio
-#        #  maxAll is an array
-#        pl.figure()
-#        ax = pl.subplot(111)
-#        pl.loglog(xvalues,numIntens/denIntens)
-#        pl.xlim(xvalues.min(),xvalues.max())
-#        pl.xlabel(xlabel,fontsize=fontsize)
-#        pl.ylabel('Ratio ('+self.Defaults['flux']+')',fontsize=fontsize)
-#        desc = title + ':'
-#        for aline in num_idx:
-#            desc += ' ' + str(wvl[topLines[aline]])
-#        desc +=' / '
-#        for aline in den_idx:
-#            desc += ' ' + str(wvl[topLines[aline]])
-#        if ndens == ntemp and ntemp > 1:
-#            pl.text(0.07, 0.5,desc, horizontalalignment='left', verticalalignment='center', fontsize=fontsize,  transform = ax.transAxes)
-#            #
-#            ax2 = pl.twiny()
-#            xlabelDen=r'Electron Density (cm$^{-3}$)'
-#            pl.xlabel(xlabelDen, fontsize=fontsize)
-#            pl.loglog(eDensity,numIntens/denIntens, visible=False)
-#            ax2.xaxis.tick_top()
-#        else:
-##            pl.ylim(ymin, ymax)
-#            pl.title(desc,fontsize=fontsize)
-##       desc=title+' '+str(wvl[num_line])+' / '+str(wvl[den_line])+' '+desc_str
-##        pl.title(desc, fontsize=fontsize)
-##       pl.title(title+' '+str(wvl[num_line])+' / '+str(wvl[den_line])+' '+desc_str,fontsize=fontsize)
-##        pl.draw()
-##        pl.ioff()
-##        pl.show()
-#        #
-#        intensityRatioFileName=self.IonStr
-#        for aline in num_idx:
-#            intensityRatioFileName+= '_%3i'%(wvl[topLines[aline]])
-#        intensityRatioFileName+='_2'
-#        for aline in den_idx:
-#            intensityRatioFileName+= '_%3i'%(wvl[topLines[aline]])
-#        intensityRatioFileName+='.rat'
-#        self.IntensityRatio={'ratio':numIntens/denIntens,'desc':desc,
-#                'temperature':outTemperature,'eDensity':outDensity,'filename':intensityRatioFileName, 'numIdx':num_idx, 'denIdx':den_idx}
-#        #
-#        # -------------------------------------------------------------------------------------
-#        #
-#    def intensityRatioSave(self,outFile=''):
-#        '''Save the intensity ratio to a file.
-#
-#        The intensity ratio as a function to temperature and eDensity is saved to an asciii file.
-#
-#        Descriptive information is included at the top of the file.'''
-#        if outFile == '':
-#            outfile=self.IntensityRatio['filename']
-##            if chInteractive:
-#            print(' saving ratio to filename = %s'%(outfile))
-#        if hasattr(self, 'IntensityRatio'):
-#            temperature=self.IntensityRatio['temperature']
-#            eDensity=self.IntensityRatio['eDensity']
-#            ratio=self.IntensityRatio['ratio']
-#            out=open(outFile,'w')
-#            nvalues=len(ratio)
-#            #
-#            #  need to add 7 lines to maintain IDL like files
-#            #
-#            out.write(outFile+'\n')    #1
-#            out.write(self.IntensityRatio['desc']+'\n') #2
-#            out.write(' created with ChiantiPy version '+ chdata.__version__ +'\n')   #3
-#            out.write(' columns are temperature, eDensity, ratio'+'\n')  #5
-#            tunit = 'K'
-#            out.write(' temperature in '+tunit+', electron eDensity in cm^(-3)'+'\n')  #6
-#            out.write(' ratio given in '+self.Defaults['flux']+'\n')   #4
-#            out.write(' '+'\n') #7
-#            for ivalue in range(nvalues):
-#                s='%12.3e %12.3e  %12.3e \n' % (temperature[ivalue],eDensity[ivalue],ratio[ivalue])
-#                out.write(s)
-#            out.close()
-#        else:
-##            if chInteractive:
-#            print(' in .intensityRatioSave(), no IntensityRatio is found')
-#        intensityRatioFileName=self.IonStr
-#        for aline in num_idx:
-#            intensityRatioFileName+= '_%3i'%(wvl[topLines[aline]])
-#        intensityRatioFileName+='_2'
-#        for aline in den_idx:
-#            intensityRatioFileName+= '_%3i'%(wvl[topLines[aline]])
-#        intensityRatioFileName+='.rat'
-#        self.IntensityRatio={'ratio':numEmiss/denEmiss,'desc':desc,
-#                'temperature':outTemperature,'eDensity':outDensity,'filename':intensityRatioFileName, 'numIdx':num_idx, 'denIdx':den_idx}
+            self.Spectrum = {'wavelength':wavelength, 'intensity':total.squeeze(), 'filter':filter[0].__name__,   'width':filter[1], 'ions':self.IonsCalculated, 'Abundance':self.AbundanceName}
+
     #
     # -------------------------------------------------------------------------
     #

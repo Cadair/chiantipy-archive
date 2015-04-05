@@ -11,10 +11,11 @@ import chianti.io as chio
 import chianti.Gui as chGui
 #
 from ._IonTrails import _ionTrails
+from ._SpecTrails import _specTrails
 
 defaults = chdata.Defaults
 
-class spectrum(_ionTrails):
+class spectrum(_ionTrails, _specTrails):
     '''
     Calculate the emission spectrum as a function of temperature and density.
 
@@ -146,8 +147,9 @@ class spectrum(_ionTrails):
         lineSpectrum = np.zeros((nTempDen, nWvl), 'float64').squeeze()
         #
 #        self.Intensity = {'ionS':[], 'lvl1':[], 'lvl2':[], 'wvl':np.ndarray, 'pretty1':np.ndarray, 'pretty2':np.ndarray, 'intensity':np.zeros((nTempDen, 0),'float64'), 'obs':np.ndarray }
-        ionsCalculated = []
-        ionInstances = {}
+        self.IonsCalculated = []
+        self.IonInstances = {}
+        self.Finished = []
         #
         for iz in range(31):
             abundance = chdata.Abundance[self.AbundanceName]['abundance'][iz-1]
@@ -180,34 +182,38 @@ class spectrum(_ionTrails):
                         cont.freeFree(wavelength)
     #                   print dir(thisIon)
     #                   print ' wvl = ', thisIon.FreeFree['wvl']
-                        if nTempDen ==1:
-                            freeFree += cont.FreeFree['rate']
-                        else:
-                            for iTempDen in range(nTempDen):
-                                freeFree[iTempDen] += cont.FreeFree['rate'][iTempDen]
+                        freeFree += cont.FreeFree['rate']
+#                        if nTempDen ==1:
+#                            freeFree += cont.FreeFree['rate']
+#                        else:
+#                            for iTempDen in range(nTempDen):
+#                                freeFree[iTempDen] += cont.FreeFree['rate'][iTempDen]
                     #
                         cont.freeBound(wavelength)
                         if 'errorMessage' not in list(cont.FreeBound.keys()):
                             #  an fblvl file exists for this ions
-                            if nTempDen == 1:
-                                freeBound += cont.FreeBound['rate']
-                            else:
-                                for iTempDen in range(nTempDen):
-                                    freeBound[iTempDen] += cont.FreeBound['rate'][iTempDen]
+                            freeBound += cont.FreeBound['rate']
+#                            if nTempDen == 1:
+#                                freeBound += cont.FreeBound['rate']
+#                            else:
+#                                for iTempDen in range(nTempDen):
+#                                    freeBound[iTempDen] += cont.FreeBound['rate'][iTempDen]
                     if masterListTest and wvlTestMin and wvlTestMax and ioneqTest:
                         if verbose:
                             print(' calculating spectrum for  :  %s'%(ionS))
                         #
                         thisIon = chianti.core.ion(ionS, temperature, eDensity, abundanceName=self.AbundanceName)
-                        ionsCalculated.append(ionS)
+                        thisIon.intensity(wvlRange=wvlRange)
+                        self.IonsCalculated.append(ionS)
 #                       print ' dir = ', dir(thisIon)
 #                        thisIon.emiss(wvlRange = wvlRange, allLines=allLines)
                         thisIon.intensity(wvlRange = wvlRange, allLines=allLines)
 #                        print(' intensity shape %5i %5i '%(thisIon.Intensity['intensity'].shape[0], thisIon.Intensity['intensity'].shape[1]))
                         # check that there are lines in this wavelength range
                         if 'errorMessage' not in  list(thisIon.Intensity.keys()):
-                            ionInstances[ionS] = thisIon
+                            self.Finished.append(ionS)
                             thisIon.spectrum(wavelength, filter=filter)
+                            self.IonInstances[ionS] = copy.deepcopoy(thisIon)
                             if setupIntensity:
                                 for akey in self.Intensity:
                                     self.Intensity[akey] = np.hstack((copy.copy(self.Intensity[akey]), thisIon.Intensity[akey]))
@@ -216,13 +222,15 @@ class spectrum(_ionTrails):
 #                                print(' creating Intensity dict from ion %s'%(ionS))
                                 self.Intensity  = thisIon.Intensity
 #                           intensity = thisIon.Intensity['intensity']
-                            if nTempDen == 1:
-                                lineSpectrum += thisIon.Spectrum['intensity']
-                            else:
-                                for iTempDen in range(nTempDen):
-                                    lineSpectrum[iTempDen] += thisIon.Spectrum['intensity'][iTempDen]
+                            lineSpectrum += thisIon.Spectrum['intensity']
+#                            if nTempDen == 1:
+#                                lineSpectrum += thisIon.Spectrum['intensity']
+#                            else:
+#                                for iTempDen in range(nTempDen):
+#                                    lineSpectrum[iTempDen] += thisIon.Spectrum['intensity'][iTempDen]
                         else:
-                            print((' error with ion = %s'%(ionS)))
+                            if verbose:
+                                print(thisIon.Intensity['errorMessage'])
                         # get 2 photon emission for H and He sequences
                         if (iz - ionstage) in [0, 1]:
                             thisIon.twoPhoton(wavelength)
@@ -230,7 +238,7 @@ class spectrum(_ionTrails):
                     # get dielectronic lines
                     if masterListTestD and wvlTestMinD and wvlTestMaxD and ioneqTestD:
                         if verbose:
-                            print(' calculating spectrum for  :  ', ionSd)
+                            print(' calculating spectrum for  :  %s'%(ionSd))
                         #
                         thisIon = chianti.core.ion(ionSd, temperature, eDensity, abundanceName=self.AbundanceName)
 #                       print ' dir = ', dir(thisIon)
@@ -239,32 +247,35 @@ class spectrum(_ionTrails):
                         thisIon.intensity(wvlRange = wvlRange, allLines=allLines)
                         # check that there are lines in this wavelength range - probably not redundant
                         if 'errorMessage' not in  list(thisIon.Intensity.keys()):
-                            ionsCalculated.append(ionSd)
+                            self.Finished.append(ionSd)
                             thisIon.spectrum(wavelength, filter=filter)
+                            self.IonInstances['ionSd'] = copy.deepcopy(thisIon)
                             if setupIntensity:
                                 for akey in self.Intensity:
                                     self.Intensity[akey] = np.hstack((self.Intensity[akey], thisIon.Intensity[akey]))
                             else:
                                 setupIntensity = 1
                                 self.Intensity = thisIon.Intensity
-                            if nTempDen == 1:
-                                lineSpectrum += thisIon.Spectrum['intensity']
-                            else:
-                                for iTempDen in range(nTempDen):
-                                    lineSpectrum[iTempDen] += thisIon.Spectrum['intensity'][iTempDen]
+                            lineSpectrum += thisIon.Spectrum['intensity']
+                        else:
+                            if verbose:
+                                print(thisIon.Intensity['errorMessage'])
+#                            if nTempDen == 1:
+#                                lineSpectrum += thisIon.Spectrum['intensity']
+#                            else:
+#                                for iTempDen in range(nTempDen):
+#                                    lineSpectrum[iTempDen] += thisIon.Spectrum['intensity'][iTempDen]
         self.FreeFree = {'wavelength':wavelength, 'intensity':freeFree.squeeze()}
         self.FreeBound = {'wavelength':wavelength, 'intensity':freeBound.squeeze()}
         self.LineSpectrum = {'wavelength':wavelength, 'intensity':lineSpectrum.squeeze()}
         self.TwoPhoton = {'wavelength':wavelength, 'intensity':twoPhoton.squeeze()}
         #
-        self.IonsCalculated = ionsCalculated
-        self.IonInstances = ionInstances
         #
         total = freeFree + freeBound + lineSpectrum + twoPhoton
         self.Total = total
         t2 = datetime.now()
         dt=t2-t1
-        print(' elapsed seconds = ', dt.seconds)
+        print(' elapsed seconds = %12.3f'%(dt.seconds))
         if em == 0:
             integrated = total
         else:
@@ -277,47 +288,12 @@ class spectrum(_ionTrails):
         #
         if type(label) == type(''):
             if hasattr(self, 'Spectrum'):
-                self.Spectrum[label] = {'wavelength':wavelength, 'intensity':total.squeeze(), 'filter':filter[0].__name__,   'width':filter[1], 'integrated':integrated, 'em':em, 'ions':ionsCalculated, 'Abundance':self.AbundanceName}
+                self.Spectrum[label] = {'wavelength':wavelength, 'intensity':total.squeeze(), 'filter':filter[0].__name__,   'width':filter[1], 'integrated':integrated, 'em':em, 'ions':self.IonsCalculated, 'Abundance':self.AbundanceName}
             else:
-                self.Spectrum = {label:{'wavelength':wavelength, 'intensity':total.squeeze(), 'filter':filter[0].__name__,   'width':filter[1], 'integrated':integrated, 'em':em, 'ions':ionsCalculated, 'Abundance':self.AbundanceName}}
+                self.Spectrum = {label:{'wavelength':wavelength, 'intensity':total.squeeze(), 'filter':filter[0].__name__,   'width':filter[1], 'integrated':integrated, 'em':em, 'ions':self.IonsCalculated, 'Abundance':self.AbundanceName}}
         else:
-            self.Spectrum ={'wavelength':wavelength, 'intensity':total.squeeze(), 'filter':filter[0].__name__,   'width':filter[1], 'ions':ionsCalculated, 'Abundance':self.AbundanceName}
+            self.Spectrum ={'wavelength':wavelength, 'intensity':total.squeeze(), 'filter':filter[0].__name__,   'width':filter[1],  'ions':self.IonsCalculated, 'Abundance':self.AbundanceName}
         #
         # -----------------------------------------------------------------------
         #
-    def convolve(self, filter=(chfilters.gaussianR, 1000.), label=0):
-        '''
-        the first application of spectrum calculates the line intensities within the specified wavelength range and for set of ions specified
-        '''
-        nWvl = len(self.Wavelength)
-        wavelength = self.Wavelength
-        lineSpectrum = np.zeros((self.NTempDen, nWvl), 'float64').squeeze()
-        for akey in sorted(self.IonInstances.keys()):
-            thisIon = self.IonInstances[akey]
-            thisIon.spectrum(wavelength, filter)
-            if self.NTempDen == 1:
-                lineSpectrum += thisIon.Spectrum['intensity']
-            else:
-                for iTempDen in range(self.NTempDen):
-                    lineSpectrum[iTempDen] += thisIon.Spectrum['intensity'][iTempDen]
-        self.LineSpectrum = lineSpectrum
-        total = self.FreeFree['intensity'] + self.FreeBound['intensity'] + self.TwoPhoton['intensity'] + lineSpectrum
-        self.Total = total
-        #
-        if self.NEm == 0:
-            integrated = total
-        else:
-            if self.NEm == 1:
-                integrated = total*self.Em
-            else:
-                integrated = np.zeros_like(wavelength)
-                for iTempDen in range(self.NTempDen):
-                    integrated += total[iTempDen]*self.Em[iTempDen]
-        #
-        if type(label) == type(''):
-            if hasattr(self, 'Spectrum'):
-                self.Spectrum[label] = {'wavelength':wavelength, 'intensity':total.squeeze(), 'filter':filter[0].__name__,   'width':filter[1], 'integrated':integrated, 'em':self.Em, 'ions':self.IonsCalculated, 'Abundance':self.AbundanceName}
-            else:
-                self.Spectrum = {label:{'wavelength':wavelength, 'intensity':total.squeeze(), 'filter':filter[0].__name__,   'width':filter[1], 'integrated':integrated, 'em':self.Em, 'ions':self.IonsCalculated, 'Abundance':self.AbundanceName}}
-        else:
-            self.Spectrum ={'wavelength':wavelength, 'intensity':total.squeeze(), 'filter':filter[0].__name__,   'width':filter[1], 'ions':self.IonsCalculated, 'Abundance':self.AbundanceName}
+        self.Spectrum ={'wavelength':wavelength, 'intensity':total.squeeze(), 'filter':filter[0].__name__,   'width':filter[1], 'ions':self.IonsCalculated, 'Abundance':self.AbundanceName}
