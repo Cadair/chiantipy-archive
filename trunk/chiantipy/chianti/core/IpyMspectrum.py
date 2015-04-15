@@ -479,6 +479,9 @@ class ipymspectrum(_ionTrails, _specTrails):
         self.IonInstances = {}
         self.Finished = []
         #
+        self.FfInstances = {}
+        self.FbInstances = {}
+        #
         self.Todo = []
         for iz in range(31):
             abundance = chdata.Abundance[self.AbundanceName]['abundance'][iz-1]
@@ -538,15 +541,23 @@ class ipymspectrum(_ionTrails, _specTrails):
             for iff in range(len(list(lbvff.results.values()))):
                 aFreeFree = list(lbvff.results.values()[iff])
                 ionS = aFreeFree[0]
+                print(' got ff ion %s'%(ionS))
                 thisFfCont = aFreeFree[1]
-                if 'errorMessage' not in sorted(thisFfCont.FreeFree.keys()):
-                    if nTempDen == 1:
-                        freeFree += thisFfCont.FreeFree['rate']*em[0]
+                if hasattr(thisFfCont, 'FreeFree'):
+                    if 'errorMessage' not in sorted(thisFfCont.FreeFree.keys()):
+                        self.FfInstances[ionS] = thisFfCont
+                        if nTempDen == 1:
+                            freeFree += thisFfCont.FreeFree['rate']*em[0]
+                        else:
+                            for iTempDen in range(nTempDen):
+                                freeFree[iTempDen] += thisFfCont.FreeFree['rate'][iTempDen]*em[iTempDen]
                     else:
-                        for iTempDen in range(nTempDen):
-                            freeFree[iTempDen] += thisFfCont.FreeFree['rate'][iTempDen]*em[iTempDen]
+                        print(thisFfCont.FreeFree['errorMessage'])
                 else:
-                    print(thisFfCont.FreeFree['errorMessage'])
+                    if type(thisFfCont) == str:
+                        print(' error in FfCont %s'%(thisFfCont))
+                    else:
+                        self.FfInstances[ionS] = thisFfCont                    
         #
             for anInpt in fbInpt:
                 lbvfb.apply(mputil.doFb, anInpt)
@@ -561,16 +572,21 @@ class ipymspectrum(_ionTrails, _specTrails):
                 ionS = aFreeBound[0]
                 thisFbCont = aFreeBound[1]
                 print(' fb ion = %s'%(ionS))
-                for akey in sorted(thisFbCont.FreeBound.keys()):
-                    print('FreeBound key = %s'%(akey))
-                if 'errorMessage' not in sorted(thisFbCont.FreeBound.keys()):
-                    if nTempDen == 1:
-                        freeBound += thisFbCont.FreeBound['rate']*em[0]
+                if hasattr(thisFbCont, 'FreeBound'):
+                    self.FbInstances[ionS] = thisFbCont
+                    for akey in sorted(thisFbCont.FreeBound.keys()):
+                        print('FreeBound key = %s'%(akey))
+                    if 'errorMessage' not in sorted(thisFbCont.FreeBound.keys()):
+                        if nTempDen == 1:
+                            freeBound += thisFbCont.FreeBound['rate']*em[0]
+                        else:
+                            for iTempDen in range(nTempDen):
+                                freeBound[iTempDen] += thisFbCont.FreeBound['rate'][iTempDen]*em[iTempDen]
                     else:
-                        for iTempDen in range(nTempDen):
-                            freeBound[iTempDen] += thisFbCont.FreeBound['rate'][iTempDen]*em[iTempDen]
+                        print(thisFbCont.FreeBound['errorMessage'])
                 else:
-                    print(thisFbCont.FreeBound['errorMessage'])
+                    self.FbInstances[ionS] = thisFbCont
+
         #
         #
         for anInpt in ionInpt:

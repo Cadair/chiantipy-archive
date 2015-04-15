@@ -11,7 +11,7 @@ def doFf(inpt):
     abund = inpt[3]
     cont = chianti.core.continuum(ionS, temperature, abundance=abund)
     cont.freeFree(wavelength)
-    return [ionS, copy.deepcopy(cont)]
+    return [ionS, cont]
     #
     # ----------------------------------------------
     #
