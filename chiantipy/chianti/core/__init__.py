@@ -1,6 +1,6 @@
 ''' chianti.core - contains the main classes for ChiantiPy users.
 
-Copyright 2009, 2010 Kenneth P. Dere
+Copyright 2009-2015, 2010 Kenneth P. Dere
 
 This software is distributed under the terms of the GNU General Public License
 that is found in the LICENSE file
@@ -8,7 +8,7 @@ that is found in the LICENSE file
 
 '''
 #from chianti import *
-from .Spectrum import spectrum
+from .Spectrum import spectrum, bunch
 from .Mspectrum import mspectrum
 from .IpyMspectrum import ipymspectrum
 from .Continuum import continuum

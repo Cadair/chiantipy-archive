@@ -66,21 +66,23 @@ def doIonQ(inQueue, outQueue):
     ''' 
     multiprocessing helper for ion, also does two-photon
     '''
-    for inputs in iter(inQueue.get, 'STOP'):
-        ionS = inputs[0]
-        temperature = inputs[1]
-        density = inputs[2]
-        wavelength = inputs[3]
+    for inpts in iter(inQueue.get, 'STOP'):
+        ionS = inpts[0]
+        temperature = inpts[1]
+        density = inpts[2]
+        wavelength = inpts[3]
         wvlRange = [wavelength.min(), wavelength.max()]
-        filter = inputs[4]
-        allLines = inputs[5]
-        abund = inputs[6]
+        filter = inpts[4]
+        allLines = inpts[5]
+        abund = inpts[6]
+        em = inpts[7]
+        doContinuum = inpts[8]
         thisIon = chianti.core.ion(ionS, temperature, density, abundance=abund)
-        thisIon.intensity(wvlRange = wvlRange, allLines = allLines)
-        thisIon.spectrum(wavelength,  filter=filter)
-#        outList = [ionS, thisIon.Spectrum]
+        thisIon.intensity(wvlRange = wvlRange, allLines = allLines, em=em)
+        if 'errorMessage' not in sorted(thisIon.Intensity.keys()):
+            thisIon.spectrum(wavelength,  filter=filter)
         outList = [ionS, thisIon]
-        if not thisIon.Dielectronic:
+        if not thisIon.Dielectronic and doContinuum:
             if (thisIon.Z - thisIon.Ion) in [0, 1]:
                 thisIon.twoPhoton(wavelength)
                 outList.append(thisIon.TwoPhoton)

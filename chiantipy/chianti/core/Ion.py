@@ -25,6 +25,9 @@ class ion(_ionTrails):
     eDensity in cm^-3
     radTemperature, the radiation black-body temperature in Kelvin
     rPlot, the distance from the center of the star in stellar radii
+    
+    Inherited methods include 'intensityList', 'intensityRatio' (between lines of different ions), 'intensityRatioSave'
+    and 'convolve'    
     '''
     def __init__(self, ionStr, temperature=None, eDensity=None, pDensity='default', radTemperature=0,  rStar=0, abundanceName=0, abundance=0,  verbose=0, setup=True,  **kwargs):
         '''
@@ -105,21 +108,27 @@ class ion(_ionTrails):
             ndens = self.EDensity.size
             ntemp = self.Temperature.size
             tst1 = ndens == ntemp
+            tst1a = ndens != ntemp
             tst2 = ntemp > 1
             tst3 = ndens > 1
+            tst4 = ndens > 1 and ntemp > 1
+            if tst1 and ntemp == 1:
+                self.NTempDen = 1
+            elif tst1a and (tst2 or tst3) and not tst4:
+                self.NTempDen = ntemp*ndens        
             #
-            if pDensity == 'default':
-                if tst1 and tst2 and tst3:
-                    self.PDensity = np.zeros((ntemp), 'float64')
-                    for itemp in range(ntemp):
-                        self.PDensity[itemp] = self.ProtonDensityRatio[itemp]*self.EDensity[itemp]
-                elif tst2 and tst3 and not tst1:
-                    print(' if both temperature and eDensity are arrays, they must be of the same size')
-                    return
-                else:
-                    self.PDensity = self.ProtonDensityRatio*self.EDensity
+        if pDensity == 'default' and type(eDensity) != type(None):
+            if tst1 and tst2 and tst3:
+                self.PDensity = np.zeros((ntemp), 'float64')
+                for itemp in range(ntemp):
+                    self.PDensity[itemp] = self.ProtonDensityRatio[itemp]*self.EDensity[itemp]
+            elif tst2 and tst3 and not tst1:
+                print(' if both temperature and eDensity are arrays, they must be of the same size')
+                return
             else:
-                self.PDensity = pDensity
+                self.PDensity = self.ProtonDensityRatio*self.EDensity
+        else:
+            self.PDensity = pDensity
         if setup:
             if self.IonStr in chdata.MasterList:
                 self.setup()
@@ -1852,7 +1861,7 @@ class ion(_ionTrails):
         #
         # -------------------------------------------------------------------------
         #
-    def spectrum(self, wavelength, filter=(chfilters.gaussianR,1000.), label=0):
+    def spectrum(self, wavelength, filter=(chfilters.gaussianR,1000.), label=0, allLines=1, em=1.):
         '''
         Calculates the line emission spectrum for the specified ion.
 
@@ -1873,24 +1882,25 @@ class ion(_ionTrails):
 
         Note:  scipy.ndimage.filters also includes a range of filters.
         '''
-        aspectrum = np.zeros_like(wavelength)
+#        aspectrum = np.zeros_like(wavelength)
         nTemp = self.Temperature.size
         nDens = self.EDensity.size
         useFilter = filter[0]
         useFactor= filter[1]
         #
+        wvlRange = [wavelength.min(), wavelength.max()]
         if hasattr(self, 'Intensity'):
             intensity = self.Intensity
         else:
-            self.intensity()
+            self.intensity(wvlRange=wvlRange, allLines=allLines, em=em)
             intensity = self.Intensity
         #
 #        lvl1 = []
 #        lvl2 = []
-        if (nTemp == 1) and (nDens == 1):
+        if self.NTempDen == 1:
             aspectrum = np.zeros_like(wavelength)
             if not 'errorMessage' in self.Intensity.keys():
-                idx = util.between(self.Intensity['wvl'], [wavelength.min(), wavelength.max()])
+                idx = util.between(self.Intensity['wvl'], wvlRange)
                 if len(idx) == 0:
                     print(' no lines in wavelength range %12.2f - %12.2f'%(wavelength.min(), wavelength.max()))
                     return
@@ -1898,27 +1908,27 @@ class ion(_ionTrails):
                     wvlCalc = self.Intensity['wvl'][iwvl]
                     aspectrum += useFilter(wavelength, wvlCalc, factor=useFactor)*intensity['intensity'][iwvl]
         else:
-            nVar = max(nTemp, nDens)
-            aspectrum = np.zeros((nVar, wavelength.size), 'float64')
+            aspectrum = np.zeros((self.NTempDen, wavelength.size), 'float64')
             if not 'errorMessage' in self.Intensity.keys():
                 idx = util.between(self.Intensity['wvl'], [wavelength.min(), wavelength.max()])
                 if len(idx) == 0:
                     print(' no lines in wavelength range %12.2f - %12.2f'%(wavelength.min(), wavelength.max()))
                     return
-                for itemp in range(nVar):
+                for itemp in range(self.NTempDen):
                     for iwvl in idx:
                         wvlCalc = self.Intensity['wvl'][iwvl]
                         aspectrum[itemp] += useFilter(wavelength, wvlCalc, factor=useFactor)*self.Intensity['intensity'][itemp, iwvl]
-    #                    for iwvl, wvlCalc in enumerate(self.Intensity['wvl']):
-    #                        aspectrum[itemp] += useFilter(wavelength, wvlCalc, factor=useFactor)*self.Intensity['intensity'][itemp, iwvl]
+#                        aspectrum[itemp] += useFilter(wavelength, wvlCalc, factor=useFactor)*self.Intensity['intensity'][iwvl, itemp]
+#                    for iwvl, wvlCalc in enumerate(self.Intensity['wvl']):
+#                        aspectrum[itemp] += useFilter(wavelength, wvlCalc, factor=useFactor)*self.Intensity['intensity'][itemp, iwvl]
         if type(label) == type(''):
             if hasattr(self, 'Spectrum'):
-                self.Spectrum[label] = {'intensity':aspectrum,  'wvl':wavelength, 'filter':useFilter.__name__, 'filterWidth':useFactor}
+                self.Spectrum[label] = {'intensity':aspectrum,  'wvl':wavelength, 'filter':useFilter.__name__, 'filterWidth':useFactor, 'allLines':allLines, 'em':em}
             else:
-                self.Spectrum = {label:{'intensity':aspectrum,  'wvl':wavelength, 'filter':useFilter.__name__, 'filterWidth':useFactor}}
+                self.Spectrum = {label:{'intensity':aspectrum,  'wvl':wavelength, 'filter':useFilter.__name__, 'filterWidth':useFactor, 'allLines':allLines, 'em':em}}
             
         else:
-            self.Spectrum = {'intensity':aspectrum,  'wvl':wavelength, 'filter':useFilter.__name__, 'filterWidth':useFactor}
+            self.Spectrum = {'intensity':aspectrum,  'wvl':wavelength, 'filter':useFilter.__name__, 'filterWidth':useFactor, 'allLines':allLines, 'em':em}
         #
         # -------------------------------------------------------------------------------------
         #
@@ -2235,8 +2245,7 @@ class ion(_ionTrails):
                 pop = fullpop[ci:ci+nlvls]
             except np.linalg.LinAlgError:
                 pop = np.zeros(nlvls, 'float64')
-                if verbose:
-                    print(' error in matrix inversion, setting populations to zero at T = %10.2e'%(temperature))
+#                print ' error in matrix inversion, setting populations to zero at T = ', ('%8.2e')%(temperature)
             #
         #   next, in case of a single eDensity value
 #            pop = np.linalg.solve(popmat,b)
@@ -2345,8 +2354,7 @@ class ion(_ionTrails):
                     pop[itemp] = thispop[ci:ci+nlvls]
                 except np.linalg.LinAlgError:
                     pop[itemp] = np.zeros(nlvls, 'float64')
-                    if verbose:
-                        print(' error in matrix inversion, setting populations to zero at T = %10.2e'%(temperature[itemp]))
+#                    print ' error in matrix inversion, setting populations to zero at T = ', ('%8.2e')%(temperature[itemp])
             #
         elif ntemp == 1:
 #            pop=np.zeros((ndens,nlvls),"float64")
@@ -2473,8 +2481,7 @@ class ion(_ionTrails):
                     pop[idens] = thispop[ci:ci+nlvls]
                 except np.linalg.LinAlgError:
                     pop[idens] = np.zeros(nlvls, 'float64')
-                    if verbose:
-                        print(' error in matrix inversion, setting populations to zero at eDensity = %10.2e'%(eDensity[idens]))
+#                    print ' error in matrix inversion, setting populations to zero at eDensity = ', ('%8.2e')%(eDensity[idens])
 #                thispop=np.linalg.solve(popmat,b)
 #                if rec:
 #                    pop[idens] = thispop[ci:ci+nlvls+rec-1]
@@ -2605,8 +2612,7 @@ class ion(_ionTrails):
                     pop[itemp] = thispop[ci:ci+nlvls]
                 except np.linalg.LinAlgError:
                     pop[itemp] = np.zeros(nlvls, 'float64')
-                    if verbose:
-                        print(' error in matrix inversion, setting populations to zero at T = %10.2e'%(temperature[itemp]))
+#                    print ' error in matrix inversion, setting populations to zero at T = ', ('%8.2e')%(temperature[itemp])
 #                thispop=np.linalg.solve(popmat,b)
 #                if rec:
 #                    pop[itemp] = thispop[ci:ci+nlvls+rec-1]
@@ -2917,8 +2923,7 @@ class ion(_ionTrails):
             except np.linalg.LinAlgError:
                 pop = np.zeros(nlvls, 'float64')
                 popHigher = 0.
-                if verbose:
-                    print(' error in matrix inversion, setting populations to zero at T = %10.2e'%(temperature))
+#                print ' error in matrix inversion, setting populations to zero at T = ', ('%8.2e')%(temperature)
         #
         # ------------- ntemp = 1 ---------------------------------------------------------
         #
@@ -3025,8 +3030,7 @@ class ion(_ionTrails):
                 except np.linalg.LinAlgError:
                     pop[itemp] = np.zeros(nlvls, 'float64')
                     popHigher[itemp] = 0.
-                    if verbose:
-                        print(' error in matrix inversion, setting populations to zero at T = %10.2e'%(temperature[itemp]))
+#                    print ' error in matrix inversion, setting populations to zero at T = ', ('%8.2e')%(temperature[itemp])
             #
         elif ntemp == 1:
             pop=np.zeros((ndens,nlvls),"float64")
@@ -3117,8 +3121,7 @@ class ion(_ionTrails):
                 except np.linalg.LinAlgError:
                     pop[idens] = np.zeros(nlvls, 'float64')
                     popHigher[idens] = 0.
-                    if verbose:
-                        print(' error in matrix inversion, setting populations to zero at eDensity = %10.2e'%(eDensity[idens]))
+#                    print ' error in matrix inversion, setting populations to zero at eDensity = ', ('%8.2e')%(eDensity[idens])
                 #
         elif ntemp>1  and ntemp==ndens:
             pop=np.zeros((ntemp,nlvls),"float64")
@@ -3212,8 +3215,7 @@ class ion(_ionTrails):
                 except np.linalg.LinAlgError:
                     pop[itemp] = np.zeros(nlvls, 'float64')
                     popHigher[itemp] = 0.
-                    if verbose:
-                        print(' error in matrix inversion, setting populations to zero at T = %10.2e'%(temperature[itemp]))
+#                    print ' error in matrix inversion, setting populations to zero at T = ', ('%8.2e')%(temperature[itemp])
             #
         pop=np.where(pop >0., pop,0.)
         self.Population={"temperature":temperature, "eDensity":eDensity, "population":pop, "protonDensity":protonDensity, "ci":ci, "rec":rec, 'popmat':popmata, 'b':b, 'rad':rad}
@@ -3228,6 +3230,7 @@ class ion(_ionTrails):
         #
         # -------------------------------------------------------------------------------------
         #
+    
     def populate(self, popCorrect=1, verbose=0, **kwargs):
         """
         Calculate level populations for specified ion.
@@ -3553,8 +3556,7 @@ class ion(_ionTrails):
                 pop = fullpop[ci:ci+nlvls]
             except np.linalg.LinAlgError:
                 pop = np.zeros(nlvls, 'float64')
-                if verbose:
-                    print(' error in matrix inversion, setting populations to zero at T = %%8.2e'%(temperature))
+#                print ' error in matrix inversion, setting populations to zero at T = ', ('%8.2e')%(temperature)
             #
             # ----------------------------------------------------------------------------------
         #   next, in case of a single eDensity value
@@ -3667,8 +3669,7 @@ class ion(_ionTrails):
                     pop[itemp] = thispop[ci:ci+nlvls]
                 except np.linalg.LinAlgError:
                     pop[itemp] = np.zeros(nlvls, 'float64')
-                    if verbose:
-                        print(' error in matrix inversion, setting populations to zero at T = %10.2e'%(temperature[itemp]))
+#                    print ' error in matrix inversion, setting populations to zero at T = ', ('%8.2e')%(temperature[itemp])
             #
         elif ntemp == 1:
 #            pop=np.zeros((ndens,nlvls),"float64")
@@ -3797,8 +3798,7 @@ class ion(_ionTrails):
                     pop[idens] = thispop[ci:ci+nlvls]
                 except np.linalg.LinAlgError:
                     pop[idens] = np.zeros(nlvls, 'float64')
-                    if verbose:
-                        print(' error in matrix inversion, setting populations to zero at eDensity = %10.2e'%(eDensity[idens]))
+#                    print ' error in matrix inversion, setting populations to zero at eDensity = ', ('%8.2e')%(eDensity[idens])
 #                thispop=np.linalg.solve(popmat,b)
 #                if rec:
 #                    pop[idens] = thispop[ci:ci+nlvls+rec-1]
@@ -3930,8 +3930,7 @@ class ion(_ionTrails):
                     pop[itemp] = thispop[ci:ci+nlvls]
                 except np.linalg.LinAlgError:
                     pop[itemp] = np.zeros(nlvls, 'float64')
-                    if verbose:
-                        print(' error in matrix inversion, setting populations to zero at T = %10.2e'%(temperature[itemp]))
+#                    print ' error in matrix inversion, setting populations to zero at T = ', ('%8.2e')%(temperature[itemp])
 #                thispop=np.linalg.solve(popmat,b)
 #                if rec:
 #                    pop[itemp] = thispop[ci:ci+nlvls+rec-1]
@@ -4825,15 +4824,23 @@ class ion(_ionTrails):
         #
         # ---------------------------------------------------------------------------
         #
-    def intensity(self,  wvlRange = None,  allLines=1):
-        """Calculate  the intensities for lines of the specified ion.
+    def intensity(self,  wvlRange = None,  allLines=1, em=1.):
+        """
+        Calculate  the intensities for lines of the specified ion.
 
         wvlRange, a 2 element tuple, list or array determines the wavelength range
 
         units:  ergs cm^-3 s^-1 str^-1
 
-        includes elemental abundance and ionization fraction."""
+        includes elemental abundance and ionization fraction.
+        
+        the emission measure 'em' is included if specified
+        """
         # emiss ={"wvl":wvl, "emiss":em, "plotLabels":plotLabels}
+        #
+        em = np.asarray(em, 'float64')
+        if len(em.shape) == 0:
+            em = np.ones(self.NTempDen, 'float64')*em
         #
         if not hasattr(self, 'Emiss'):
             self.emiss(wvlRange = wvlRange, allLines=allLines)
@@ -4843,8 +4850,9 @@ class ion(_ionTrails):
         if 'errorMessage'  in emiss.keys():
             self.Intensity = {'errorMessage': self.Spectroscopic+' no lines in this wavelength region'}
             return
+        #
         # everything in emiss should be a numpy array
-        em = emiss['emiss']
+        emissivity = emiss['emiss']
         ionS = emiss['ionS']
         wvl = emiss['wvl']
         lvl1 = emiss['lvl1']
@@ -4853,6 +4861,13 @@ class ion(_ionTrails):
         pretty1 = emiss['pretty1']
         pretty2 = emiss['pretty2']
         avalue = emiss['avalue']
+        #
+#        print(' shape of emissivity %5i'%(len(emissivity.shape)))
+#        if len(emissivity.shape) > 1:
+#            print( ' emissivity.shape %5i %5i '%(emissivity.shape))
+#        else:
+#            print(' len of emissivity'%(len(emissivity)))
+        #
         if hasattr(self, 'Abundance'):
             ab=self.Abundance
         else:
@@ -4863,163 +4878,35 @@ class ion(_ionTrails):
         else:
             self.ioneqOne()
             thisIoneq=self.IoneqOne
-        try:
-            nwvl, ntempden = em.shape
+#        try:
+#            nwvl, ntempden = emissivity.shape
+#            intensity = np.zeros((ntempden, nwvl),'Float64')
+#            if thisIoneq.size == 1:
+#                thisIoneq = np.ones(ntempden, 'float64')*thisIoneq
+#            for it in range(ntempden):
+#                intensity[it] = ab*thisIoneq[it]*emissivity[:, it]
+#        except:
+#            nwvl=len(emissivity)
+#            ntempden=1
+#            intensity = ab*thisIoneq*emissivity
+
+        if len(emissivity.shape) > 1:
+            nwvl, ntempden= emissivity.shape
             intensity = np.zeros((ntempden, nwvl),'Float64')
             if thisIoneq.size == 1:
-                thisIoneq = np.ones(ntempden, 'float64')*thisIoneq
+                thisIoneq = np.ones(ntempden, 'float64')*thisIoneq            
             for it in range(ntempden):
-                intensity[it] = ab*thisIoneq[it]*em[:, it]
-        except:
-            nwvl=len(em)
+                intensity[it] = ab*thisIoneq[it]*emissivity[:, it]*em[it]
+        else:
+            nwvl=len(emissivity)
             ntempden=1
-            intensity = ab*thisIoneq*em
-        Intensity = {'intensity':intensity, 'ionS':ionS, 'wvl':wvl, 'lvl1':lvl1, 'lvl2':lvl2, 'pretty1':pretty1, 'pretty2':pretty2,  'obs':obs, 'avalue':avalue}
+            intensity = ab*thisIoneq*emissivity*em
+        Intensity = {'intensity':intensity, 'ionS':ionS, 'wvl':wvl, 'lvl1':lvl1, 'lvl2':lvl2, 'pretty1':pretty1, 'pretty2':pretty2,  'obs':obs, 'avalue':avalue, 'em':em}
 #        if emiss.has_key('pretty1'):
 #            Intensity['pretty1'] = emiss['pretty1']
 #        if emiss.has_key('pretty2'):
 #            Intensity['pretty2'] = emiss['pretty2']
         self.Intensity = Intensity
-#        #
-#        # ---------------------------------------------------------------------------
-#        #
-#    def intensityList(self, index=-1,  wvlRange=None, wvlRanges=None,   top=10, relative=0, outFile=0 ):
-#        '''
-#        List the line intensities
-#
-#        wvlRange, a 2 element tuple, list or array determines the wavelength range
-#
-#        Top specifies to plot only the top strongest lines, default = 10
-#
-#        normalize = 1 specifies whether to normalize to strongest line, default = 0
-#        rewrite of emissList
-#        '''
-#        #
-#        #
-#        if not hasattr(self, 'Intensity'):
-#            try:
-#                self.intensity()
-#            except:
-#                print(' intensities not calculated and emiss() is unable to calculate them')
-#                print(' perhaps the temperature and/or eDensity are not set')
-#                return
-#        #
-#        # everything in self.Intensity should be a numpy array
-#        #
-#        intens = copy.copy(self.Intensity)
-#        intensity = intens['intensity']
-#        ionS = intens['ionS']
-#        wvl = intens['wvl']
-#        lvl1 = intens['lvl1']
-#        lvl2 = intens['lvl2']
-#        pretty1 = intens['pretty1']
-#        pretty2 = intens['pretty2']
-#        obs = intens['obs']
-#        avalue = intens['avalue']
-#        #
-#        temperature = self.Temperature
-#        eDensity = self.EDensity
-#        #
-#            #
-#        ndens = eDensity.size
-#        ntemp = temperature.size
-#        #
-#        if ndens == 1 and ntemp == 1:
-#            dstr = ' -  Density = %10.2e (cm$^{-3}$)' %(eDensity)
-#            tstr = ' -  T = %10.2e (K)' %(temperature)
-#        elif ndens == 1 and ntemp > 1:
-#            if index < 0:
-#                index = ntemp/2
-#            print('using index = %5i specifying temperature =  %10.2e'%(index, temperature[index]))
-#            self.Message = 'using index = %5i specifying temperature =  %10.2e'%(index, temperature[index])
-#
-#            intensity=intensity[index]
-#        elif ndens > 1 and ntemp == 1:
-#            if index < 0:
-#                index = ntemp/2
-#            print('using index =%5i specifying eDensity = %10.2e'%(index, eDensity[index]))
-#            self.Message = 'using index =%5i specifying eDensity = %10.2e'%(index, eDensity[index])
-#            intensity=intensity[index]
-#        elif ndens > 1 and ntemp > 1:
-#            if index < 0:
-#                index = ntemp/2
-#            print('using index = %5i specifying temperature = %10.2e, eDensity =  %10.2e'%(index, temperature[index], eDensity[index]))
-#            self.Message = 'using index = %5i specifying temperature = %10.2e, eDensity =  %10.2e'%(index, temperature[index], eDensity[index])
-#            intensity=intensity[index]
-#        #
-#        if wvlRange:
-#            wvlIndex=util.between(wvl,wvlRange)
-#        elif wvlRanges:
-#            wvlIndex = []
-#            for awvlRange in wvlRanges:
-#                wvlIndex.extend(util.between(wvl,awvlRange))
-#        else:
-#            wvlIndex = range(wvl.size)
-#        #
-#        #  get lines in the specified wavelength range
-#        #
-#        intensity = intensity[wvlIndex]
-#        ionS = ionS[wvlIndex]
-#        wvl = wvl[wvlIndex]
-#        lvl1 = lvl1[wvlIndex]
-#        lvl2 = lvl2[wvlIndex]
-#        avalue = avalue[wvlIndex]
-#        pretty1 = pretty1[wvlIndex]
-#        pretty2 = pretty2[wvlIndex]
-#        obs = obs[wvlIndex]
-#        #
-#        self.Error = 0
-#        if wvl.size == 0:
-#            print('No lines in this wavelength interval')
-#            self.Error = 1
-#            self.Message = 'No lines in this wavelength interval'
-#            return
-#        #
-#        elif top == 0:
-#            top = wvl.size
-#        elif top > wvl.size:
-#            top = wvl.size
-#        #
-#        # sort by intensity
-#        #
-#        isrt = np.argsort(intensity)
-#        ionS = ionS[isrt[-top:]]
-#        wvl = wvl[isrt[-top:]]
-#        lvl1 = lvl1[isrt[-top:]]
-#        lvl2 = lvl2[isrt[-top:]]
-#        obs = obs[isrt[-top:]]
-#        intensity = intensity[isrt[-top:]]
-#        avalue = avalue[isrt[-top:]]
-#        pretty1 = pretty1[isrt[-top:]]
-#        pretty2 = pretty2[isrt[-top:]]
-#        #
-#    # must follow setting top
-#        #
-#        if relative:
-#            intensity = intensity/intensity[:top].max()
-#        #
-#        #
-#        idx = np.argsort(wvl)
-#        fmt = '%5s %5i %5i %25s - %25s %12.4f %12.3e %12.2e %1s'
-#        print('   ')
-#        print(' ------------------------------------------')
-#        print('   ')
-#        print(' Ion   lvl1  lvl2         lower                     upper                   Wvl(A)   Intensity      A value Obs')
-#        for kdx in idx:
-#            print(fmt%(ionS[kdx], lvl1[kdx], lvl2[kdx], pretty1[kdx], pretty2[kdx], wvl[kdx], intensity[kdx], avalue[kdx], obs[kdx]))
-#        print('   ')
-#        print(' ------------------------------------------')
-#        print('   ')
-#        #
-#        self.Intensity['wvlTop'] = wvl[idx]
-#        self.Intensity['intensityTop'] = intensity[idx]
-#        if outFile:
-#            fmt = '%5s %5i %5i %25s - %25s %12.4f %12.3e %12.2e %1s \n'
-#            outpt = open(outFile, 'w')
-#            outpt.write('Ion lvl1  lvl2         lower                       upper                   Wvl(A)   Intensity      A value Obs \n')
-#            for kdx in idx:
-#                outpt.write(fmt%(ionS[kdx], lvl1[kdx], lvl2[kdx], pretty1[kdx], pretty2[kdx], wvl[kdx], intensity[kdx], avalue[kdx], obs[kdx]))
-#            outpt.close()
         #
         # ---------------------------------------------------------------------------
         #
@@ -5759,10 +5646,14 @@ class ion(_ionTrails):
         #
         #-----------------------------------------------------------------
         #
-    def twoPhoton(self, wvl):
-        ''' to calculate the two-photon continuum - only for hydrogen- and helium-like ions
-        includes the elemental abundance and the ionization equilibrium'''
+    def twoPhoton(self, wvl, em=1.):
+        ''' 
+        to calculate the two-photon continuum - only for hydrogen- and helium-like ions
+        includes the elemental abundance and the ionization equilibrium
+        includes the emission measure if specified
+        '''
         wvl = np.array(wvl, 'float64')
+        em = np.asarray(em, 'float64')
         nWvl = wvl.size
         if self.Z -self.Ion > 1 or self.Dielectronic:
             # this is not a hydrogen-like or helium-like ion
@@ -5789,6 +5680,8 @@ class ion(_ionTrails):
                 nTempDens = max(self.Temperature.size, self.EDensity.size)
             if nTempDens > 1:
                 rate = np.zeros((nTempDens, nWvl), 'float64')
+                if em.size == 1.:
+                    em = np.ones(nTempDens, 'float64')*em
                 if self.EDensity.size == 1:
                     eDensity = np.repeat(self.EDensity, nTempDens)
                 else:
@@ -5820,10 +5713,10 @@ class ion(_ionTrails):
                     else:
                         f=1./(4.*const.pi)
                     if nTempDens == 1:
-                        rate[goodWvl] = f*pop[l2]*distr*ab*thisIoneq/eDensity
+                        rate[goodWvl] = f*pop[l2]*distr*ab*thisIoneq*em/eDensity
                     else:
                        for it in range(nTempDens):
-                            rate[it, goodWvl] = f*pop[it, l2]*distr*ab*thisIoneq[it]/eDensity[it]
+                            rate[it, goodWvl] = f*pop[it, l2]*distr*ab*thisIoneq[it]*em[it]/eDensity[it]
                 self.TwoPhoton = {'wvl':wvl, 'rate':rate}
 
             else:
@@ -5843,17 +5736,20 @@ class ion(_ionTrails):
                     else:
                         f=1./(4.*const.pi)
                     if nTempDens == 1:
-                        rate[goodWvl] = f*pop[l2]*distr*ab*thisIoneq/eDensity
+                        rate[goodWvl] = f*pop[l2]*distr*ab*thisIoneq*em/eDensity
                     else:
                        for it in range(nTempDens):
-                            rate[it, goodWvl] = f*pop[it, l2]*distr*ab*thisIoneq[it]/eDensity[it]
+                            rate[it, goodWvl] = f*pop[it, l2]*distr*ab*thisIoneq[it]*em[it]/eDensity[it]
                 self.TwoPhoton = {'wvl':wvl, 'rate':rate}
         #
         #-----------------------------------------------------------------
         #
     def twoPhotonLoss(self):
-        ''' to calculate the two-photon energy loss rate - only for hydrogen- and helium-like ions
-        includes the elemental abundance and the ionization equilibrium'''
+        ''' 
+        to calculate the two-photon energy loss rate - only for hydrogen- and helium-like ions
+        includes the elemental abundance and the ionization equilibrium
+        does not include the emission measure
+        '''
         if self.Z -self.Ion > 1 or self.Dielectronic:
             # this is not a hydrogen-like or helium-like ion
             nTempDens = max(self.Temperature.size, self.EDensity.size)

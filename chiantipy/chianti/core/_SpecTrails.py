@@ -1,7 +1,5 @@
 from datetime import datetime
-from copy import copy
 import numpy as np
-import pylab as pl
 import chianti.filters as chfilters
 class _specTrails():
     '''
@@ -13,9 +11,15 @@ class _specTrails():
         #
         # ---------------------------------------------------------------------------
         #
-    def convolve(self, filter=(chfilters.gaussianR, 1000.), label=0, verbose=0):
+    def convolve(self, wavelength=0, filter=(chfilters.gaussianR, 1000.), label=0, verbose=0):
         '''
         the first application of spectrum calculates the line intensities within the specified wavelength range and for set of ions specified
+        
+        wavelength is will not be used if applied to 'spectrum' objects
+        
+        wavelength IS need for 'bunch' objects - in this case, the wavelength should not extend beyond the limits of the
+        wvlRange used for the 'bunch' calculation
+        
         '''
         if type(label)!= type(0):
             if type(label) != str:
@@ -23,9 +27,15 @@ class _specTrails():
                 return
         #
         t1 = datetime.now()
-        #
-        nWvl = len(self.Wavelength)
-        wavelength = self.Wavelength
+        #:
+        if hasattr(self, 'Wavelength'):
+            nWvl = len(self.Wavelength)
+            wavelength = self.Wavelength
+        elif type(wavelength) == int:
+            print(' a wavelength array must be given')
+            return
+        else:
+            nWvl = len(wavelength)
         lineSpectrum = np.zeros((self.NTempDen, nWvl), 'float64').squeeze()
         for akey in self.IonInstances.iterkeys():
 #            thisIon = self.IonInstances[akey]
@@ -122,19 +132,24 @@ class _specTrails():
 #        self.LineSpectrum = lineSpectrum
 
         self.LineSpectrum = {'wavelength':wavelength, 'intensity':lineSpectrum.squeeze()}
-
-        total = self.FreeFree['intensity'] + self.FreeBound['intensity'] + self.TwoPhoton['intensity'] + self.LineSpectrum['intensity']
+        #
+        total = self.LineSpectrum['intensity']
+        #
+        # the following is required in order to be applied to both a 'spectrum' and a 'bunch' object
+        #
+        if hasattr(self, 'FreeFree'):
+            total += self.FreeFree['intensity']
+        if hasattr(self, 'FreeBound'):
+            total += self.FreeBound['intensity']
+        if hasattr(self, 'TwoPhoton'):
+            total += self.TwoPhoton['intensity']
         self.Total = total
         #
-        if self.NEm == 0:
+        #
+        if self.NTempDen == 1:
             integrated = total
         else:
-            if self.NEm == 1:
-                integrated = total*self.Em
-            else:
-                integrated = np.zeros_like(wavelength)
-                for iTempDen in range(self.NTempDen):
-                    integrated += total[iTempDen]*self.Em[iTempDen]
+            integrated = total.sum(axis=0)
         #
         t2 = datetime.now()
         dt=t2-t1

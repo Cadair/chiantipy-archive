@@ -18,7 +18,7 @@ class continuum:
 
     can specify the abundance file with abund='cosmic_1973_allen', for example (the .ioneq suffix should not be included
     '''
-    def __init__(self, ionStr,  temperature,  density=0, abundance=0, abundanceName=0):
+    def __init__(self, ionStr,  temperature,  density=0, abundance=0, abundanceName=0, em=1.):
         nameDict = util.convertName(ionStr)
         self.Z = nameDict['Z']
         self.Ion = nameDict['Ion']
@@ -118,8 +118,8 @@ class continuum:
         l = fblvl['l']
         # energy level in inverse cm
         ecm = fblvl['ecm']
-        for i in range(nlvls):
-            print(' lvl %5i ecm %12.3f  wvl %12.4f'%(i, ecm[i], 1.e+8/(ipcm-ecm[i])))
+#        for i in range(nlvls):
+#            print(' lvl %5i ecm %12.3f  wvl %12.4f'%(i, ecm[i], 1.e+8/(ipcm-ecm[i])))
         # statistical weigths/multiplicities
         multu = fblvl['mult']
         multr = rFblvl['mult']
@@ -282,7 +282,7 @@ class continuum:
             self.Ip=ip[self.Z-1, self.Ion-2]
         else:
             print(' in freeBound, trying to use the neutral ion as the recombining ion')
-            self.FreeBound={}
+            self.FreeBound={'errorMessage':' in freeBound, trying to use the neutral ion as the recombining ion'}
             return
         try:
             temperature = self.Temperature
@@ -290,33 +290,38 @@ class continuum:
             print(' temperature undefined')
             return
         # the recombined ion contains that data for fblvl
-        try:
+        if hasattr(self, 'Fblvl'):
             fblvl = self.Fblvl
-        except:
+        else:
             fblvlname = util.zion2filename(self.Z,self.Ion-1)+'.fblvl'
+            ionS = util.zion2name(self.Z,self.Ion-1)
             self.Fblvl = io.fblvlRead(fblvlname)
             fblvl = self.Fblvl
             # in case there is no fblvl file
-            if 'errorMessage' in fblvl:
-                self.FreeBound = fblvl
+            if 'errorMessage' in sorted(fblvl.keys()):
+                print(' filename = %s'%(fblvlname))
+                print(' for ion %s fblvl file message %s'%(ionS, fblvl['errorMessage']))
                 return
         #  need data for the current/recombining ion
-        try:
+        if hasattr(self, 'rFblvl'):
             rFblvl = self.rFblvl
-        except:
-            if self.Ion+1 == self.Z:
+        else:
+            if self.Ion == self.Z + 1:
                 # this is a bare ion
+                print(' recombining ion is bare')
                 rFblvl = {'mult':[1., 1.]}
             else:
                 rfblvlname = util.zion2filename(self.Z,self.Ion)+'.fblvl'
-                self.rFblvl = io.fblvlRead(rfblvlname)
-                rFblvl = self.rFblvl
-            if 'errorMessage' in rFblvl:
-                self.FreeBound = fblvl
-                return
-        try:
+                self.RFblvl = io.fblvlRead(rfblvlname)
+                rFblvl = self.RFblvl
+                if 'errorMessage' in sorted(rFblvl.keys()):
+                    print(' filename = %s'%(rfblvlname))
+                    print(' for ion %s rfblvl file message %s'%(self.IonStr, rFblvl['errorMessage']))
+                    self.FreeBound = {'errorMessage':' rfblvl file does not exist'}
+                    return
+        if hasattr(self, 'IoneqOne'):
             gIoneq = self.IoneqOne
-        except:
+        else:
             self.ioneqOne()
             gIoneq = self.IoneqOne
         #
@@ -507,7 +512,7 @@ class continuum:
             self.Ip=ip[self.Z-1, self.Ion-2]
         else:
             print(' in freeBound, trying to use the neutral ion as the recombining ion')
-            self.FreeBound={}
+            self.FreeBound={'errorMessage':' in freeBound, trying to use the neutral ion as the recombining ion'}
             return
         #
         if hasattr(self, 'Fblvl'):
