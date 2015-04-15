@@ -42,7 +42,16 @@ class _ionTrails():
         #
         # everything in self.Intensity should be a numpy array
         #
-        intens = copy.copy(self.Intensity)
+         #
+            #
+        temperature = self.Temperature
+        eDensity = self.EDensity
+        #
+        ndens = eDensity.size
+        ntemp = temperature.size
+        #
+        #
+        intens = copy.deepcopy(self.Intensity)
         intensity = intens['intensity']
         ionS = intens['ionS']
         wvl = intens['wvl']
@@ -52,13 +61,6 @@ class _ionTrails():
         pretty2 = intens['pretty2']
         obs = intens['obs']
         avalue = intens['avalue']
-        #
-        temperature = self.Temperature
-        eDensity = self.EDensity
-        #
-            #
-        ndens = eDensity.size
-        ntemp = temperature.size
         #
         if ndens == 1 and ntemp == 1:
             dstr = ' -  Density = %10.2e (cm$^{-3}$)' %(eDensity)
@@ -83,6 +85,8 @@ class _ionTrails():
             self.Message = 'using index = %5i specifying temperature = %10.2e, eDensity =  %10.2e'%(index, temperature[index], eDensity[index])
             intensity=intensity[index]
         #
+#        print('shpae of intensity 0 = %5i %5i'%(intensity.shape))
+        #
         if wvlRange:
             wvlIndex=util.between(wvl,wvlRange)
         elif wvlRanges:
@@ -93,6 +97,8 @@ class _ionTrails():
             wvlIndex = range(wvl.size)
         #
         #  get lines in the specified wavelength range
+        #
+#        print('shpae of intensity 1 = %5i %5i'%(intensity.shape))
         #
         intensity = intensity[wvlIndex]
         ionS = ionS[wvlIndex]
@@ -128,6 +134,8 @@ class _ionTrails():
         avalue = avalue[isrt[-top:]]
         pretty1 = pretty1[isrt[-top:]]
         pretty2 = pretty2[isrt[-top:]]
+        #
+#        print('shpae of intensity 2= %5i %5i'%(intensity.shape))
         #
     # must follow setting top
         #

@@ -77,7 +77,7 @@ class mspectrum(_ionTrails, _specTrails):
     proc = the number of processors to use
     timeout - a small but non-zero value seems to be necessary
     '''
-    def __init__(self, temperature, eDensity, wavelength, filter=(chfilters.gaussianR, 1000.), label=0, elementList = 0, ionList = 0, minAbund=0., abundanceName=0,  doContinuum=1, allLines = 1, em = 0,  proc=3, verbose = 0,  timeout=0.1):
+    def __init__(self, temperature, eDensity, wavelength, filter=(chfilters.gaussianR, 1000.), label=0, elementList = 0, ionList = 0, minAbund=0., abundanceName=0,  doContinuum=1, allLines = 1, em = 1.,  proc=3, verbose = 0,  timeout=0.1):
         #
         t1 = datetime.now()
         # creates Intensity dict from first ion calculated
@@ -111,24 +111,16 @@ class mspectrum(_ionTrails, _specTrails):
         nDen = self.EDensity.size
         nTempDen = max([nTemp, nDen])
         self.NTempDen = nTempDen
-        if em != 0:
-            if isinstance(em, float):
-                if nTempDen > 1:
-                    em = np.ones_like(self.Temperature)*em
-                    nEm = nTempDen
-                else:
-                    nEm = 1
-            else:
-                em = np.asarray(em, 'float64')
-                nEm = em.size
-                if nEm != nTempDen:
-                    print(' the emission measure array must be the same size as the temperature/density array')
-                    return
-            self.Em = em
-        else:
-                nEm = 0
-        self.Em = 0
-        self.NEm = nEm
+#        em = np.asarray(em, 'float64')
+#        if em.size != nTempDen:
+#            if em.size == 1:
+#                em = np.ones(nTempDen, 'float64')*em[0]
+#        self.Em = em
+        #
+        em = np.asarray(em, 'float64')
+        if len(em.shape) == 0:
+            em = np.ones(self.NTempDen, 'float64')*em
+        self.Em = em
         self.AllLines = allLines
         #
         if not abundanceName:
@@ -218,7 +210,7 @@ class mspectrum(_ionTrails, _specTrails):
                         if masterListTest and wvlTestMin and wvlTestMax and ioneqTest:
                             if verbose:
                                 print(' setting up spectrum calculation for %s '%(ionS))
-                            ionWorkerQ.put((ionS, temperature, eDensity, wavelength, filter, allLines, abundance))
+                            ionWorkerQ.put((ionS, temperature, eDensity, wavelength, filter, allLines, abundance, em, doContinuum))
                             self.Todo.append(ionS)
                             self.IonsCalculated.append(ionS)
                         # get dielectronic lines
@@ -227,7 +219,7 @@ class mspectrum(_ionTrails, _specTrails):
                                 print(' setting up  spectrum calculation for %s'%(ionSd))
     #                        dielWorkerQ.put((ionSd, temperature, density, wavelength, filter))
                             # set allLines fo dielectronic
-                            ionWorkerQ.put((ionSd, temperature, eDensity, wavelength, filter, 1, abundance))
+                            ionWorkerQ.put((ionSd, temperature, eDensity, wavelength, filter, allLines, abundance, em, doContinuum))
                             self.Todo.append(ionSd)
                             self.IonsCalculated.append(ionS)
         #
@@ -249,12 +241,12 @@ class mspectrum(_ionTrails, _specTrails):
             #
             for iff in range(ffWorkerQSize):
                 thisFreeFree = ffDoneQ.get()
-                freeFree += thisFreeFree['rate']
-#                if nTempDen ==1:
-#                    freeFree += thisFreeFree['rate']
-#                else:
-#                    for iTempDen in range(nTempDen):
-#                        freeFree[iTempDen] += thisFreeFree['rate'][iTempDen]
+#                freeFree += thisFreeFree['rate']
+                if nTempDen ==1:
+                    freeFree += thisFreeFree['rate']*em[0]
+                else:
+                    for iTempDen in range(nTempDen):
+                        freeFree[iTempDen] += thisFreeFree['rate'][iTempDen]*em[iTempDen]
             for p in ffProcesses:
                 if not isinstance(p, str):
                     p.terminate()
@@ -274,19 +266,19 @@ class mspectrum(_ionTrails, _specTrails):
             for ifb in range(fbWorkerQSize):
                 thisFreeBound = fbDoneQ.get()
                 if 'rate' in sorted(thisFreeBound.keys()):
-                    freeBound += thisFreeBound['rate']
-#                    if nTempDen ==1:
-#                        freeBound += thisFreeBound['rate']
-#                    else:
-#                        for iTempDen in range(nTempDen):
-#                            freeBound[iTempDen] += thisFreeBound['rate'][iTempDen]
+#                    freeBound += thisFreeBound['rate']
+                    if nTempDen ==1:
+                        freeBound += thisFreeBound['rate']*em[0]
+                    else:
+                        for iTempDen in range(nTempDen):
+                            freeBound[iTempDen] += thisFreeBound['rate'][iTempDen]*em[iTempDen]
             for p in fbProcesses:
                 if not isinstance(p, str):
                     p.terminate()
         #
         ionProcesses = []
         if ionWorkerQSize < proc:
-            nproc = ionWorkerQSize
+            proc = ionWorkerQSize
         for i in range(proc):
             p = mp.Process(target=mputil.doIonQ, args=(ionWorkerQ, ionDoneQ))
             p.start()
@@ -307,7 +299,7 @@ class mspectrum(_ionTrails, _specTrails):
             if verbose:
                 print(' collecting calculation for %s'%(ions))
             thisIon = out[1]
-            thisSpectrum = thisIon.Spectrum
+#            thisSpectrum = thisIon.Spectrum
             thisIntensity = thisIon.Intensity
             if not 'errorMessage' in sorted(thisIntensity.keys()):
                 self.Finished.append(ions)
@@ -319,8 +311,7 @@ class mspectrum(_ionTrails, _specTrails):
                     setupIntensity = 1
                     self.Intensity  = thisIntensity
                 #
-                lineSpectrum += thisSpectrum['intensity']
-
+                lineSpectrum += thisIon.Spectrum['intensity']
 #                if nTempDen == 1:
 #                    lineSpectrum += thisSpectrum['intensity']
 #                else:
@@ -329,12 +320,12 @@ class mspectrum(_ionTrails, _specTrails):
                # check for two-photon emission
                 if len(out) == 3:
                     tp = out[2]
-                    twoPhoton += tp['rate']
-#                    if nTempDen == 1:
-#                        twoPhoton += tp['rate']
-#                    else:
-#                        for iTempDen in range(nTempDen):
-#                            twoPhoton[iTempDen] += tp['rate'][iTempDen]
+#                    twoPhoton += tp['rate']
+                    if nTempDen == 1:
+                        twoPhoton += tp['rate']*em[0]
+                    else:
+                        for iTempDen in range(nTempDen):
+                            twoPhoton[iTempDen] += tp['rate'][iTempDen]*em[iTempDen]
             else:
                 if 'errorMessage' in sorted(thisIntensity.keys()):
                     print(thisIntensity['errorMessage'])
@@ -356,15 +347,10 @@ class mspectrum(_ionTrails, _specTrails):
         dt=t2-t1
         print(' elapsed seconds = %12.3f'%(dt.seconds))
         #
-        if nEm == 0:
+        if nTempDen == 1:
             integrated = total
         else:
-            if nEm == 1:
-                integrated = total*em
-            else:
-                integrated = np.zeros_like(wavelength)
-                for iTempDen in range(nTempDen):
-                    integrated += total[iTempDen]*em[iTempDen]
+            integrated = total.sum(axis=0)
         #
         if type(label) == type(''):
             if hasattr(self, 'Spectrum'):
@@ -373,16 +359,6 @@ class mspectrum(_ionTrails, _specTrails):
                 self.Spectrum = {label:{'wavelength':wavelength, 'intensity':total.squeeze(), 'filter':filter[0].__name__,   'width':filter[1], 'integrated':integrated, 'em':em, 'ions':self.IonsCalculated, 'Abundance':self.AbundanceName}}
         else:
             self.Spectrum ={'wavelength':wavelength, 'intensity':total.squeeze(), 'filter':filter[0].__name__,   'width':filter[1], 'ions':self.IonsCalculated, 'Abundance':self.AbundanceName}
-#        if em != 0:
-#            if nEm == 1:
-#                integrated = total*em
-#            else:
-#                integrated = np.zeros_like(wavelength)
-#                for iTempDen in range(nTempDen):
-#                    integrated += total[iTempDen]*em[iTempDen]
-#            self.Spectrum ={'temperature':temperature, 'eDensity':eDensity, 'wavelength':wavelength, 'intensity':total.squeeze(), 'filter':filter[0].__name__,   'width':filter[1], 'integrated':integrated, 'em':em, 'minAbund':minAbund, 'masterlist':masterlist, 'ions':ionsCalculated, 'Abundance':self.AbundanceName}
-#        else:
-#            self.Spectrum ={'temperature':temperature, 'eDensity':eDensity, 'wavelength':wavelength, 'intensity':total.squeeze(), 'filter':filter[0].__name__,   'width':filter[1], 'minAbund':minAbund, 'masterlist':masterlist, 'ions':ionsCalculated, 'abundance':self.AbundanceName}
     #
     # -------------------------------------------------------------------------
     #
