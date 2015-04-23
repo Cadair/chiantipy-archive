@@ -35,33 +35,6 @@ def doFbQ(inQ, outQ):
     #
     # ----------------------------------------------
     #
-def doIonQ1(inQueue, outQueue):
-    ''' 
-    multiprocessing helper for ion, also does two-photon
-    '''
-    for inputs in iter(inQueue.get, 'STOP'):
-        ionS = inputs[0]
-        temperature = inputs[1]
-        density = inputs[2]
-        wavelength = inputs[3]
-        wvlRange = [wavelength.min(), wavelength.max()]
-        filter = inputs[4]
-        allLines = inputs[5]
-        abund = inputs[6]
-        thisIon = chianti.core.ion(ionS, temperature, density, abundance=abund)
-        thisIon.intensity(wvlRange = wvlRange, allLines = allLines)
-        thisIon.spectrum(wavelength,  filter=filter)
-#        outList = [ionS, thisIon.Spectrum]
-        outList = [ionS, thisIon.Spectrum, thisIon.Intensity]
-        if not thisIon.Dielectronic:
-            if (thisIon.Z - thisIon.Ion) in [0, 1]:
-                thisIon.twoPhoton(wavelength)
-                outList.append(thisIon.TwoPhoton)
-        outQueue.put(outList)
-    return
-    #
-    # ----------------------------------------------
-    #
 def doIonQ(inQueue, outQueue):
     ''' 
     multiprocessing helper for ion, also does two-photon

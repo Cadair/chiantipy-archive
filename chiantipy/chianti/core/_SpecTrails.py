@@ -1,6 +1,14 @@
 from datetime import datetime
 import numpy as np
 import chianti.filters as chfilters
+import chianti.util as util
+import chianti.io as chio 
+import chianti.data as chdata
+import chianti.Gui as chGui
+import chianti.constants as const
+#
+defaults = chdata.Defaults
+#
 class _specTrails():
     '''
     a collection of methods for use in spectrum calculations
@@ -53,83 +61,6 @@ class _specTrails():
             else:
                 if 'errorMessage' in sorted(self.IonInstances[akey].Intensity.keys()):
                     print(self.IonInstances[akey].Intensity['errorMessage'])
-#
-##        ijk = 0
-##        for thisItem in self.IonInstances.iteritems():
-##            ionS = thisItem[0]
-##            thisIon = thisItem[1]
-###        for thisIon in self.IonInstances.iteritems():
-###            thisIon = self.IonInstances[akey]
-##            if not 'errorMessage' in sorted(thisIon.Intensity.keys()):
-##                if verbose:
-##                    print(' doing convolve on ion %s - %s'%(ionS, thisIon.IonStr))
-##                delattr(thisIon, 'Spectrum')
-##                thisIon.spectrum(wavelength, filter)
-##                ijk += 1
-##                pl.figure(ijk)
-##                pl.plot(wavelength, thisIon.Spectrum['intensity'][self.NTempDen/2])
-##                pl.title(thisIon.IonStr)
-###                lineSpectrum = np.add(lineSpectrum, self.IonInstances[akey].Spectrum['intensity'])
-##                lineSpectrum += thisIon.Spectrum['intensity']
-###                if self.NTempDen == 1:
-###                    lineSpectrum += thisIon.Spectrum['intensity']
-###                else:
-###                    for iTempDen in range(self.NTempDen):
-###                        lineSpectrum[iTempDen] += thisIon.Spectrum['intensity'][iTempDen]
-##            else:
-##                if 'errorMessage' in sorted(thisIon.Intensity.keys()):
-##                    print(thisIon.Intensity['errorMessage'])
-##
-##        ijk = 0
-##        for thisIon in self.IonInstances:
-##            ionS = thisIon.IonStr
-###        for thisIon in self.IonInstances.iteritems():
-###            thisIon = self.IonInstances[akey]
-##            if not 'errorMessage' in sorted(thisIon.Intensity.keys()):
-##                if verbose:
-##                    print(' doing convolve on ion %s - %s'%(ionS, thisIon.IonStr))
-###                delattr(thisIon, 'Spectrum')
-##                thisIon.spectrum(wavelength, filter)
-##                ijk += 1
-##                pl.figure(ijk)
-##                pl.plot(wavelength, thisIon.Spectrum['intensity'][self.NTempDen/2])
-##                pl.title(thisIon.IonStr)
-###                lineSpectrum = np.add(lineSpectrum, self.IonInstances[akey].Spectrum['intensity'])
-##                lineSpectrum += thisIon.Spectrum['intensity']
-###                if self.NTempDen == 1:
-###                    lineSpectrum += thisIon.Spectrum['intensity']
-###                else:
-###                    for iTempDen in range(self.NTempDen):
-###                        lineSpectrum[iTempDen] += thisIon.Spectrum['intensity'][iTempDen]
-##            else:
-##                if 'errorMessage' in sorted(thisIon.Intensity.keys()):
-##                    print(thisIon.Intensity['errorMessage'])
-##
-#        ijk = 0
-#        for ion in range(len(self.IonInstances)):
-#            ionS = self.IonInstances[ion].IonStr
-##        for thisIon in self.IonInstances.iteritems():
-##            thisIon = self.IonInstances[akey]
-#            if not 'errorMessage' in sorted(self.IonInstances[ion].Intensity.keys()):
-#                if verbose:
-#                    print(' doing convolve on ion %s - %s'%(ionS, self.IonInstances[ion].IonStr))
-##                delattr(thisIon, 'Spectrum')
-#                self.IonInstances[ion].spectrum(wavelength, filter)
-#                ijk += 1
-#                pl.figure(ijk)
-#                pl.plot(wavelength, self.IonInstances[ion].Spectrum['intensity'][self.NTempDen/2])
-#                pl.title(self.IonInstances[ion].IonStr)
-##                lineSpectrum = np.add(lineSpectrum, self.IonInstances[akey].Spectrum['intensity'])
-#                lineSpectrum += self.IonInstances[ion].Spectrum['intensity']
-##                if self.NTempDen == 1:
-##                    lineSpectrum += thisIon.Spectrum['intensity']
-##                else:
-##                    for iTempDen in range(self.NTempDen):
-##                        lineSpectrum[iTempDen] += thisIon.Spectrum['intensity'][iTempDen]
-#            else:
-#                if 'errorMessage' in sorted(self.IonInstances[ion].Intensity.keys()):
-#                    print(self.IonInstances[ion].Intensity['errorMessage'])
-#        self.LineSpectrum = lineSpectrum
 
         self.LineSpectrum = {'wavelength':wavelength, 'intensity':lineSpectrum.squeeze()}
         #
@@ -157,9 +88,133 @@ class _specTrails():
         #
         if type(label) == type(''):
             if hasattr(self, 'Spectrum'):
-                self.Spectrum[label] = {'wavelength':wavelength, 'intensity':total.squeeze(), 'filter':filter[0].__name__,   'width':filter[1], 'integrated':integrated, 'em':self.Em, 'ions':self.IonsCalculated, 'Abundance':self.AbundanceName}
+                self.Spectrum[label] = {'wavelength':wavelength, 'intensity':total.squeeze(), 'filter':filter[0].__name__,   'width':filter[1], 'integrated':integrated, 'em':self.Em,  'Abundance':self.AbundanceName}
             else:
-                self.Spectrum = {label:{'wavelength':wavelength, 'intensity':total.squeeze(), 'filter':filter[0].__name__,   'width':filter[1], 'integrated':integrated, 'em':self.Em, 'ions':self.IonsCalculated, 'Abundance':self.AbundanceName}}
+                self.Spectrum = {label:{'wavelength':wavelength, 'intensity':total.squeeze(), 'filter':filter[0].__name__,   'width':filter[1], 'integrated':integrated, 'em':self.Em,  'Abundance':self.AbundanceName}}
         else:
-            self.Spectrum ={'wavelength':wavelength, 'intensity':total.squeeze(), 'filter':filter[0].__name__,   'width':filter[1], 'ions':self.IonsCalculated, 'Abundance':self.AbundanceName}
+            self.Spectrum ={'wavelength':wavelength, 'intensity':total.squeeze(), 'filter':filter[0].__name__,   'width':filter[1], 'Abundance':self.AbundanceName}
         return
+        #
+        # ---------------------------------------------------------------------------
+        #
+    def ionGate(self, elementList = 0, ionList = 0, minAbund=0., doContinuum=1, verbose = 0):
+        '''
+        creates a list of ions for free-free, free-bound, and line intensity calculations
+        '''
+        #
+        masterlist = chdata.MasterList
+        abundAll = self.AbundAll
+        #
+        nonzed = abundAll > 0.
+        minAbundAll = abundAll[nonzed].min()
+        if minAbund < minAbundAll:
+            minAbund = minAbundAll
+        ionInfo = chio.masterListInfo()
+        #
+        wvlRange = [self.Wavelength.min(), self.Wavelength.max()]
+        temperature = self.Temperature
+        #
+        # use the ionList but make sure the ions are in the database
+        self.Todo = {}
+        #
+        if doContinuum:
+            for iz in range(1, 31):
+                abundance = chdata.Abundance[self.AbundanceName]['abundance'][iz-1]
+                if abundance >= minAbund:
+                    if verbose:
+                        print(' %5i %5s abundance = %10.2e '%(iz, const.El[iz-1],  abundance))
+                    #
+                    for ionstage in range(1, iz+2):
+                        ionS = util.zion2name(iz, ionstage)
+                        masterListTest = ionS in masterlist
+                        masterListInfoTest = ionS in sorted(ionInfo.keys())
+                        if masterListTest or masterListInfoTest:
+                            wvlTestMin = wvlRange[0] <= ionInfo[ionS]['wmax']
+                            wvlTestMax = wvlRange[1] >= ionInfo[ionS]['wmin']
+                            ioneqTest = (temperature.max() >= ionInfo[ionS]['tmin']) and (temperature.min() <= ionInfo[ionS]['tmax'])
+                        # construct similar test for the dielectronic files
+                        ionSd = util.zion2name(iz, ionstage, dielectronic=1)
+                        masterListTestD = ionSd in masterlist
+                        masterListInfoTestD = ionSd in sorted(ionInfo.keys())
+                        if masterListTestD or masterListInfoTestD:
+                            wvlTestMinD = wvlRange[0] <= ionInfo[ionSd]['wmax']
+                            wvlTestMaxD = wvlRange[1] >= ionInfo[ionSd]['wmin']
+                            ioneqTestD = (temperature.max() >= ionInfo[ionSd]['tmin']) and (temperature.min() <=ionInfo[ionSd]['tmax'])
+                        ionstageTest = ionstage > 1
+                        if ionstageTest and ioneqTest and doContinuum:
+                            # ionS is the target ion, cannot be the neutral for the continuum
+                            if verbose:
+                                print(' setting up continuum calculation for %s  '%(ionS))
+                            if ionS in sorted(self.Todo.keys()):
+                                self.Todo[ionS] += '_ff'
+                            else:
+                                self.Todo[ionS] = 'ff'
+                                if iz +1 != ionstage:
+                                    self.Todo[ionS] += '_fb'
+                            if verbose:
+                                print(' for ions %s do : %s'%(ionS, self.Todo[ionS]))
+        #
+        if elementList:
+            for i,  one in enumerate(elementList):
+                elementList[i] = one.lower()
+            for one in masterlist:
+                stuff = util.convertName(one)
+                if stuff['Element'] in  elementList:
+                    self.Todo[one] = 'line'
+        elif ionList: 
+            for one in ionList:
+                if masterlist.count(one):
+                    self.Todo[one] = 'line'
+                else:
+                    if verbose:
+                        pstring = ' %s not in CHIANTI database'%(one)
+                        print(pstring)
+        #
+        #
+        #
+        else:
+            for iz in range(1, 31):
+                abundance = chdata.Abundance[self.AbundanceName]['abundance'][iz-1]
+                if abundance >= minAbund:
+                    if verbose:
+                        print(' %5i %5s abundance = %10.2e '%(iz, const.El[iz-1],  abundance))
+                    #
+                    for ionstage in range(1, iz+2):
+                        ionS = util.zion2name(iz, ionstage)
+                        masterListTest = ionS in masterlist
+                        masterListInfoTest = ionS in sorted(ionInfo.keys())
+                        if masterListTest or masterListInfoTest:
+                            wvlTestMin = wvlRange[0] <= ionInfo[ionS]['wmax']
+                            wvlTestMax = wvlRange[1] >= ionInfo[ionS]['wmin']
+                            ioneqTest = (temperature.max() >= ionInfo[ionS]['tmin']) and (temperature.min() <= ionInfo[ionS]['tmax'])
+                        # construct similar test for the dielectronic files
+                        ionSd = util.zion2name(iz, ionstage, dielectronic=1)
+                        masterListTestD = ionSd in masterlist
+                        masterListInfoTestD = ionSd in sorted(ionInfo.keys())
+                        if masterListTestD or masterListInfoTestD:
+                            wvlTestMinD = wvlRange[0] <= ionInfo[ionSd]['wmax']
+                            wvlTestMaxD = wvlRange[1] >= ionInfo[ionSd]['wmin']
+                            ioneqTestD = (temperature.max() >= ionInfo[ionSd]['tmin']) and (temperature.min() <=ionInfo[ionSd]['tmax'])
+                            #
+                        if masterListTest and wvlTestMin and wvlTestMax and ioneqTest:
+                            if verbose:
+                                print(' setting up spectrum calculation for  %s'%(ionS))
+                            if ionS in sorted(self.Todo.keys()):
+                                self.Todo[ionS] += '_line'
+                            else:
+                                self.Todo[ionS] = 'line'
+                        # get dielectronic lines
+                            if verbose:
+                                print(' for ions %s do : %s'%(ionS, self.Todo[ionS]))
+                        if masterListTestD and wvlTestMinD and wvlTestMaxD and ioneqTestD:
+                            if verbose:
+                                print(' setting up  spectrum calculation for  %s '%(ionSd))
+                            if ionSd in sorted(self.Todo.keys()):
+                                self.Todo[ionSd] += '_line'
+                            else:
+                                self.Todo[ionSd] = 'line'
+                            if verbose:
+                                print(' for ions %s do : %s'%(ionSd, self.Todo[ionSd]))
+        return
+
+
