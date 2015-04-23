@@ -413,6 +413,66 @@ def eaRead(ions, filename=0):
     #
     # -----------------------------------------------------------------------
     #
+def easplomRead(ions, filename=0, extension='.splom'):
+    """
+    read chianti splom files and returns
+    {"lvl1":lvl1,"lvl2":lvl2,"deryd":de,"gf":gf,"eryd":eout,"omega":omout}
+    currently only works for 5 point spline fit files
+    splomRead probably does just as good a job - this function may be redundant
+    """
+    #
+    #
+    if filename:
+        input = open(filename)
+    else:
+        fname=ion2filename(ions)
+        omname=fname+extension
+        input=open(omname,'r')
+    lines=input.readlines()
+    input.close()
+    format=FortranFormat('5i3,8e10.3')
+    data=5
+    iline=0
+    lvl1=[]
+    lvl2=[]
+    ttype=[]
+    gf=[]
+    de=[]
+    om=[]
+    z=1
+    while z > 0:
+        omdat1=FortranLine(lines[iline],format)
+        z=omdat1[0]
+        if z > 0:
+            l1=omdat1[2]
+            l2=omdat1[3]
+            ttype1=omdat1[4]
+            gf1=omdat1[5]
+            de1=omdat1[6]
+            btf1=omdat1[7]
+            om1=omdat1[8:]
+            #
+            lvl1.append(l1)
+            lvl2.append(l2)
+            ttype.append(ttype1)
+            gf.append(gf1)
+            de.append(de1)
+            om.append(om1)
+        iline=iline+1
+    omout=np.asarray(om,'Float64')
+    ref=lines[iline:-1]
+#        omout=np.transpose(omout)
+#    if extension == '.omdat':
+#        Splom={"lvl1":lvl1,"lvl2":lvl2,'ttype':ttype,"gf":gf, "deryd":de,"omega":omout, 'ref':ref}
+#        return Splom
+#    elif  extension == '.easplom':
+#        Easplom={"lvl1":lvl1,"lvl2":lvl2,'ttype':ttype,"gf":gf, "deryd":de,"omega":omout, 'ref':ref}
+#        return Easplom
+    Splom={"lvl1":lvl1,"lvl2":lvl2,'ttype':ttype,"gf":gf, "deryd":de,"omega":omout, 'ref':ref}
+    return Splom
+    #
+    # -----------------------------------------------------------------------
+    #
 def elvlcRead(ions, filename=0, getExtended=0, verbose=0,  useTh=1):
     """
     reads the new format elvlc files
@@ -781,17 +841,6 @@ def ioneqRead(ioneqname='', verbose=0):
         filelist = util.listFiles(ioneqdir)
         fname=os.path.join(dir,'ioneq',ioneqname+'.ioneq')
         newlist = fnmatch.filter(filelist, '*.ioneq')
-#        if not os.path.isfile(fname):
-#            print ' file does not exist:  ', fname
-#            path=os.path.join(dir,'ioneq')
-#            filelist=os.listdir(path)
-#            ioneqlist=[]
-#            for aname in fnmatch.filter(filelist,'*.ioneq'):
-#                ioneqlist.append(aname)
-#            print ' the following files do exist:'
-#            for one in ioneqlist:
-#                print ' - ', one.replace('.ioneq', '')
-#            return False
         baselist = []
         for one in newlist:
             baselist.append(os.path.basename(one))

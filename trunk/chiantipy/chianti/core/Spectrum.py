@@ -125,13 +125,15 @@ class spectrum(_ionTrails, _specTrails):
             self.AbundanceName = self.Defaults['abundfile']
         #
         abundAll = chdata.Abundance[self.AbundanceName]['abundance']
+        # needed by ionGate
+        self.AbundAll = abundAll
         #
         nonzed = abundAll > 0.
         minAbundAll = abundAll[nonzed].min()
         if minAbund < minAbundAll:
             minAbund = minAbundAll
         self.minAbund = minAbund
-        ionInfo = chio.masterListInfo()
+#        ionInfo = chio.masterListInfo()
         wavelength = np.asarray(wavelength)
         nWvl = wavelength.size
         self.Wavelength = wavelength
@@ -142,123 +144,82 @@ class spectrum(_ionTrails, _specTrails):
         twoPhoton = np.zeros((nTempDen, nWvl), 'float64').squeeze()
         lineSpectrum = np.zeros((nTempDen, nWvl), 'float64').squeeze()
         #
-#        self.Intensity = {'ionS':[], 'lvl1':[], 'lvl2':[], 'wvl':np.ndarray, 'pretty1':np.ndarray, 'pretty2':np.ndarray, 'intensity':np.zeros((nTempDen, 0),'float64'), 'obs':np.ndarray }
         self.IonsCalculated = []
         self.IonInstances = {}
         self.Finished = []
         #
-        for iz in range(31):
-            abundance = chdata.Abundance[self.AbundanceName]['abundance'][iz-1]
-            if abundance >= minAbund:
-                print((' %5i %5s abundance = %10.2e '%(iz, const.El[iz-1],  abundance)))
-                #
-                for ionstage in range(1, iz+2):
-                    ionS = util.zion2name(iz, ionstage)
-#                   print ' ionS = ', ionS
-                    masterListTest = ionS in masterlist
-                    masterListInfoTest = ionS in list(ionInfo.keys())
-                    if masterListTest or masterListInfoTest:
-                        wvlTestMin = self.Wavelength.min() <= ionInfo[ionS]['wmax']
-                        wvlTestMax = self.Wavelength.max() >= ionInfo[ionS]['wmin']
-                        ioneqTest = (self.Temperature.max() >= ionInfo[ionS]['tmin']) and (self.Temperature.min() <= ionInfo[ionS]['tmax'])
-                    # construct similar test for the dielectronic files
-                    ionSd = util.zion2name(iz, ionstage, dielectronic=1)
-                    masterListTestD = ionSd in masterlist
-                    masterListInfoTestD = ionSd in list(ionInfo.keys())
-                    if masterListTestD or masterListInfoTestD:
-                        wvlTestMinD = self.Wavelength.min() <= ionInfo[ionSd]['wmax']
-                        wvlTestMaxD = self.Wavelength.max() >= ionInfo[ionSd]['wmin']
-                        ioneqTestD = (self.Temperature.max() >= ionInfo[ionSd]['tmin']) and (self.Temperature.min() <=ionInfo[ionSd]['tmax'])
-                    ionstageTest = ionstage > 1
-                    if ionstageTest and ioneqTest and doContinuum:
-                        # ionS is the target ion, cannot be the neutral for the continuum
-                        if verbose:
-                            print(' calculating continuum for :  %s'%(ionS))
-                        cont = chianti.core.continuum(ionS, temperature, abundanceName=self.AbundanceName)
-                        cont.freeFree(wavelength)
-                        freeFree += cont.FreeFree['rate']
-#                        if nTempDen ==1:
-#                            freeFree += cont.FreeFree['rate']
-#                        else:
-#                            for iTempDen in range(nTempDen):
-#                                freeFree[iTempDen] += cont.FreeFree['rate'][iTempDen]
-                    #
-                        cont.freeBound(wavelength)
-                        if 'errorMessage' not in list(cont.FreeBound.keys()):
-                            #  an fblvl file exists for this ions
-                            freeBound += cont.FreeBound['rate']
-#                            if nTempDen == 1:
-#                                freeBound += cont.FreeBound['rate']
-#                            else:
-#                                for iTempDen in range(nTempDen):
-#                                    freeBound[iTempDen] += cont.FreeBound['rate'][iTempDen]
-                    if masterListTest and wvlTestMin and wvlTestMax and ioneqTest:
-                        if verbose:
-                            print(' calculating spectrum for  :  %s'%(ionS))
-                        #
-                        thisIon = chianti.core.ion(ionS, temperature, eDensity, abundanceName=self.AbundanceName)
-                        thisIon.intensity(wvlRange=wvlRange, allLines=allLines, em=em)
-                        self.IonsCalculated.append(ionS)
-#                       print ' dir = ', dir(thisIon)
-#                        thisIon.emiss(wvlRange = wvlRange, allLines=allLines)
-#                        thisIon.intensity(wvlRange = wvlRange, allLines=allLines)
-#                        print(' intensity shape %5i %5i '%(thisIon.Intensity['intensity'].shape[0], thisIon.Intensity['intensity'].shape[1]))
-                        # check that there are lines in this wavelength range
-                        if 'errorMessage' not in  list(thisIon.Intensity.keys()):
-                            self.Finished.append(ionS)
-                            thisIon.spectrum(wavelength, filter=filter, allLines=allLines, em=em)
-                            self.IonInstances[ionS] = copy.deepcopy(thisIon)
-                            if setupIntensity:
-                                for akey in self.Intensity:
-                                    self.Intensity[akey] = np.hstack((copy.copy(self.Intensity[akey]), thisIon.Intensity[akey]))
-                            else:
-                                setupIntensity = 1
-#                                print(' creating Intensity dict from ion %s'%(ionS))
-                                self.Intensity  = thisIon.Intensity
-#                           intensity = thisIon.Intensity['intensity']
-                            lineSpectrum += thisIon.Spectrum['intensity']
+        self.ionGate(elementList = elementList, ionList = ionList, minAbund=minAbund, doContinuum=doContinuum, verbose = verbose)
+        #
+        for akey in sorted(self.Todo.keys()):
+            zStuff = util.convertName(akey)
+            Z = zStuff['Z']
+            ionstage = zStuff['Ion']
+            dielectronic = zStuff['Dielectronic']
+            abundance = chdata.Abundance[self.AbundanceName]['abundance'][Z - 1]
+            if verbose:
+                print(' %5i %5s abundance = %10.2e '%(Z, const.El[Z-1],  abundance))
+            if verbose:
+                print(' doing ion %s for the following processes %s'%(akey, self.Todo[akey]))
+            if 'ff' in self.Todo[akey]:
+                if verbose:
+                    print(' calculating ff continuum for :  %s'%(akey))
+                cont = chianti.core.continuum(akey, temperature, abundanceName=self.AbundanceName)
+                cont.freeFree(wavelength)
+                if nTempDen == 1:
+                    freeFree += cont.FreeFree['rate']*em[0]
+                else:
+                    for iTempDen in range(nTempDen):
+                        freeFree[iTempDen] += cont.FreeFree['rate'][iTempDen]*em[iTempDen]
+#                freeFree += cont.FreeFree['rate']
+            if 'fb' in self.Todo[akey]:
+                if verbose:
+                    print(' calculating fb continuum for :  %s'%(akey))
+                try:
+                    cont.freeBound(wavelength)
+                    if 'errorMessage' not in list(cont.FreeBound.keys()):
+                        #  an fblvl file exists for this ions
+                        freeBound += cont.FreeBound['rate']
+                except:
+                    cont = chianti.core.continuum(akey, temperature, abundanceName=self.AbundanceName)
+                    cont.freeBound(wavelength)
+                if 'errorMessage' not in list(cont.FreeBound.keys()):
+                    #  an fblvl file exists for this ions
+                    if nTempDen == 1:
+                        freeBound += cont.FreeBound['rate']*em[0]
+                    else:
+                        for iTempDen in range(nTempDen):
+                            freeBound[iTempDen] += cont.FreeBound['rate'][iTempDen]*em[iTempDen]
+#                        freeBound += cont.FreeBound['rate']
+            if 'line' in self.Todo[akey]:
+                if verbose:
+                    print(' calculating spectrum for  :  %s'%(akey))
+                thisIon = chianti.core.ion(akey, temperature, eDensity, abundanceName=self.AbundanceName)
+                thisIon.intensity(wvlRange=wvlRange, allLines=allLines, em=em)
+                self.IonsCalculated.append(akey)
+                if 'errorMessage' not in  list(thisIon.Intensity.keys()):
+                    self.Finished.append(akey)
+                    thisIon.spectrum(wavelength, filter=filter, allLines=allLines, em=em)
+                    self.IonInstances[akey] = copy.deepcopy(thisIon)
+                    if setupIntensity:
+                        for bkey in self.Intensity:
+                            self.Intensity[bkey] = np.hstack((copy.copy(self.Intensity[bkey]), thisIon.Intensity[bkey]))
+                    else:
+                        setupIntensity = 1
+                        self.Intensity  = thisIon.Intensity
+                    lineSpectrum += thisIon.Spectrum['intensity']
 #                            if nTempDen == 1:
 #                                lineSpectrum += thisIon.Spectrum['intensity']
 #                            else:
 #                                for iTempDen in range(nTempDen):
 #                                    lineSpectrum[iTempDen] += thisIon.Spectrum['intensity'][iTempDen]
-                        else:
-                            if verbose:
-                                print(thisIon.Intensity['errorMessage'])
-                        # get 2 photon emission for H and He sequences
-                        if (iz - ionstage) in [0, 1]:
-                            thisIon.twoPhoton(wavelength)
-                            twoPhoton += thisIon.TwoPhoton['rate']
-                    # get dielectronic lines
-                    if masterListTestD and wvlTestMinD and wvlTestMaxD and ioneqTestD:
-                        if verbose:
-                            print(' calculating spectrum for  :  %s'%(ionSd))
-                        #
-                        thisIon = chianti.core.ion(ionSd, temperature, eDensity, abundanceName=self.AbundanceName)
-#                       print ' dir = ', dir(thisIon)
-#                       have to do all lines for the dielectronic satellites
-#                        thisIon.emiss(allLines=1)
-                        thisIon.intensity(wvlRange = wvlRange, allLines=allLines)
-                        # check that there are lines in this wavelength range - probably not redundant
-                        if 'errorMessage' not in  list(thisIon.Intensity.keys()):
-                            self.Finished.append(ionSd)
-                            thisIon.spectrum(wavelength, filter=filter)
-                            self.IonInstances['ionSd'] = copy.deepcopy(thisIon)
-                            if setupIntensity:
-                                for akey in self.Intensity:
-                                    self.Intensity[akey] = np.hstack((self.Intensity[akey], thisIon.Intensity[akey]))
-                            else:
-                                setupIntensity = 1
-                                self.Intensity = thisIon.Intensity
-                            lineSpectrum += thisIon.Spectrum['intensity']
-                        else:
-                            if verbose:
-                                print(thisIon.Intensity['errorMessage'])
-#                            if nTempDen == 1:
-#                                lineSpectrum += thisIon.Spectrum['intensity']
-#                            else:
-#                                for iTempDen in range(nTempDen):
-#                                    lineSpectrum[iTempDen] += thisIon.Spectrum['intensity'][iTempDen]
+                else:
+                    if verbose:
+                        print(thisIon.Intensity['errorMessage'])
+                # get 2 photon emission for H and He sequences
+                if (Z - ionstage) in [0, 1] and not dielectronic:
+                    thisIon.twoPhoton(wavelength)
+                    twoPhoton += thisIon.TwoPhoton['rate']
+
         self.FreeFree = {'wavelength':wavelength, 'intensity':freeFree.squeeze()}
         self.FreeBound = {'wavelength':wavelength, 'intensity':freeBound.squeeze()}
         self.LineSpectrum = {'wavelength':wavelength, 'intensity':lineSpectrum.squeeze()}
@@ -270,9 +231,10 @@ class spectrum(_ionTrails, _specTrails):
         t2 = datetime.now()
         dt=t2-t1
         print(' elapsed seconds = %12.3f'%(dt.seconds))
-        integrated = np.zeros_like(wavelength)
-        for iTempDen in range(nTempDen):
-            integrated += total[iTempDen]*em[iTempDen]
+        if nTempDen == 1:
+            integrated = total
+        else:
+            integrated = total.sum(axis=0)
         #
         if type(label) == type(''):
             if hasattr(self, 'Spectrum'):
@@ -438,31 +400,6 @@ class bunch(_ionTrails, _specTrails):
                         wvlTestMinD = wvlRange[0] <= ionInfo[ionSd]['wmax']
                         wvlTestMaxD = wvlRange[1] >= ionInfo[ionSd]['wmin']
                         ioneqTestD = (self.Temperature.max() >= ionInfo[ionSd]['tmin']) and (self.Temperature.min() <=ionInfo[ionSd]['tmax'])
-#                    ionstageTest = ionstage > 1
-#                    if ionstageTest and ioneqTest and doContinuum:
-#                        # ionS is the target ion, cannot be the neutral for the continuum
-#                        if verbose:
-#                            print(' calculating continuum for :  %s'%(ionS))
-#                        cont = chianti.core.continuum(ionS, temperature, abundanceName=self.AbundanceName)
-#                        cont.freeFree(wavelength)
-#    #                   print dir(thisIon)
-#    #                   print ' wvl = ', thisIon.FreeFree['wvl']
-#                        freeFree += cont.FreeFree['rate']
-##                        if nTempDen ==1:
-##                            freeFree += cont.FreeFree['rate']
-##                        else:
-##                            for iTempDen in range(nTempDen):
-##                                freeFree[iTempDen] += cont.FreeFree['rate'][iTempDen]
-#                    #
-#                        cont.freeBound(wavelength)
-#                        if 'errorMessage' not in list(cont.FreeBound.keys()):
-#                            #  an fblvl file exists for this ions
-#                            freeBound += cont.FreeBound['rate']
-##                            if nTempDen == 1:
-##                                freeBound += cont.FreeBound['rate']
-##                            else:
-##                                for iTempDen in range(nTempDen):
-##                                    freeBound[iTempDen] += cont.FreeBound['rate'][iTempDen]
                     if masterListTest and wvlTestMin and wvlTestMax and ioneqTest:
                         if verbose:
                             print(' calculating spectrum for  :  %s'%(ionS))
@@ -486,13 +423,6 @@ class bunch(_ionTrails, _specTrails):
                                 setupIntensity = 1
 #                                print(' creating Intensity dict from ion %s'%(ionS))
                                 self.Intensity  = thisIon.Intensity
-#                           intensity = thisIon.Intensity['intensity']
-#                            lineSpectrum += thisIon.Spectrum['intensity']
-#                            if nTempDen == 1:
-#                                lineSpectrum += thisIon.Spectrum['intensity']
-#                            else:
-#                                for iTempDen in range(nTempDen):
-#                                    lineSpectrum[iTempDen] += thisIon.Spectrum['intensity'][iTempDen]
                         else:
                             if verbose:
                                 print(thisIon.Intensity['errorMessage'])
@@ -502,14 +432,10 @@ class bunch(_ionTrails, _specTrails):
                             print(' calculating spectrum for  :  %s'%(ionSd))
                         #
                         thisIon = chianti.core.ion(ionSd, temperature, eDensity, abundanceName=self.AbundanceName)
-#                       print ' dir = ', dir(thisIon)
-#                       have to do all lines for the dielectronic satellites
-#                        thisIon.emiss(allLines=1)
                         thisIon.intensity(wvlRange = wvlRange, allLines=allLines, em=em)
                         # check that there are lines in this wavelength range - probably not redundant
                         if 'errorMessage' not in  list(thisIon.Intensity.keys()):
                             self.Finished.append(ionSd)
-#                            thisIon.spectrum(wavelength, filter=filter)
                             self.IonInstances['ionSd'] = copy.deepcopy(thisIon)
                             if setupIntensity:
                                 for akey in self.Intensity:
@@ -517,44 +443,12 @@ class bunch(_ionTrails, _specTrails):
                             else:
                                 setupIntensity = 1
                                 self.Intensity = thisIon.Intensity
-#                            lineSpectrum += thisIon.Spectrum['intensity']
                         else:
                             if verbose:
                                 print(thisIon.Intensity['errorMessage'])
-#                            if nTempDen == 1:
-#                                lineSpectrum += thisIon.Spectrum['intensity']
-#                            else:
-#                                for iTempDen in range(nTempDen):
-#                                    lineSpectrum[iTempDen] += thisIon.Spectrum['intensity'][iTempDen]
-#        self.FreeFree = {'wavelength':wavelength, 'intensity':freeFree.squeeze()}
-#        self.FreeBound = {'wavelength':wavelength, 'intensity':freeBound.squeeze()}
-#        self.LineSpectrum = {'wavelength':wavelength, 'intensity':lineSpectrum.squeeze()}
-#        self.TwoPhoton = {'wavelength':wavelength, 'intensity':twoPhoton.squeeze()}
+#        #
         #
-        #
-#        total = freeFree + freeBound + lineSpectrum + twoPhoton
-#        self.Total = total
         t2 = datetime.now()
         dt=t2-t1
         print(' elapsed seconds = %12.3f'%(dt.seconds))
-#        if em == 0:
-#            integrated = total
-#        else:
-#            if nEm == 1:
-#                integrated = total*em
-#            else:
-#                integrated = np.zeros_like(wavelength)
-#                for iTempDen in range(nTempDen):
-#                    integrated += total[iTempDen]*em[iTempDen]
-#        #
-#        if type(label) == type(''):
-#            if hasattr(self, 'Spectrum'):
-#                self.Spectrum[label] = {'wavelength':wavelength, 'intensity':total.squeeze(), 'filter':filter[0].__name__,   'width':filter[1], 'integrated':integrated, 'em':em, 'ions':self.IonsCalculated, 'Abundance':self.AbundanceName}
-#            else:
-#                self.Spectrum = {label:{'wavelength':wavelength, 'intensity':total.squeeze(), 'filter':filter[0].__name__,   'width':filter[1], 'integrated':integrated, 'em':em, 'ions':self.IonsCalculated, 'Abundance':self.AbundanceName}}
-#        else:
-#            self.Spectrum ={'wavelength':wavelength, 'intensity':total.squeeze(), 'filter':filter[0].__name__,   'width':filter[1],  'ions':self.IonsCalculated, 'Abundance':self.AbundanceName}
-#        #
-#        # -----------------------------------------------------------------------
-#        #
-#        self.Spectrum ={'wavelength':wavelength, 'intensity':total.squeeze(), 'filter':filter[0].__name__,   'width':filter[1], 'ions':self.IonsCalculated, 'Abundance':self.AbundanceName}
+        return

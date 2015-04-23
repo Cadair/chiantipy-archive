@@ -11,7 +11,7 @@ def doFf(inpt):
     abund = inpt[3]
     cont = chianti.core.continuum(ionS, temperature, abundance=abund)
     cont.freeFree(wavelength)
-    return [ionS, cont]
+    return [ionS, copy.deepcopy(cont.FreeFree)]
     #
     # ----------------------------------------------
     #
@@ -26,38 +26,6 @@ def doFb(inpt):
     cont = chianti.core.continuum(ionS, temperature, abundance=abund)
     cont.freeBound(wavelength)
     return [ionS, copy.deepcopy(cont)]
-    #
-    # ----------------------------------------------
-    #
-def doIon1(inpt):
-    '''
-    multiprocessing helper for ion, also does two-photon
-    '''
- #     [ionS, temperature, eDensity, wavelength, filter, allLines, abund]
-    ionS = inpt[0]
-    temperature = inpt[1]
-    density = inpt[2]
-    wavelength = inpt[3]
-#    wvlRange = [wavelength.min(), wavelength.max()]
-    filter = inpt[4]
-    allLines = inpt[5]
-    abund = inpt[6]
-    em = input[7]
-    thisIon = chianti.core.ion(ionS, temperature, density, abundance=abund)
-#    thisIon.intensity(wvlRange = wvlRange, allLines = allLines, em=em)
-    thisIon.spectrum(wavelength,  filter=filter, allLines=allLines,  em=em)
-#        outList = [ionS, thisIon.Spectrum]
-#    outList = [ionS, thisIon.Spectrum, thisIon.Intensity]
-    outList = [ionS, thisIon]
-#    outList = [ionS, ionS]
-    if not thisIon.Dielectronic:
-        if (thisIon.Z - thisIon.Ion) in [0, 1]:
-            thisIon.twoPhoton(wavelength, em=em)
-            outList.append(thisIon.TwoPhoton)
-    return outList
-    #
-    # ----------------------------------------------
-    #
     #
     # ----------------------------------------------
     #
@@ -93,3 +61,48 @@ def doIon(inpt):
     #
     # ----------------------------------------------
     #
+def doAll(inpt):
+    '''
+    to process ff, fb and line inputs
+    '''
+    ionS = inpt[0]
+    calcType = inpt[1]
+    if calcType == 'ff':
+        temperature = inpt[2]
+        wavelength = inpt[3]
+        abund = inpt[4]
+        cont = chianti.core.continuum(ionS, temperature, abundance=abund)
+        cont.freeFree(wavelength)
+        return [ionS, calcType, copy.deepcopy(cont.FreeFree)]
+    elif calcType == 'fb':
+        temperature = inpt[2]
+        wavelength = inpt[3]
+        abund = inpt[4]
+        cont = chianti.core.continuum(ionS, temperature, abundance=abund)
+        cont.freeBound(wavelength)
+        return [ionS, calcType, copy.deepcopy(cont)]
+    elif calcType == 'line':
+        temperature = inpt[2]
+        density = inpt[3]
+        wavelength = inpt[4]
+        wvlRange = [wavelength.min(), wavelength.max()]
+        filter = inpt[5]
+        allLines = inpt[6]
+        abund = inpt[7]
+        em = inpt[8]
+        doContinuum = inpt[9]
+        thisIon = chianti.core.ion(ionS, temperature, density, abundance=abund)
+        thisIon.intensity(wvlRange = wvlRange, allLines = allLines, em=em)
+        if 'errorMessage' not in thisIon.Intensity.keys():
+            thisIon.spectrum(wavelength,  filter=filter, allLines=allLines,  em=em)
+    #        outList = [ionS, thisIon.Spectrum]
+    #    outList = [ionS, thisIon.Spectrum, thisIon.Intensity]
+    #    outList = [ionS, thisIon]
+    #    outList = [ionS, ionS]
+        outList = [ionS, calcType, copy.deepcopy(thisIon)]
+        if not thisIon.Dielectronic and doContinuum:
+            if (thisIon.Z - thisIon.Ion) in [0, 1]:
+                thisIon.twoPhoton(wavelength, em=em)
+                outList.append(thisIon.TwoPhoton)
+        return outList
+    

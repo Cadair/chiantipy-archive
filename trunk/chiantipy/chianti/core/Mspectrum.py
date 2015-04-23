@@ -139,6 +139,7 @@ class mspectrum(_ionTrails, _specTrails):
                 print(' Abundance chosen:  %s '%(self.AbundanceName))
         #
         abundAll = chdata.Abundance[self.AbundanceName]['abundance']
+        self.AbundAll = abundAll
         #
         nonzed = abundAll > 0.
         minAbundAll = abundAll[nonzed].min()
@@ -174,54 +175,35 @@ class mspectrum(_ionTrails, _specTrails):
         self.IonInstances = {}
         self.Finished = []
         #
-        self.Todo = []
-        for iz in range(31):
-            abundance = chdata.Abundance[self.AbundanceName]['abundance'][iz-1]
-            if abundance >= minAbund:
-                if verbose:
-                    print(' %5i %5s abundance = %10.2e '%(iz, const.El[iz-1],  abundance))
-                #
-                for ionstage in range(1, iz+2):
-                    ionS = util.zion2name(iz, ionstage)
-                    masterListTest = ionS in masterlist
-                    if masterListTest:
-                        masterListInfoTest = ionS in sorted(ionInfo.keys())
-                        if masterListInfoTest:
-                            wvlTestMin = self.Wavelength.min() <= ionInfo[ionS]['wmax']
-                            wvlTestMax = self.Wavelength.max() >= ionInfo[ionS]['wmin']
-                            ioneqTest = (self.Temperature.max() >= ionInfo[ionS]['tmin']) and (self.Temperature.min() <= ionInfo[ionS]['tmax'])
-                        # construct similar test for the dielectronic files
-                        ionSd = util.zion2name(iz, ionstage, dielectronic=1)
-                        masterListTestD = ionSd in masterlist
-                        masterListInfoTestD = ionSd in sorted(ionInfo.keys())
-                        if masterListTestD or masterListInfoTestD:
-                            wvlTestMinD = self.Wavelength.min() <= ionInfo[ionSd]['wmax']
-                            wvlTestMaxD = self.Wavelength.max() >= ionInfo[ionSd]['wmin']
-                            ioneqTestD = (self.Temperature.max() >= ionInfo[ionSd]['tmin']) and (self.Temperature.min() <=ionInfo[ionSd]['tmax'])
-                        ionstageTest = ionstage > 1
-                        if masterListTest and ionstageTest and ioneqTest and doContinuum:
-                            # ionS is the target ion, cannot be the neutral for the continuum
-                            if verbose:
-                                print(' setting up continuum calculation for %s:  '%(ionS))
-                            ffWorkerQ.put((ionS, temperature, wavelength, abundance))
-                            fbWorkerQ.put((ionS, temperature, wavelength, abundance))
-    #                        fbInputs.append([ionS, temperature, wavelength])
-                            #
-                        if masterListTest and wvlTestMin and wvlTestMax and ioneqTest:
-                            if verbose:
-                                print(' setting up spectrum calculation for %s '%(ionS))
-                            ionWorkerQ.put((ionS, temperature, eDensity, wavelength, filter, allLines, abundance, em, doContinuum))
-                            self.Todo.append(ionS)
-                            self.IonsCalculated.append(ionS)
-                        # get dielectronic lines
-                        if masterListTestD and wvlTestMinD and wvlTestMaxD and ioneqTestD:
-                            if verbose:
-                                print(' setting up  spectrum calculation for %s'%(ionSd))
-    #                        dielWorkerQ.put((ionSd, temperature, density, wavelength, filter))
-                            # set allLines fo dielectronic
-                            ionWorkerQ.put((ionSd, temperature, eDensity, wavelength, filter, allLines, abundance, em, doContinuum))
-                            self.Todo.append(ionSd)
-                            self.IonsCalculated.append(ionS)
+        
+#        self.Todo = []
+        self.ionGate(elementList = elementList, ionList = ionList, minAbund=minAbund, doContinuum=doContinuum, verbose = 0)
+        #
+        for akey in sorted(self.Todo.keys()):
+            zStuff = util.convertName(akey)
+            Z = zStuff['Z']
+            abundance = chdata.Abundance[self.AbundanceName]['abundance'][Z - 1]
+            if verbose:
+                print(' %5i %5s abundance = %10.2e '%(Z, const.El[Z-1],  abundance))
+            if verbose:
+                print(' doing ion %s for the following processes %s'%(akey, self.Todo[akey]))
+            if 'ff' in self.Todo[akey]:
+#                if verbose:
+#                    print(' doing ff')
+                ffWorkerQ.put((akey, temperature, wavelength, abundance))
+#                allInpt.append([akey, 'ff', temperature, wavelength, abundance])
+            if 'fb' in self.Todo[akey]:
+#                if verbose:
+#                    print(' doing fb')
+                fbWorkerQ.put((akey, temperature, wavelength, abundance))
+#                allInpt.append([akey, 'fb', temperature, wavelength, abundance])
+            if 'line' in self.Todo[akey]:
+#                if verbose:
+#                    print(' doing line')
+                ionWorkerQ.put((akey, temperature, eDensity, wavelength, filter, allLines, abundance, em, doContinuum))
+#                allInpt.append([akey, 'line', temperature, eDensity, wavelength, filter, allLines, abundance, em, doContinuum])
+
+
         #
         ffWorkerQSize = ffWorkerQ.qsize()
         fbWorkerQSize = fbWorkerQ.qsize()
