@@ -1,89 +1,89 @@
 import os
-from .FortranFormat import *
+#from .FortranFormat import *
 import chianti.constants as const
 from .util import ion2filename
     #
     # -------------------------------------------------------------------------------------
     #
-def elvlcRead(ions, filename = 0, verbose=0,  useTh=0):
-    """
-    read a chianti energy level file and returns
-    {"lvl":lvl,"conf":conf,"term":term,"spin":spin,"l":l,"spd":spd,"j":j
-    ,"mult":mult,"ecm":ecm,"eryd":eryd,"ecmth":ecmth,"erydth":erydth,"ref":ref,"pretty":pretty, 'ionS':ions}
-    if a energy value for ecm or eryd is zero(=unknown), the theoretical values
-    (ecmth and erydth) are inserted
-    """
-    #
-    fstring='i3,i6,a15,i3,i3,a3,f4.1,i3,4f15.2'
-    elvlcFormat=FortranFormat(fstring)
-    #
-    if filename:
-        elvlname = filename
-        bname = os.path.basename(filename)
-        ions = bname.split('.')[0]
-    else:
-        fname=ion2filename(ions)
-        elvlname=fname+'.elvlc'
-    if not os.path.isfile(elvlname):
-        print((' elvlc file does not exist:  %s'%(elvlname)))
-        return {'status':0}
-    status = 1
-    input=open(elvlname,'r')
-    s1=input.readlines()
-    input.close()
-    nlvls=0
-    ndata=2
-    while ndata > 1:
-        s1a=s1[nlvls][:-1]
-        s2=s1a.split()
-        ndata=len(s2)
-        nlvls=nlvls+1
-    nlvls-=1
-    if verbose:
-        print((' nlvls = %i'%(nlvls)))
-    lvl=[0]*nlvls
-    conf=[0]*nlvls
-    term=[0]*nlvls
-    spin=[0]*nlvls
-    l=[0]*nlvls
-    spd=[0]*nlvls
-    j=[0]*nlvls
-    mult=[0]*nlvls
-    ecm=[0]*nlvls
-    eryd=[0]*nlvls
-    ecmth=[0]*nlvls
-    erydth=[0]*nlvls
-    pretty=[0]*nlvls
-    for i in range(0,nlvls):
-        if verbose:
-            print((s1[i][0:115]))
-        inpt=FortranLine(s1[i][0:115],elvlcFormat)
-        lvl[i]=inpt[0]
-        conf[i]=inpt[1]
-        term[i]=inpt[2].strip()
-        spin[i]=inpt[3]
-        l[i]=inpt[4]
-        spd[i]=inpt[5].strip()
-        j[i]=inpt[6]
-        mult[i]=inpt[7]
-        ecm[i]=inpt[8]
-        eryd[i]=inpt[9]
-        ecmth[i]=inpt[10]
-        erydth[i]=inpt[11]
-        if ecm[i] == 0.:
-            if useTh:
-                ecm[i] = ecmth[i]
-                eryd[i] = erydth[i]
-        stuff = term[i].strip() + ' %1i%1s%3.1f'%( spin[i], spd[i], j[i])
-        pretty[i] = stuff.strip()
-    ref=[]
-    for i in range(nlvls+1,len(s1)-1):
-        s1a=s1[i][:-1]
-        ref.append(s1a.strip())
-#    self.const.Elvlc={"lvl":lvl,"conf":conf,"term":term,"spin":spin,"l":l,"spd":spd,"j":j
-#            ,"mult":mult,"ecm":ecm,"eryd":eryd,"ecmth":ecmth,"erydth":erydth,"ref":ref}
-    return {"lvl":lvl,"conf":conf,"term":term,"spin":spin,"l":l,"spd":spd,"j":j
-            ,"mult":mult,"ecm":ecm,"eryd":eryd,"ecmth":ecmth,"erydth":erydth,"ref":ref,"pretty":pretty, 'ionS':ions, 'status':status}
+#def elvlcRead(ions, filename = 0, verbose=0,  useTh=0):
+#    """
+#    read a chianti energy level file and returns
+#    {"lvl":lvl,"conf":conf,"term":term,"spin":spin,"l":l,"spd":spd,"j":j
+#    ,"mult":mult,"ecm":ecm,"eryd":eryd,"ecmth":ecmth,"erydth":erydth,"ref":ref,"pretty":pretty, 'ionS':ions}
+#    if a energy value for ecm or eryd is zero(=unknown), the theoretical values
+#    (ecmth and erydth) are inserted
+#    """
+#    #
+#    fstring='i3,i6,a15,i3,i3,a3,f4.1,i3,4f15.2'
+#    elvlcFormat=FortranFormat(fstring)
+#    #
+#    if filename:
+#        elvlname = filename
+#        bname = os.path.basename(filename)
+#        ions = bname.split('.')[0]
+#    else:
+#        fname=ion2filename(ions)
+#        elvlname=fname+'.elvlc'
+#    if not os.path.isfile(elvlname):
+#        print((' elvlc file does not exist:  %s'%(elvlname)))
+#        return {'status':0}
+#    status = 1
+#    input=open(elvlname,'r')
+#    s1=input.readlines()
+#    input.close()
+#    nlvls=0
+#    ndata=2
+#    while ndata > 1:
+#        s1a=s1[nlvls][:-1]
+#        s2=s1a.split()
+#        ndata=len(s2)
+#        nlvls=nlvls+1
+#    nlvls-=1
+#    if verbose:
+#        print((' nlvls = %i'%(nlvls)))
+#    lvl=[0]*nlvls
+#    conf=[0]*nlvls
+#    term=[0]*nlvls
+#    spin=[0]*nlvls
+#    l=[0]*nlvls
+#    spd=[0]*nlvls
+#    j=[0]*nlvls
+#    mult=[0]*nlvls
+#    ecm=[0]*nlvls
+#    eryd=[0]*nlvls
+#    ecmth=[0]*nlvls
+#    erydth=[0]*nlvls
+#    pretty=[0]*nlvls
+#    for i in range(0,nlvls):
+#        if verbose:
+#            print((s1[i][0:115]))
+#        inpt=FortranLine(s1[i][0:115],elvlcFormat)
+#        lvl[i]=inpt[0]
+#        conf[i]=inpt[1]
+#        term[i]=inpt[2].strip()
+#        spin[i]=inpt[3]
+#        l[i]=inpt[4]
+#        spd[i]=inpt[5].strip()
+#        j[i]=inpt[6]
+#        mult[i]=inpt[7]
+#        ecm[i]=inpt[8]
+#        eryd[i]=inpt[9]
+#        ecmth[i]=inpt[10]
+#        erydth[i]=inpt[11]
+#        if ecm[i] == 0.:
+#            if useTh:
+#                ecm[i] = ecmth[i]
+#                eryd[i] = erydth[i]
+#        stuff = term[i].strip() + ' %1i%1s%3.1f'%( spin[i], spd[i], j[i])
+#        pretty[i] = stuff.strip()
+#    ref=[]
+#    for i in range(nlvls+1,len(s1)-1):
+#        s1a=s1[i][:-1]
+#        ref.append(s1a.strip())
+##    self.const.Elvlc={"lvl":lvl,"conf":conf,"term":term,"spin":spin,"l":l,"spd":spd,"j":j
+##            ,"mult":mult,"ecm":ecm,"eryd":eryd,"ecmth":ecmth,"erydth":erydth,"ref":ref}
+#    return {"lvl":lvl,"conf":conf,"term":term,"spin":spin,"l":l,"spd":spd,"j":j
+#            ,"mult":mult,"ecm":ecm,"eryd":eryd,"ecmth":ecmth,"erydth":erydth,"ref":ref,"pretty":pretty, 'ionS':ions, 'status':status}
     #
     # -------------------------------------------------------------------------------------
     #

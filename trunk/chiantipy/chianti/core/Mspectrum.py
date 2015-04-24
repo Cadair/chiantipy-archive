@@ -177,7 +177,7 @@ class mspectrum(_ionTrails, _specTrails):
         #
         
 #        self.Todo = []
-        self.ionGate(elementList = elementList, ionList = ionList, minAbund=minAbund, doContinuum=doContinuum, verbose = 0)
+        self.ionGate(elementList = elementList, ionList = ionList, minAbund=minAbund, doContinuum=doContinuum, verbose = verbose)
         #
         for akey in sorted(self.Todo.keys()):
             zStuff = util.convertName(akey)
