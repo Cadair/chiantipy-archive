@@ -98,7 +98,7 @@ class ipymspectrum(_ionTrails, _specTrails):
         em = np.asarray(em, 'float64')
         if em.size != nTempDen:
             if em.size == 1:
-                em = np.ones(nTempDen, 'float64')*em[0]
+                em = np.ones(nTempDen, 'float64')*em
         self.Em = em
         self.AllLines = allLines
         #
@@ -143,7 +143,7 @@ class ipymspectrum(_ionTrails, _specTrails):
         self.IonInstances = {}
         # ionGate creates the self.Todo list
         #
-        self.ionGate(elementList = elementList, ionList = ionList, minAbund=minAbund, doContinuum=doContinuum, verbose = 0)
+        self.ionGate(elementList = elementList, ionList = ionList, minAbund=minAbund, doContinuum=doContinuum, verbose = verbose)
         #
         for akey in sorted(self.Todo.keys()):
             zStuff = util.convertName(akey)

@@ -3302,11 +3302,11 @@ class ion(_ionTrails):
             if self.Ncilvl:
                 ci = 1
                 cilvl = self.Cilvl
-#                if hasattr(self, 'CilvlRate'):
-#                    cilvlRate = self.CilvlRate
-#                else:
-#                    self.cireclvlDescale('cilvl')
-#                    cilvlRate = self.CilvlRate
+                if hasattr(self, 'CilvlRate'):
+                    cilvlRate = self.CilvlRate
+                else:
+                    self.cireclvlDescale('cilvl')
+                    cilvlRate = self.CilvlRate
                 self.recombRate()
                 #
                 lowers = util.zion2name(self.Z, self.Ion-1)

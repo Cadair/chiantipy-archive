@@ -20,7 +20,6 @@ import pickle
 from datetime import date
 import numpy as np
 from scipy import interpolate
-from .FortranFormat import *
 import chianti
 import chianti.constants as const
 #import chianti.io as chio
