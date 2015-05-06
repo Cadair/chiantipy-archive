@@ -4,7 +4,6 @@ import chianti.filters as chfilters
 import chianti.util as util
 import chianti.io as chio 
 import chianti.data as chdata
-import chianti.Gui as chGui
 import chianti.constants as const
 #
 defaults = chdata.Defaults
@@ -97,7 +96,7 @@ class _specTrails():
         #
         # ---------------------------------------------------------------------------
         #
-    def ionGate(self, elementList = 0, ionList = 0, minAbund=0., doContinuum=1, verbose = 0):
+    def ionGate(self, elementList = 0, ionList = 0, minAbund=0, doContinuum=1, verbose = 0):
         '''
         creates a list of ions for free-free, free-bound, and line intensity calculations
         '''
@@ -161,7 +160,7 @@ class _specTrails():
                 stuff = util.convertName(one)
                 if stuff['Element'] in  elementList:
                     self.Todo[one] = 'line'
-        elif ionList: 
+        if ionList: 
             for one in ionList:
                 if masterlist.count(one):
                     self.Todo[one] = 'line'
@@ -172,7 +171,7 @@ class _specTrails():
         #
         #
         #
-        else:
+        if minAbund:
             for iz in range(1, 31):
                 abundance = chdata.Abundance[self.AbundanceName]['abundance'][iz-1]
                 if abundance >= minAbund:
