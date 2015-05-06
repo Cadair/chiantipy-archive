@@ -54,6 +54,18 @@ def z2element(z):
     #
     # -------------------------------------------------------------------------------------
     #
+def spectroscopic2name(el,roman, dielectronic=False):
+    """ 
+    convert Z and ion to spectroscopic notation string 
+    """
+    elu = el.lower()
+    romanu = roman.upper()
+    idx =const.Ionstage.index(romanu)
+    gname = elu+'_'+str(idx+1)
+    return gname
+    #
+    # -------------------------------------------------------------------------------------
+    #
 def zion2name(z,ion, dielectronic=False):
     """
     convert Z, ion to generic name  26, 13 -> fe_13
@@ -137,7 +149,9 @@ def zion2localFilename(z,ion, dielectronic=False):
     # -------------------------------------------------------------------------------------
     #
 def zion2spectroscopic(z,ion, dielectronic=False):
-    """ convert Z and ion to spectroscopic notation string """
+    """ 
+    convert Z and ion to spectroscopic notation string 
+    """
     if (z-1 < len(const.El)) and (ion <= z+1):
         spect=const.El[z-1].capitalize()+' '+const.Ionstage[ion-1]
         if dielectronic:

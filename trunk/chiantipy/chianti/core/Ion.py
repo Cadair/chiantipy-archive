@@ -5056,10 +5056,7 @@ class ion(_ionTrails):
             else:
                 gIoneq=interpolate.splev(np.log(self.Temperature),y2)
                 ioneqOne = np.exp(gIoneq)
-        else:
-            ioneqOne = 0.
-        #
-        self.IoneqOne = ioneqOne
+            self.IoneqOne = ioneqOne
         #
         # -------------------------------------------------------------------------------------
         #
