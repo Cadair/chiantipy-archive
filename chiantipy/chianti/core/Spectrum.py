@@ -63,7 +63,7 @@ class spectrum(_ionTrails, _specTrails):
     em [for emission measure], can be a float or an array of the same length as the
     temperature/density
     '''
-    def __init__(self, temperature, eDensity, wavelength, filter=(chfilters.gaussianR, 1000.), label=0, elementList = 0, ionList = 0, minAbund=0., doContinuum=1, em = 1., abundanceName=0, verbose=0, allLines=1):
+    def __init__(self, temperature, eDensity, wavelength, filter=(chfilters.gaussianR, 1000.), label=0, elementList = 0, ionList = 0, minAbund=0., doContinuum=1, em = 1., keepIons=0,  abundanceName=0, verbose=0, allLines=1):
         #
         t1 = datetime.now()
         # creates Intensity dict from first ion calculated
@@ -145,7 +145,8 @@ class spectrum(_ionTrails, _specTrails):
         lineSpectrum = np.zeros((nTempDen, nWvl), 'float64').squeeze()
         #
         self.IonsCalculated = []
-        self.IonInstances = {}
+        if keepIons:
+            self.IonInstances = {}
         self.Finished = []
         #
         self.ionGate(elementList = elementList, ionList = ionList, minAbund=minAbund, doContinuum=doContinuum, verbose = verbose)
@@ -293,7 +294,7 @@ class bunch(_ionTrails, _specTrails):
     #
     # ------------------------------------------------------------------------------------
     #
-    def __init__(self, temperature, eDensity, wvlRange, elementList = 0, ionList = 0, minAbund=0, em = 1., abundanceName=0, verbose=0, allLines=1):
+    def __init__(self, temperature, eDensity, wvlRange, elementList =0, ionList=0, minAbund=0, keepIons=0, em = 1., abundanceName=0, verbose=0, allLines=1):
         #
         t1 = datetime.now()
         # creates Intensity dict from first ion calculated
@@ -375,7 +376,8 @@ class bunch(_ionTrails, _specTrails):
         #        #
 #        self.Intensity = {'ionS':[], 'lvl1':[], 'lvl2':[], 'wvl':np.ndarray, 'pretty1':np.ndarray, 'pretty2':np.ndarray, 'intensity':np.zeros((nTempDen, 0),'float64'), 'obs':np.ndarray }
         self.IonsCalculated = []
-        self.IonInstances = {}
+        if keepIons:
+            self.IonInstances = {}
         self.Finished = []
         #
         for iz in range(31):
@@ -415,7 +417,8 @@ class bunch(_ionTrails, _specTrails):
                         if 'errorMessage' not in  list(thisIon.Intensity.keys()):
                             self.Finished.append(ionS)
 #                            thisIon.spectrum(wavelength, filter=filter)
-                            self.IonInstances[ionS] = copy.deepcopy(thisIon)
+                            if keepIons:
+                                self.IonInstances[ionS] = copy.deepcopy(thisIon)
                             if setupIntensity:
                                 for akey in self.Intensity:
                                     self.Intensity[akey] = np.hstack((copy.copy(self.Intensity[akey]), thisIon.Intensity[akey]))
@@ -436,7 +439,8 @@ class bunch(_ionTrails, _specTrails):
                         # check that there are lines in this wavelength range - probably not redundant
                         if 'errorMessage' not in  list(thisIon.Intensity.keys()):
                             self.Finished.append(ionSd)
-                            self.IonInstances['ionSd'] = copy.deepcopy(thisIon)
+                            if keepIons:
+                                self.IonInstances['ionSd'] = copy.deepcopy(thisIon)
                             if setupIntensity:
                                 for akey in self.Intensity:
                                     self.Intensity[akey] = np.hstack((self.Intensity[akey], thisIon.Intensity[akey]))
