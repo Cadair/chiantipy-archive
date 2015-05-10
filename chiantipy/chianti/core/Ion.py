@@ -1903,7 +1903,8 @@ class ion(_ionTrails):
                 idx = util.between(self.Intensity['wvl'], wvlRange)
                 if len(idx) == 0:
                     print(' no lines in wavelength range %12.2f - %12.2f'%(wavelength.min(), wavelength.max()))
-                    return
+                    self.Spectrum = {'errorMessage':' no lines in wavelength range %12.2f - %12.2f'%(wavelength.min(), wavelength.max())}
+                    return 
                 for iwvl in idx:
                     wvlCalc = self.Intensity['wvl'][iwvl]
                     aspectrum += useFilter(wavelength, wvlCalc, factor=useFactor)*intensity['intensity'][iwvl]
@@ -1913,7 +1914,8 @@ class ion(_ionTrails):
                 idx = util.between(self.Intensity['wvl'], [wavelength.min(), wavelength.max()])
                 if len(idx) == 0:
                     print(' no lines in wavelength range %12.2f - %12.2f'%(wavelength.min(), wavelength.max()))
-                    return
+                    self.Spectrum = {'errorMessage':' no lines in wavelength range %12.2f - %12.2f'%(wavelength.min(), wavelength.max())}
+                    return 
                 for itemp in range(self.NTempDen):
                     for iwvl in idx:
                         wvlCalc = self.Intensity['wvl'][iwvl]

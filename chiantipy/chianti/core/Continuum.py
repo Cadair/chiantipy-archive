@@ -94,7 +94,11 @@ class continuum:
         else:
             fblvlname = util.zion2filename(self.Z,self.Ion-1)+'.fblvl'
             self.Fblvl = io.fblvlRead(fblvlname)
-            fblvl = self.Fblvl
+            if 'errorMessage' in sorted(self.Fblvl.keys()):
+                self.FreeBound = {'errorMessage':self.Fblvl['errorMessage']}
+                return
+            else:
+                fblvl = self.Fblvl
         #  need some data for the recombining ion
         if hasattr(self, 'rFblvl'):
             rFblvl = self.rFblvl
@@ -105,6 +109,10 @@ class continuum:
             else:
                 rfblvlname = util.zion2filename(self.Z,self.Ion)+'.fblvl'  # previously self.Ion)
                 self.rFblvl = io.fblvlRead(rfblvlname)
+            if 'errorMessage' in sorted(self.rFblvl.keys()):
+                self.FreeBound = {'errorMessage':self.Fblvl['errorMessage']}
+                return
+            else:
                 rFblvl = self.rFblvl
         #  6/9/2010 the recombining ion is the present ion
         #

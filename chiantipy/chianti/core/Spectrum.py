@@ -71,25 +71,25 @@ class spectrum(_ionTrails, _specTrails):
         #
         masterlist = chdata.MasterList
         # use the ionList but make sure the ions are in the database
-        if elementList:
-            for i,  one in enumerate(elementList):
-                elementList[i] = one.lower()
-            alist = []
-            for one in masterlist:
-                stuff = util.convertName(one)
-                if stuff['Element'] in  elementList:
-                    alist.append(one)
-            masterlist = alist
-        elif ionList:
-            alist=[]
-            for one in ionList:
-                if masterlist.count(one):
-                    alist.append(one)
-                else:
-                    if verbose:
-                        pstring = ' %s not in CHIANTI database'%(one)
-                        print(pstring)
-            masterlist = alist
+        #if elementList:
+            #for i,  one in enumerate(elementList):
+                #elementList[i] = one.lower()
+            #alist = []
+            #for one in masterlist:
+                #stuff = util.convertName(one)
+                #if stuff['Element'] in  elementList:
+                    #alist.append(one)
+            #masterlist = alist
+        #elif ionList:
+            #alist=[]
+            #for one in ionList:
+                #if masterlist.count(one):
+                    #alist.append(one)
+                #else:
+                    #if verbose:
+                        #pstring = ' %s not in CHIANTI database'%(one)
+                        #print(pstring)
+            #masterlist = alist
         self.Defaults=defaults
         self.Temperature = np.asarray(temperature, 'float64')
         nTemp = self.Temperature.size
@@ -300,53 +300,32 @@ class bunch(_ionTrails, _specTrails):
         # creates Intensity dict from first ion calculated
         setupIntensity = 0
         #
-        masterlist = chdata.MasterList
-        # use the ionList but make sure the ions are in the database
-        if elementList:
-            for i,  one in enumerate(elementList):
-                elementList[i] = one.lower()
-            alist = []
-            for one in masterlist:
-                stuff = util.convertName(one)
-                if stuff['Element'] in  elementList:
-                    alist.append(one)
-            masterlist = alist
-        elif ionList:
-            alist=[]
-            for one in ionList:
-                if masterlist.count(one):
-                    alist.append(one)
-                else:
-                    if verbose:
-                        pstring = ' %s not in CHIANTI database'%(one)
-                        print(pstring)
-            masterlist = alist
         self.Defaults=defaults
         self.Temperature = np.asarray(temperature, 'float64')
         nTemp = self.Temperature.size
         self.EDensity = np.asarray(eDensity, 'float64')
         nDen = self.EDensity.size
         self.NTempDen = max([nTemp, nDen])
-        nTempDen = self.NTempDen
-        self.Em = em
         em = np.asarray(em, 'float64')
+        if len(em.shape) == 0:
+            em = np.ones(self.NTempDen, 'float64')*em
         
-        if em != 0:
-            if type(em) == type(float):
-                if nTempDen > 1:
-                    em = np.ones_like(self.Temperature)*em
-                    nEm = nTempDen
-                else:
-                    nEm = 1
-            else:
-                em = np.asarray(em, 'float64')
-                nEm = em.size
-                if nEm != nTempDen:
-                    print(' the emission measure array must be the same size as the temperature/density array')
-                    return
-        else:
-            nEm = 0
-        self.NEm = nEm
+        #if em != 0:
+            #if type(em) == type(float):
+                #if nTempDen > 1:
+                    #em = np.ones_like(self.Temperature)*em
+                    #nEm = nTempDen
+                #else:
+                    #nEm = 1
+            #else:
+                #em = np.asarray(em, 'float64')
+                #nEm = em.size
+                #if nEm != nTempDen:
+                    #print(' the emission measure array must be the same size as the temperature/density array')
+                    #return
+        #else:
+            #nEm = 0
+        #self.NEm = nEm
         #self.AbundanceName = defaults['abundfile']
         #self.AbundanceAll = chdata.AbundanceAll
         #
@@ -366,6 +345,8 @@ class bunch(_ionTrails, _specTrails):
             self.AbundanceName = self.Defaults['abundfile']
         #
         abundAll = chdata.Abundance[self.AbundanceName]['abundance']
+        # needed by ionGate
+        self.AbundAll = abundAll
         #
         nonzed = abundAll > 0.
         minAbundAll = abundAll[nonzed].min()
@@ -380,76 +361,105 @@ class bunch(_ionTrails, _specTrails):
             self.IonInstances = {}
         self.Finished = []
         #
-        for iz in range(31):
-            abundance = chdata.Abundance[self.AbundanceName]['abundance'][iz-1]
-            if abundance >= minAbund:
-                print((' %5i %5s abundance = %10.2e '%(iz, const.El[iz-1],  abundance)))
-                #
-                for ionstage in range(1, iz+2):
-                    ionS = util.zion2name(iz, ionstage)
-#                   print ' ionS = ', ionS
-                    masterListTest = ionS in masterlist
-                    masterListInfoTest = ionS in list(ionInfo.keys())
-                    if masterListTest or masterListInfoTest:
-                        wvlTestMin =wvlRange[0] <= ionInfo[ionS]['wmax']
-                        wvlTestMax = wvlRange[1] >= ionInfo[ionS]['wmin']
-                        ioneqTest = (self.Temperature.max() >= ionInfo[ionS]['tmin']) and (self.Temperature.min() <= ionInfo[ionS]['tmax'])
-                    # construct similar test for the dielectronic files
-                    ionSd = util.zion2name(iz, ionstage, dielectronic=1)
-                    masterListTestD = ionSd in masterlist
-                    masterListInfoTestD = ionSd in list(ionInfo.keys())
-                    if masterListTestD or masterListInfoTestD:
-                        wvlTestMinD = wvlRange[0] <= ionInfo[ionSd]['wmax']
-                        wvlTestMaxD = wvlRange[1] >= ionInfo[ionSd]['wmin']
-                        ioneqTestD = (self.Temperature.max() >= ionInfo[ionSd]['tmin']) and (self.Temperature.min() <=ionInfo[ionSd]['tmax'])
-                    if masterListTest and wvlTestMin and wvlTestMax and ioneqTest:
-                        if verbose:
-                            print(' calculating spectrum for  :  %s'%(ionS))
-                        #
-                        thisIon = chianti.core.ion(ionS, temperature, eDensity, abundanceName=self.AbundanceName)
-                        thisIon.intensity(wvlRange=wvlRange, allLines = allLines,  em=em)
-                        self.IonsCalculated.append(ionS)
-#                       print ' dir = ', dir(thisIon)
-#                        thisIon.emiss(wvlRange = wvlRange, allLines=allLines)
-                        thisIon.intensity(wvlRange = wvlRange, allLines=allLines)
-#                        print(' intensity shape %5i %5i '%(thisIon.Intensity['intensity'].shape[0], thisIon.Intensity['intensity'].shape[1]))
-                        # check that there are lines in this wavelength range
-                        if 'errorMessage' not in  list(thisIon.Intensity.keys()):
-                            self.Finished.append(ionS)
+        # also needed by ionGate
+        self.WvlRange = np.asarray(wvlRange, 'float64')
+        #
+        self.ionGate(elementList = elementList, ionList = ionList, minAbund=minAbund, doContinuum=0, verbose = verbose)
+        #
+        for ionS in sorted(self.Todo.keys()):
+            if verbose:
+                print(' calculating %s'%(ionS))
+            thisIon = chianti.core.ion(ionS, temperature, eDensity, abundanceName=self.AbundanceName)
+            thisIon.intensity(wvlRange=wvlRange, allLines = allLines,  em=em)
+            self.IonsCalculated.append(ionS)
+            #
+            if 'errorMessage' not in  list(thisIon.Intensity.keys()):
+                self.Finished.append(ionS)
 #                            thisIon.spectrum(wavelength, filter=filter)
-                            if keepIons:
-                                self.IonInstances[ionS] = copy.deepcopy(thisIon)
-                            if setupIntensity:
-                                for akey in self.Intensity:
-                                    self.Intensity[akey] = np.hstack((copy.copy(self.Intensity[akey]), thisIon.Intensity[akey]))
-                            else:
-                                setupIntensity = 1
+                if keepIons:
+                    self.IonInstances[ionS] = copy.deepcopy(thisIon)
+                if setupIntensity:
+                    for akey in self.Intensity:
+                        self.Intensity[akey] = np.hstack((copy.copy(self.Intensity[akey]), thisIon.Intensity[akey]))
+                else:
+                    setupIntensity = 1
 #                                print(' creating Intensity dict from ion %s'%(ionS))
-                                self.Intensity  = thisIon.Intensity
-                        else:
-                            if verbose:
-                                print(thisIon.Intensity['errorMessage'])
-                    # get dielectronic lines
-                    if masterListTestD and wvlTestMinD and wvlTestMaxD and ioneqTestD:
-                        if verbose:
-                            print(' calculating spectrum for  :  %s'%(ionSd))
-                        #
-                        thisIon = chianti.core.ion(ionSd, temperature, eDensity, abundanceName=self.AbundanceName)
-                        thisIon.intensity(wvlRange = wvlRange, allLines=allLines, em=em)
-                        # check that there are lines in this wavelength range - probably not redundant
-                        if 'errorMessage' not in  list(thisIon.Intensity.keys()):
-                            self.Finished.append(ionSd)
-                            if keepIons:
-                                self.IonInstances['ionSd'] = copy.deepcopy(thisIon)
-                            if setupIntensity:
-                                for akey in self.Intensity:
-                                    self.Intensity[akey] = np.hstack((self.Intensity[akey], thisIon.Intensity[akey]))
-                            else:
-                                setupIntensity = 1
-                                self.Intensity = thisIon.Intensity
-                        else:
-                            if verbose:
-                                print(thisIon.Intensity['errorMessage'])
+                    self.Intensity  = thisIon.Intensity
+            else:
+                if verbose:
+                    print(thisIon.Intensity['errorMessage'])
+        #
+        #for iz in range(31):
+#
+            #abundance = chdata.Abundance[self.AbundanceName]['abundance'][iz-1]
+            #if abundance >= minAbund:
+                #print((' %5i %5s abundance = %10.2e '%(iz, const.El[iz-1],  abundance)))
+                ##
+                #for ionstage in range(1, iz+2):
+                    #ionS = util.zion2name(iz, ionstage)
+##                   print ' ionS = ', ionS
+                    #masterListTest = ionS in masterlist
+                    #masterListInfoTest = ionS in list(ionInfo.keys())
+                    #if masterListTest or masterListInfoTest:
+                        #wvlTestMin =wvlRange[0] <= ionInfo[ionS]['wmax']
+                        #wvlTestMax = wvlRange[1] >= ionInfo[ionS]['wmin']
+                        #ioneqTest = (self.Temperature.max() >= ionInfo[ionS]['tmin']) and (self.Temperature.min() <= ionInfo[ionS]['tmax'])
+                    ## construct similar test for the dielectronic files
+                    #ionSd = util.zion2name(iz, ionstage, dielectronic=1)
+                    #masterListTestD = ionSd in masterlist
+                    #masterListInfoTestD = ionSd in list(ionInfo.keys())
+                    #if masterListTestD or masterListInfoTestD:
+                        #wvlTestMinD = wvlRange[0] <= ionInfo[ionSd]['wmax']
+                        #wvlTestMaxD = wvlRange[1] >= ionInfo[ionSd]['wmin']
+                        #ioneqTestD = (self.Temperature.max() >= ionInfo[ionSd]['tmin']) and (self.Temperature.min() <=ionInfo[ionSd]['tmax'])
+                    #if masterListTest and wvlTestMin and wvlTestMax and ioneqTest:
+                        #if verbose:
+                            #print(' calculating spectrum for  :  %s'%(ionS))
+                        ##
+                        #thisIon = chianti.core.ion(ionS, temperature, eDensity, abundanceName=self.AbundanceName)
+                        #thisIon.intensity(wvlRange=wvlRange, allLines = allLines,  em=em)
+                        #self.IonsCalculated.append(ionS)
+##                       print ' dir = ', dir(thisIon)
+##                        thisIon.emiss(wvlRange = wvlRange, allLines=allLines)
+                        ##thisIon.intensity(wvlRange = wvlRange, allLines=allLines)
+##                        print(' intensity shape %5i %5i '%(thisIon.Intensity['intensity'].shape[0], thisIon.Intensity['intensity'].shape[1]))
+                        ## check that there are lines in this wavelength range
+                        #if 'errorMessage' not in  list(thisIon.Intensity.keys()):
+                            #self.Finished.append(ionS)
+##                            thisIon.spectrum(wavelength, filter=filter)
+                            #if keepIons:
+                                #self.IonInstances[ionS] = copy.deepcopy(thisIon)
+                            #if setupIntensity:
+                                #for akey in self.Intensity:
+                                    #self.Intensity[akey] = np.hstack((copy.copy(self.Intensity[akey]), thisIon.Intensity[akey]))
+                            #else:
+                                #setupIntensity = 1
+##                                print(' creating Intensity dict from ion %s'%(ionS))
+                                #self.Intensity  = thisIon.Intensity
+                        #else:
+                            #if verbose:
+                                #print(thisIon.Intensity['errorMessage'])
+                    ## get dielectronic lines
+                    #if masterListTestD and wvlTestMinD and wvlTestMaxD and ioneqTestD:
+                        #if verbose:
+                            #print(' calculating spectrum for  :  %s'%(ionSd))
+                        ##
+                        #thisIon = chianti.core.ion(ionSd, temperature, eDensity, abundanceName=self.AbundanceName)
+                        #thisIon.intensity(wvlRange = wvlRange, allLines=allLines, em=em)
+                        ## check that there are lines in this wavelength range - probably not redundant
+                        #if 'errorMessage' not in  list(thisIon.Intensity.keys()):
+                            #self.Finished.append(ionSd)
+                            #if keepIons:
+                                #self.IonInstances['ionSd'] = copy.deepcopy(thisIon)
+                            #if setupIntensity:
+                                #for akey in self.Intensity:
+                                    #self.Intensity[akey] = np.hstack((self.Intensity[akey], thisIon.Intensity[akey]))
+                            #else:
+                                #setupIntensity = 1
+                                #self.Intensity = thisIon.Intensity
+                        #else:
+                            #if verbose:
+                                #print(thisIon.Intensity['errorMessage'])
 #        #
         #
         t2 = datetime.now()
