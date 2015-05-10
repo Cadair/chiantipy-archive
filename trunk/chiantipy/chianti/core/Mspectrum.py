@@ -77,33 +77,33 @@ class mspectrum(_ionTrails, _specTrails):
     proc = the number of processors to use
     timeout - a small but non-zero value seems to be necessary
     '''
-    def __init__(self, temperature, eDensity, wavelength, filter=(chfilters.gaussianR, 1000.), label=0, elementList = 0, ionList = 0, minAbund=0., abundanceName=0,  doContinuum=1, allLines = 1, em = 1.,  proc=3, verbose = 0,  timeout=0.1):
+    def __init__(self, temperature, eDensity, wavelength, filter=(chfilters.gaussianR, 1000.), label=0, elementList = 0, ionList = 0, minAbund=0, keepIons=0, abundanceName=0,  doContinuum=1, allLines = 1, em = 1.,  proc=3, verbose = 0,  timeout=0.1):
         #
         t1 = datetime.now()
         # creates Intensity dict from first ion calculated
         setupIntensity = 0
         #
-        masterlist = chdata.MasterList
+        #masterlist = chdata.MasterList
         # use the ionList but make sure the ions are in the database
-        if elementList:
-            for i,  one in enumerate(elementList):
-                elementList[i] = one.lower()
-            alist = []
-            for one in masterlist:
-                stuff = util.convertName(one)
-                if stuff['Element'] in  elementList:
-                    alist.append(one)
-            masterlist = alist
-        elif ionList:
-            alist=[]
-            for one in ionList:
-                if masterlist.count(one):
-                    alist.append(one)
-                else:
-                    if verbose:
-                        pstring = ' %s not in CHIANTI database'%(one)
-                        print(pstring)
-            masterlist = alist
+        #if elementList:
+            #for i,  one in enumerate(elementList):
+                #elementList[i] = one.lower()
+            #alist = []
+            #for one in masterlist:
+                #stuff = util.convertName(one)
+                #if stuff['Element'] in  elementList:
+                    #alist.append(one)
+            #masterlist = alist
+        #elif ionList:
+            #alist=[]
+            #for one in ionList:
+                #if masterlist.count(one):
+                    #alist.append(one)
+                #else:
+                    #if verbose:
+                        #pstring = ' %s not in CHIANTI database'%(one)
+                        #print(pstring)
+            #masterlist = alist
         self.Defaults = defaults
         self.Temperature = np.asarray(temperature, 'float64')
         nTemp = self.Temperature.size
@@ -111,15 +111,18 @@ class mspectrum(_ionTrails, _specTrails):
         nDen = self.EDensity.size
         nTempDen = max([nTemp, nDen])
         self.NTempDen = nTempDen
+        em = np.asarray(em, 'float64')
+        if len(em.shape) == 0:
+            em = np.ones(self.NTempDen, 'float64')*em
 #        em = np.asarray(em, 'float64')
 #        if em.size != nTempDen:
 #            if em.size == 1:
 #                em = np.ones(nTempDen, 'float64')*em[0]
 #        self.Em = em
-        #
-        em = np.asarray(em, 'float64')
-        if len(em.shape) == 0:
-            em = np.ones(self.NTempDen, 'float64')*em
+        ##
+        #em = np.asarray(em, 'float64')
+        #if len(em.shape) == 0:
+            #em = np.ones(self.NTempDen, 'float64')*em
         self.Em = em
         self.AllLines = allLines
         #
@@ -172,7 +175,8 @@ class mspectrum(_ionTrails, _specTrails):
         ionDoneQ = mp.Queue()
         #
         self.IonsCalculated = []
-        self.IonInstances = {}
+        if keepIons:
+            self.IonInstances = {}
         self.Finished = []
         #
         
@@ -293,7 +297,8 @@ class mspectrum(_ionTrails, _specTrails):
                     setupIntensity = 1
                     self.Intensity  = thisIntensity
                 #
-                lineSpectrum += thisIon.Spectrum['intensity']
+                if not 'errorMessage' in sorted(thisIon.Spectrum.keys()):
+                    lineSpectrum += thisIon.Spectrum['intensity']
 #                if nTempDen == 1:
 #                    lineSpectrum += thisSpectrum['intensity']
 #                else:
