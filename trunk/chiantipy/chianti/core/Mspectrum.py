@@ -148,7 +148,7 @@ class mspectrum(_ionTrails, _specTrails):
         minAbundAll = abundAll[nonzed].min()
         if minAbund < minAbundAll:
             minAbund = minAbundAll
-        ionInfo = chio.masterListInfo()
+        #ionInfo = chio.masterListInfo()
         wavelength = np.asarray(wavelength)
         nWvl = wavelength.size
         self.Wavelength = wavelength
@@ -289,7 +289,8 @@ class mspectrum(_ionTrails, _specTrails):
             thisIntensity = thisIon.Intensity
             if not 'errorMessage' in sorted(thisIntensity.keys()):
                 self.Finished.append(ions)
-                self.IonInstances[ions] = copy.deepcopy(thisIon)
+                if keepIons:
+                    self.IonInstances[ions] = copy.deepcopy(thisIon)
                 if setupIntensity:
                     for akey in sorted(self.Intensity.keys()):
                         self.Intensity[akey] = np.hstack((copy.copy(self.Intensity[akey]), thisIntensity[akey]))
@@ -345,7 +346,7 @@ class mspectrum(_ionTrails, _specTrails):
             else:
                 self.Spectrum = {label:{'wavelength':wavelength, 'intensity':total.squeeze(), 'filter':filter[0].__name__,   'width':filter[1], 'integrated':integrated, 'em':em, 'ions':self.IonsCalculated, 'Abundance':self.AbundanceName}}
         else:
-            self.Spectrum ={'wavelength':wavelength, 'intensity':total.squeeze(), 'filter':filter[0].__name__,   'width':filter[1], 'ions':self.IonsCalculated, 'Abundance':self.AbundanceName}
+            self.Spectrum ={'wavelength':wavelength, 'intensity':total.squeeze(), 'filter':filter[0].__name__,   'width':filter[1], 'integrated':integrated, 'ions':self.IonsCalculated, 'Abundance':self.AbundanceName}
     #
     # -------------------------------------------------------------------------
     #

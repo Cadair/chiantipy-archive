@@ -74,7 +74,7 @@ class ipymspectrum(_ionTrails, _specTrails):
     proc = the number of processors to use
     timeout - a small but non-zero value seems to be necessary
     '''
-    def __init__(self, temperature, eDensity, wavelength, filter=(chfilters.gaussianR, 1000.), label=0, elementList = 0, ionList = 0, minAbund=0., doContinuum=1, allLines = 1, em = 1.,  proc=3,  abundanceName=0, verbose = 0,  timeout=0.1):
+    def __init__(self, temperature, eDensity, wavelength, filter=(chfilters.gaussianR, 1000.), label=0, elementList = 0, ionList = 0, minAbund=0, keepIons=0, doContinuum=1, allLines = 1, em = 1.,  proc=3,  abundanceName=0, verbose = 0,  timeout=0.1):
         #
         t1 = datetime.now()
         #
@@ -96,9 +96,12 @@ class ipymspectrum(_ionTrails, _specTrails):
         nTempDen = max([nTemp, nDen])
         self.NTempDen = nTempDen
         em = np.asarray(em, 'float64')
-        if em.size != nTempDen:
-            if em.size == 1:
-                em = np.ones(nTempDen, 'float64')*em
+        if len(em.shape) == 0:
+            em = np.ones(self.NTempDen, 'float64')*em
+        #em = np.asarray(em, 'float64')
+        #if em.size != nTempDen:
+            #if em.size == 1:
+                #em = np.ones(nTempDen, 'float64')*em
         self.Em = em
         self.AllLines = allLines
         #
@@ -125,7 +128,7 @@ class ipymspectrum(_ionTrails, _specTrails):
         minAbundAll = abundAll[nonzed].min()
         if minAbund < minAbundAll:
             minAbund = minAbundAll
-        ionInfo = chio.masterListInfo()
+        #ionInfo = chio.masterListInfo()
         wavelength = np.asarray(wavelength)
         nWvl = wavelength.size
         self.Wavelength = wavelength
@@ -140,7 +143,8 @@ class ipymspectrum(_ionTrails, _specTrails):
          #
         allInpt = []
         #
-        self.IonInstances = {}
+        if keepIons:
+            self.IonInstances = {}
         # ionGate creates the self.Todo list
         #
         self.ionGate(elementList = elementList, ionList = ionList, minAbund=minAbund, doContinuum=doContinuum, verbose = verbose)
@@ -209,7 +213,8 @@ class ipymspectrum(_ionTrails, _specTrails):
             elif calcType == 'line':
                 thisIon = out[2]
                 if not 'errorMessage' in sorted(thisIon.Intensity.keys()):
-                    self.IonInstances[ionS] = thisIon
+                    if keepIons:
+                        self.IonInstances[ionS] = thisIon
                     thisIntensity = thisIon.Intensity
     ##                self.IonInstances.append(copy.deepcopy(thisIon))
                     if setupIntensity:
