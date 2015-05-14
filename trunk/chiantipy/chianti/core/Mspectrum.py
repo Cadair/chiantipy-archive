@@ -146,8 +146,10 @@ class mspectrum(_ionTrails, _specTrails):
         #
         nonzed = abundAll > 0.
         minAbundAll = abundAll[nonzed].min()
-        if minAbund < minAbundAll:
-            minAbund = minAbundAll
+        # if minAbund is even set
+        if minAbund:
+            if minAbund < minAbundAll:
+                minAbund = minAbundAll
         #ionInfo = chio.masterListInfo()
         wavelength = np.asarray(wavelength)
         nWvl = wavelength.size

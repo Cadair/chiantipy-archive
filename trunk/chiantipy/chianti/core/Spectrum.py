@@ -130,8 +130,10 @@ class spectrum(_ionTrails, _specTrails):
         #
         nonzed = abundAll > 0.
         minAbundAll = abundAll[nonzed].min()
-        if minAbund < minAbundAll:
-            minAbund = minAbundAll
+        # if minAbund is even set
+        if minAbund:
+            if minAbund < minAbundAll:
+                minAbund = minAbundAll
         self.minAbund = minAbund
 #        ionInfo = chio.masterListInfo()
         wavelength = np.asarray(wavelength)
@@ -350,8 +352,10 @@ class bunch(_ionTrails, _specTrails):
         #
         nonzed = abundAll > 0.
         minAbundAll = abundAll[nonzed].min()
-        if minAbund < minAbundAll:
-            minAbund = minAbundAll
+        # if minAbund is even set
+        if minAbund:
+            if minAbund < minAbundAll:
+                minAbund = minAbundAll
         self.minAbund = minAbund
         ionInfo = chio.masterListInfo()
         #        #
