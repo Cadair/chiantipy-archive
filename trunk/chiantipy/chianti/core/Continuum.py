@@ -18,7 +18,7 @@ class continuum:
 
     can specify the abundance file with abund='cosmic_1973_allen', for example (the .ioneq suffix should not be included
     '''
-    def __init__(self, ionStr,  temperature,  density=0, abundance=0, abundanceName=0, em=1.):
+    def __init__(self, ionStr,  temperature,  density=0, abundance=0, abundanceName=0, em=1):
         nameDict = util.convertName(ionStr)
         self.Z = nameDict['Z']
         self.Ion = nameDict['Ion']
@@ -54,7 +54,7 @@ class continuum:
         #  ip in eV, reading Ip of next lower level, needed for freeBound
 
         if self.Ion > 1:
-            self.Ip=ip[self.Z-1, self.Ion-2]
+            self.Ip = ip[self.Z-1, self.Ion-2]
         else:
             print(' in continuum, trying to use the neutral ion')
             return
@@ -501,7 +501,7 @@ class continuum:
         #
         # ----------------------------------------------------------------------------------------
         #
-            #
+        #
     def freeBoundLoss(self):
         '''
         to calculate the free-bound (radiative recombination) energy loss rate coefficient of an ion,
