@@ -47,7 +47,7 @@ def doIon(inpt):
     thisIon = chianti.core.ion(ionS, temperature, density, abundance=abund)
     thisIon.intensity(wvlRange = wvlRange, allLines = allLines, em=em)
     if 'errorMessage' not in thisIon.Intensity.keys():
-        thisIon.spectrum(wavelength,  filter=filter, allLines=allLines,  em=em)
+        thisIon.spectrum(wavelength,  filter=filter, allLines=allLines)
 #        outList = [ionS, thisIon.Spectrum]
 #    outList = [ionS, thisIon.Spectrum, thisIon.Intensity]
 #    outList = [ionS, thisIon]
@@ -94,7 +94,7 @@ def doAll(inpt):
         thisIon = chianti.core.ion(ionS, temperature, density, abundance=abund)
         thisIon.intensity(wvlRange = wvlRange, allLines = allLines, em=em)
         if 'errorMessage' not in thisIon.Intensity.keys():
-            thisIon.spectrum(wavelength,  filter=filter, allLines=allLines,  em=em)
+            thisIon.spectrum(wavelength,  filter=filter, allLines=allLines)
     #        outList = [ionS, thisIon.Spectrum]
     #    outList = [ionS, thisIon.Spectrum, thisIon.Intensity]
     #    outList = [ionS, thisIon]

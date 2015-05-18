@@ -3,7 +3,7 @@ import copy
 #
 #
 import numpy as np
-import pylab as pl
+
 import chianti.data as chdata
 import chianti.constants as const
 import chianti.filters as chfilters
@@ -95,14 +95,13 @@ class ipymspectrum(_ionTrails, _specTrails):
         nDen = self.EDensity.size
         nTempDen = max([nTemp, nDen])
         self.NTempDen = nTempDen
-        em = np.asarray(em, 'float64')
-        if len(em.shape) == 0:
-            em = np.ones(self.NTempDen, 'float64')*em
-        #em = np.asarray(em, 'float64')
-        #if em.size != nTempDen:
-            #if em.size == 1:
-                #em = np.ones(nTempDen, 'float64')*em
+        #
+        if type(em) == int and em == 0:
+            em = np.ones(self.NTempDen, 'float64')
+        elif type(em) == float and em > 0.:
+            em = np.ones(self.NTempDen, 'float64')*em        
         self.Em = em
+        #
         self.AllLines = allLines
         #
         if not abundanceName:
@@ -124,12 +123,12 @@ class ipymspectrum(_ionTrails, _specTrails):
         abundAll = chdata.Abundance[self.AbundanceName]['abundance']
         self.AbundAll = abundAll
         #
-        nonzed = abundAll > 0.
-        minAbundAll = abundAll[nonzed].min()
-        # if minAbund is even set
-        if minAbund:
-            if minAbund < minAbundAll:
-                minAbund = minAbundAll
+#        nonzed = abundAll > 0.
+#        minAbundAll = abundAll[nonzed].min()
+#        # if minAbund is even set
+#        if minAbund:
+#            if minAbund < minAbundAll:
+#                minAbund = minAbundAll
         #ionInfo = chio.masterListInfo()
         wavelength = np.asarray(wavelength)
         nWvl = wavelength.size
@@ -271,31 +270,5 @@ class ipymspectrum(_ionTrails, _specTrails):
             else:
                 self.Spectrum = {label:{'wavelength':wavelength, 'intensity':total.squeeze(), 'filter':filter[0].__name__,   'width':filter[1], 'integrated':integrated, 'em':em, 'Abundance':self.AbundanceName}}
         else:
-            self.Spectrum = {'wavelength':wavelength, 'intensity':total.squeeze(), 'filter':filter[0].__name__,   'width':filter[1], 'Abundance':self.AbundanceName}
+            self.Spectrum = {'wavelength':wavelength, 'intensity':total.squeeze(), 'filter':filter[0].__name__,   'width':filter[1], 'integrated':integrated, 'em':em, 'Abundance':self.AbundanceName}
 
-    #
-    # -------------------------------------------------------------------------
-    #
-    def lineSpectrumPlot(self, saveFile=0, plotContinuum=0, linLog = 'lin'):
-        '''
-        to plot the spectrum as a function of wavelength
-        '''
-        # must follow setting top
-        #
-        pl.figure()
-        ylabel = 'Intensity'
-        #
-        xlabel = 'Wavelength ('+self.Defaults['wavelength'] +')'
-        #
-#        ymin = 10.**(np.log10(emiss.min()).round(0))
-        #
-        pl.ion()
-        #
-        pl.plot(self.LineSpectrum['wavelength'], self.LineSpectrum['intensity'])
-        pl.xlabel(xlabel)
-        pl.ylabel(ylabel)
-        if saveFile:
-            pl.savefig(saveFile)
-    #
-    # -------------------------------------------------------------------------
-    #

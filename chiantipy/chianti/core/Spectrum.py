@@ -63,7 +63,7 @@ class spectrum(_ionTrails, _specTrails):
     em [for emission measure], can be a float or an array of the same length as the
     temperature/density
     '''
-    def __init__(self, temperature, eDensity, wavelength, filter=(chfilters.gaussianR, 1000.), label=0, elementList = 0, ionList = 0, minAbund=0., doContinuum=1, em = 1., keepIons=0,  abundanceName=0, verbose=0, allLines=1):
+    def __init__(self, temperature, eDensity, wavelength, filter=(chfilters.gaussianR, 1000.), label=0, elementList = 0, ionList = 0, minAbund=0., doContinuum=1, em=0, keepIons=0,  abundanceName=0, verbose=0, allLines=1):
         #
         t1 = datetime.now()
         # creates Intensity dict from first ion calculated
@@ -99,12 +99,10 @@ class spectrum(_ionTrails, _specTrails):
         nTempDen = self.NTempDen
         self.Wavelength = wavelength
         #
-        em = np.asarray(em, 'float64')
-        if len(em.shape) == 0:
-            em = np.ones(self.NTempDen, 'float64')*em
-#        if verbose:
-#            for it in range(self.NTempDen):
-#                print(' it %5i  em %12.2e'%(it, em[it]))
+        if type(em) == int and em == 0:
+            em = np.ones(self.NTempDen, 'float64')
+        elif type(em) == float and em > 0.:
+            em = np.ones(self.NTempDen, 'float64')*em        
         self.Em = em
         #self.AbundanceName = defaults['abundfile']
         #self.AbundanceAll = chdata.AbundanceAll
@@ -296,7 +294,7 @@ class bunch(_ionTrails, _specTrails):
     #
     # ------------------------------------------------------------------------------------
     #
-    def __init__(self, temperature, eDensity, wvlRange, elementList =0, ionList=0, minAbund=0, keepIons=0, em = 1., abundanceName=0, verbose=0, allLines=1):
+    def __init__(self, temperature, eDensity, wvlRange, elementList =0, ionList=0, minAbund=0, keepIons=0, em = 0, abundanceName=0, verbose=0, allLines=1):
         #
         t1 = datetime.now()
         # creates Intensity dict from first ion calculated
@@ -308,10 +306,11 @@ class bunch(_ionTrails, _specTrails):
         self.EDensity = np.asarray(eDensity, 'float64')
         nDen = self.EDensity.size
         self.NTempDen = max([nTemp, nDen])
-        em = np.asarray(em, 'float64')
-        if len(em.shape) == 0:
-            em = np.ones(self.NTempDen, 'float64')*em
-        
+        if type(em) == int and em == 0:
+            em = np.ones(self.NTempDen, 'float64')
+        elif type(em) == float and em > 0.:
+            em = np.ones(self.NTempDen, 'float64')*em        
+        self.Em = em
         #if em != 0:
             #if type(em) == type(float):
                 #if nTempDen > 1:
@@ -350,13 +349,13 @@ class bunch(_ionTrails, _specTrails):
         # needed by ionGate
         self.AbundAll = abundAll
         #
-        nonzed = abundAll > 0.
-        minAbundAll = abundAll[nonzed].min()
-        # if minAbund is even set
-        if minAbund:
-            if minAbund < minAbundAll:
-                minAbund = minAbundAll
-        self.minAbund = minAbund
+#        nonzed = abundAll > 0.
+#        minAbundAll = abundAll[nonzed].min()
+#        # if minAbund is even set
+#        if minAbund:
+#            if minAbund < minAbundAll:
+#                minAbund = minAbundAll
+#        self.minAbund = minAbund
         ionInfo = chio.masterListInfo()
         #        #
 #        self.Intensity = {'ionS':[], 'lvl1':[], 'lvl2':[], 'wvl':np.ndarray, 'pretty1':np.ndarray, 'pretty2':np.ndarray, 'intensity':np.zeros((nTempDen, 0),'float64'), 'obs':np.ndarray }
@@ -470,3 +469,6 @@ class bunch(_ionTrails, _specTrails):
         dt=t2-t1
         print(' elapsed seconds = %12.3f'%(dt.seconds))
         return
+    #
+    # -------------------------------------------------------------------------
+    #

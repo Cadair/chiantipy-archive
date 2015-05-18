@@ -1180,7 +1180,7 @@ class ion(_ionTrails):
             #  descale proton values
             if ttype == 6:
                 st=kte/(kte+cups)
-                xs=dx*np.arange(nspl)
+#                xs=dx*np.arange(nspl)
                 y2=interpolate.splrep(xs,splups,s=0)
                 sups=interpolate.splev(st,y2,der=der)
 #                ups[isplups] = sups
@@ -1861,7 +1861,7 @@ class ion(_ionTrails):
         #
         # -------------------------------------------------------------------------
         #
-    def spectrum(self, wavelength, filter=(chfilters.gaussianR,1000.), label=0, allLines=1, em=1.):
+    def spectrum(self, wavelength, filter=(chfilters.gaussianR,1000.), label=0, allLines=1, em=0):
         '''
         Calculates the line emission spectrum for the specified ion.
 
@@ -4826,7 +4826,7 @@ class ion(_ionTrails):
         #
         # ---------------------------------------------------------------------------
         #
-    def intensity(self,  wvlRange = None,  allLines=1, em=1.):
+    def intensity(self,  wvlRange = None,  allLines=1, em=0):
         """
         Calculate  the intensities for lines of the specified ion.
 
@@ -4840,9 +4840,12 @@ class ion(_ionTrails):
         """
         # emiss ={"wvl":wvl, "emiss":em, "plotLabels":plotLabels}
         #
-        em = np.asarray(em, 'float64')
-        if len(em.shape) == 0:
-            em = np.ones(self.NTempDen, 'float64')*em
+        if type(em) == int and em == 0:
+            em = np.ones(self.NTempDen, 'float64')
+        elif type(em) == float and em > 0.:
+            em = np.ones(self.NTempDen, 'float64')*em        
+        self.Em = em
+        # so we know that it has been applied
         #
         if not hasattr(self, 'Emiss'):
             self.emiss(wvlRange = wvlRange, allLines=allLines)
@@ -4903,23 +4906,25 @@ class ion(_ionTrails):
             nwvl=len(emissivity)
             ntempden=1
             intensity = ab*thisIoneq*emissivity*em
-        Intensity = {'intensity':intensity, 'ionS':ionS, 'wvl':wvl, 'lvl1':lvl1, 'lvl2':lvl2, 'pretty1':pretty1, 'pretty2':pretty2,  'obs':obs, 'avalue':avalue, 'em':em}
-#        if emiss.has_key('pretty1'):
-#            Intensity['pretty1'] = emiss['pretty1']
-#        if emiss.has_key('pretty2'):
-#            Intensity['pretty2'] = emiss['pretty2']
+        if ntempden == 1:
+            integrated = intensity
+        else:
+            integrated = intensity.sum(axis=0)
+        Intensity = {'intensity':intensity, 'integrated':integrated,'ionS':ionS, 'wvl':wvl, 'lvl1':lvl1, 'lvl2':lvl2, 'pretty1':pretty1, 'pretty2':pretty2,  'obs':obs, 'avalue':avalue, 'em':em}
         self.Intensity = Intensity
         #
         # ---------------------------------------------------------------------------
         #
     def boundBoundLoss(self,  wvlRange = None,  allLines=1):
-        """Calculate  the summed radiative loss rate for all lines of the specified ion.
+        """
+        Calculate  the summed radiative loss rate for all lines of the specified ion.
 
         wvlRange, a 2 element tuple, list or array determines the wavelength range
 
         units:  ergs cm^-3 s^-1
 
-        includes elemental abundance and ionization fraction."""
+        includes elemental abundance and ionization fraction.
+        """
         # emiss ={"wvl":wvl, "emiss":em, "plotLabels":plotLabels}
         #
         self.emiss(wvlRange = wvlRange, allLines=allLines)

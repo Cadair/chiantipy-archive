@@ -1,5 +1,6 @@
 from datetime import datetime
 import numpy as np
+import pylab as pl
 import chianti.filters as chfilters
 import chianti.util as util
 import chianti.io as chio 
@@ -108,9 +109,10 @@ class _specTrails():
         #
         # ---------------------------------------------------------------------------
         #
-    def ionGate(self, elementList = 0, ionList = 0, minAbund=0, doContinuum=1, verbose = 0):
+    def ionGate(self, elementList = 0, ionList = 0, minAbund=0, doContinuum=1, doWvlTest=1, verbose=0):
         '''
         creates a list of ions for free-free, free-bound, and line intensity calculations
+        if doing the radiative losses, accept all wavelength -> doWvlTest=0
         '''
         #
         masterlist = chdata.MasterList
@@ -148,17 +150,14 @@ class _specTrails():
                             masterListTest = ionS in masterlist
                             masterListInfoTest = ionS in sorted(ionInfo.keys())
                             if masterListTest or masterListInfoTest:
-                                wvlTestMin = wvlRange[0] <= ionInfo[ionS]['wmax']
-                                wvlTestMax = wvlRange[1] >= ionInfo[ionS]['wmin']
+                                if doWvlTest:
+                                    wvlTestMin = wvlRange[0] <= ionInfo[ionS]['wmax']
+                                    wvlTestMax = wvlRange[1] >= ionInfo[ionS]['wmin']
+                                else:
+                                    wvlTestMin = 1
+                                    wvlTestMax = 1
                                 ioneqTest = (temperature.max() >= ionInfo[ionS]['tmin']) and (temperature.min() <= ionInfo[ionS]['tmax'])
                             # construct similar test for the dielectronic files
-                            ionSd = util.zion2name(iz, ionstage, dielectronic=1)
-                            masterListTestD = ionSd in masterlist
-                            masterListInfoTestD = ionSd in sorted(ionInfo.keys())
-                            if masterListTestD or masterListInfoTestD:
-                                wvlTestMinD = wvlRange[0] <= ionInfo[ionSd]['wmax']
-                                wvlTestMaxD = wvlRange[1] >= ionInfo[ionSd]['wmin']
-                                ioneqTestD = (temperature.max() >= ionInfo[ionSd]['tmin']) and (temperature.min() <=ionInfo[ionSd]['tmax'])
                             ionstageTest = ionstage > 1
                             if ionstageTest and ioneqTest and doContinuum:
                                 # ionS is the target ion, cannot be the neutral for the continuum
@@ -214,16 +213,25 @@ class _specTrails():
                         masterListTest = ionS in masterlist
                         masterListInfoTest = ionS in sorted(ionInfo.keys())
                         if masterListTest or masterListInfoTest:
-                            wvlTestMin = wvlRange[0] <= ionInfo[ionS]['wmax']
-                            wvlTestMax = wvlRange[1] >= ionInfo[ionS]['wmin']
+                            if masterListTest or masterListInfoTest:
+                                if doWvlTest:
+                                    wvlTestMin = wvlRange[0] <= ionInfo[ionS]['wmax']
+                                    wvlTestMax = wvlRange[1] >= ionInfo[ionS]['wmin']
+                                else:
+                                    wvlTestMin = 1
+                                    wvlTestMax = 1
                             ioneqTest = (temperature.max() >= ionInfo[ionS]['tmin']) and (temperature.min() <= ionInfo[ionS]['tmax'])
                         # construct similar test for the dielectronic files
                         ionSd = util.zion2name(iz, ionstage, dielectronic=1)
                         masterListTestD = ionSd in masterlist
                         masterListInfoTestD = ionSd in sorted(ionInfo.keys())
                         if masterListTestD or masterListInfoTestD:
-                            wvlTestMinD = wvlRange[0] <= ionInfo[ionSd]['wmax']
-                            wvlTestMaxD = wvlRange[1] >= ionInfo[ionSd]['wmin']
+                            if doWvlTest:
+                                wvlTestMinD = wvlRange[0] <= ionInfo[ionSd]['wmax']
+                                wvlTestMaxD = wvlRange[1] >= ionInfo[ionSd]['wmin']
+                            else:
+                                wvlTestMinD = 1
+                                wvlTestMaxD = 1
                             ioneqTestD = (temperature.max() >= ionInfo[ionSd]['tmin']) and (temperature.min() <=ionInfo[ionSd]['tmax'])
                             #
                         if masterListTest and wvlTestMin and wvlTestMax and ioneqTest:
@@ -246,5 +254,77 @@ class _specTrails():
                             if verbose:
                                 print(' for ion %s do : %s'%(ionSd, self.Todo[ionSd]))
         return
-
+    #
+    # -------------------------------------------------------------------------
+    #
+    def spectrumPlot(self, index=0, saveFile=0, linLog = 'lin'):
+        '''
+        to plot the spectrum as a function of wavelength
+        '''
+        pl.figure()
+        ylabel = r'erg cm$^{-2}$ s$^{-1}$ sr$^{-1} \AA^{-1}$ ($\int\,$ N$_e\,$N$_H\,$d${\it l}$)$^{-1}$'
+        #
+        xlabel = 'Wavelength ('+self.Defaults['wavelength'] +')'
+        #
+#        ymin = 10.**(np.log10(emiss.min()).round(0))
+        #
+        pl.ion()
+        #
+        nTempDen = self.NTempDen
+        if nTempDen == 1:
+        #
+            pl.plot(self.Spectrum['wavelength'], self.Spectrum['intensity'])
+        else:
+            if index:
+                pl.plot(self.Spectrum['wavelength'], self.Spectrum['intensity'][index])
+            else:
+                index = nTempDen/2
+                pl.plot(self.Spectrum['wavelength'], self.Spectrum['intensity'][index])                
+        pl.xlabel(xlabel)
+        pl.ylabel(ylabel)
+        if index:
+            pl.title(' Temperature = %10.2e for index = %3i'%(self.Temperature[index], index))
+        else:
+            pl.title(' Temperature = %10.2e '%(self.Temperature))
+        if saveFile:
+            pl.savefig(saveFile)
+    #
+    # -------------------------------------------------------------------------
+    #
+    def lineSpectrumPlot(self, index = 0, saveFile=0, linLog = 'lin'):
+        '''
+        to plot the line spectrum as a function of wavelength
+        '''
+        # 
+        #
+        pl.figure()
+        ylabel = r'erg cm$^{-2}$ s$^{-1}$ sr$^{-1} \AA^{-1}$ ($\int\,$ N$_e\,$N$_H\,$d${\it l}$)$^{-1}$'
+        #
+        xlabel = 'Wavelength ('+self.Defaults['wavelength'] +')'
+        #
+#        ymin = 10.**(np.log10(emiss.min()).round(0))
+        #
+        pl.ion()
+        #
+        nTempDen = self.NTempDen
+        if nTempDen == 1:
+        #
+            pl.plot(self.LineSpectrum['wavelength'], self.LineSpectrum['intensity'])
+        else:
+            if index:
+                pl.plot(self.LineSpectrum['wavelength'], self.LineSpectrum['intensity'][index])
+            else:
+                index = nTempDen/2
+                pl.plot(self.LineSpectrum['wavelength'], self.LineSpectrum['intensity'][index])                
+        pl.xlabel(xlabel)
+        pl.ylabel(ylabel)
+        if index:
+            pl.title(' Temperature = %10.2e for index = %3i'%(self.Temperature[index], index))
+        else:
+            pl.title(' Temperature = %10.2e '%(self.Temperature))
+        if saveFile:
+            pl.savefig(saveFile)
+    #
+    # -------------------------------------------------------------------------
+ 
 

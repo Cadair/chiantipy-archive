@@ -144,11 +144,12 @@ class _ionTrails():
         #
         #
         idx = np.argsort(wvl)
-        fmt = '%5s %5i %5i %25s - %25s %12.4f %12.3e %12.2e %1s'
+        fmt1 = '%5s %5s %5s %25s - %-25s %12s %12s %12s %3s'
+        fmt = '%5s %5i %5i %25s - %-25s %12.4f %12.3e %12.2e %1s'
         print('   ')
         print(' ------------------------------------------')
         print('   ')
-        print(' Ion   lvl1  lvl2         lower                     upper                   Wvl(A)   Intensity      A value Obs')
+        print(fmt1%('Ion','lvl1','lvl2','lower','upper','Wvl(A)','Intensity','A value','Obs'))
         for kdx in idx:
             print(fmt%(ionS[kdx], lvl1[kdx], lvl2[kdx], pretty1[kdx], pretty2[kdx], wvl[kdx], intensity[kdx], avalue[kdx], obs[kdx]))
         print('   ')
@@ -158,9 +159,10 @@ class _ionTrails():
         self.Intensity['wvlTop'] = wvl[idx]
         self.Intensity['intensityTop'] = intensity[idx]
         if outFile:
-            fmt = '%5s %5i %5i %25s - %25s %12.4f %12.3e %12.2e %1s \n'
+            fmt1a = '%5s %5s %5s %25s - %-25s %12s %12s %12s %3s \n'
+            fmt = '%5s %5i %5i %25s - %-25s %12.4f %12.3e %12.2e %1s \n'
             outpt = open(outFile, 'w')
-            outpt.write('Ion lvl1  lvl2         lower                       upper                   Wvl(A)   Intensity      A value Obs \n')
+            outpt.write(fmt1a%('Ion','lvl1','lvl2','lower','upper','Wvl(A)','Intensity','A value','Obs'))
             for kdx in idx:
                 outpt.write(fmt%(ionS[kdx], lvl1[kdx], lvl2[kdx], pretty1[kdx], pretty2[kdx], wvl[kdx], intensity[kdx], avalue[kdx], obs[kdx]))
             outpt.close()
@@ -399,7 +401,7 @@ class _ionTrails():
             if ionNum == 1:
                 desc += ' ' + str(wvl[topLines[aline]])
             else:
-                desc += ionS[topLines[aline]] + ' ' + str(wvl[topLines[aline]]) 
+                desc += ' ' + ionS[topLines[aline]] + ' ' + str(wvl[topLines[aline]]) 
         if ndens == ntemp and ntemp > 1:
             pl.text(0.07, 0.5,desc, horizontalalignment='left', verticalalignment='center', fontsize=fontsize,  transform = ax.transAxes)
             #
@@ -426,7 +428,7 @@ class _ionTrails():
 #            intensityRatioFileName+= '_%3i'%(wvl[topLines[aline]])
         cnt = desc.count(' ')
         intensityRatioFileName = desc.replace(' ', '_', cnt) + '.rat'
-        intensityRatioFileName = intensityRatioFileName.replace('_/_','-')
+        intensityRatioFileName = intensityRatioFileName.lstrip('_').replace('_/_','-')
         self.IntensityRatio={'ratio':numIntens/denIntens,'desc':desc,
                 'temperature':outTemperature,'eDensity':outDensity,'filename':intensityRatioFileName, 'numIdx':num_idx, 'denIdx':den_idx}
         #
