@@ -1424,9 +1424,9 @@ class ion(_ionTrails):
         #
         ups=np.where(ups > 0.,ups,0.)
         #
-        if prot == 1:
+        if prot:
             self.PUpsilon = {'upsilon':ups, 'temperature':temperature, 'exRate':exRate, 'dexRate':dexRate}
-        elif diel == 1:
+        elif diel:
             self.DielUpsilon = {'upsilon':ups, 'temperature':temperature, 'exRate':exRate}
         else:
             self.Upsilon = {'upsilon':ups, 'temperature':temperature, 'exRate':exRate, 'dexRate':dexRate, 'de':deAll}
@@ -1762,15 +1762,15 @@ class ion(_ionTrails):
                 nlvlList.append(nlvlReclvl)
             else:
                 self.Nreclvl = 0
-            #  .dielsplups file may not exist
-            dielsplupsfile = fileName +'.splups'
-            if self.Dielectronic and os.path.isfile(dielsplupsfile):
-                self.DielSplups = io.splupsRead('', filename=dielsplupsfile, diel=1)
-                self.Ndielsplups=len(self.DielSplups["lvl1"])
-                nlvlDielSplups = max(self.DielSplups['lvl2'])
-                nlvlList.append(nlvlDielSplups)
-            else:
-                self.Ndielsplups = 0
+            #  .dielsplups files not longer exist
+#            dielsplupsfile = fileName +'.splups'
+#            if self.Dielectronic and os.path.isfile(dielsplupsfile):
+#                self.DielSplups = io.splupsRead('', filename=dielsplupsfile, diel=1)
+#                self.Ndielsplups=len(self.DielSplups["lvl1"])
+#                nlvlDielSplups = max(self.DielSplups['lvl2'])
+#                nlvlList.append(nlvlDielSplups)
+#            else:
+#                self.Ndielsplups = 0
             #
             #  psplups file may not exist
             psplupsfile = fileName +'.psplups'
@@ -2033,10 +2033,6 @@ class ion(_ionTrails):
 #                    print ' doing reclvlDescale in populate'
                     self.cireclvlDescale('reclvl')
                     reclvlRate = self.ReclvlRate
-            elif self.Ndielsplups:
-                self.upsilonDescale(diel=1)
-                dielexRate = self.DielUpsilon['exRate']
-                rec = 1
             else:
                 rec = 0
 #            except:
@@ -2059,9 +2055,9 @@ class ion(_ionTrails):
             rec = 0
         #
         if rec:
-            if self.Ndielsplups:
-                self.upsilonDescale(diel=1)
-                dielexRate = self.DielUpsilon['exRate']
+#            if self.Dielectronic:
+#                self.upsilonDescale(diel=1)
+#                dielexRate = self.Upsilon['exRate']
             # get ionization rate of this iion
             self.ionizRate()
             #  get the higher ionization stage
@@ -2100,10 +2096,14 @@ class ion(_ionTrails):
         #
         #
         if self.Nsplups:
-            self.upsilonDescaleSplups()
-            ups = self.Upsilon['upsilon']
-            exRate = self.Upsilon['exRate']
-            dexRate = self.Upsilon['dexRate']
+            self.upsilonDescaleSplups(diel=self.Dielectronic)
+            if self.Dielectronic:
+                ups = self.DielUpsilon['upsilon']
+                exRate = self.DielUpsilon['exRate']
+            else:
+                ups = self.Upsilon['upsilon']
+                exRate = self.Upsilon['exRate']
+                dexRate = self.Upsilon['dexRate']
         #
         if npsplups:
             self.upsilonDescale(prot=1)
@@ -2134,10 +2134,11 @@ class ion(_ionTrails):
                 l1=self.Splups["lvl1"][isplups]-1
                 l2=self.Splups["lvl2"][isplups]-1
                 #
-                popmat[l1+ci,l2+ci] += self.EDensity*dexRate[isplups]
                 popmat[l2+ci,l1+ci] += self.EDensity*exRate[isplups]
                 popmat[l1+ci,l1+ci] -= self.EDensity*exRate[isplups]
-                popmat[l2+ci,l2+ci] -= self.EDensity*dexRate[isplups]
+                if not self.Dielectronic:
+                    popmat[l2+ci,l2+ci] -= self.EDensity*dexRate[isplups]
+                    popmat[l1+ci,l2+ci] += self.EDensity*dexRate[isplups]
                 #
             for isplups in range(0,npsplups):
                 l1=self.Psplups["lvl1"][isplups]-1
@@ -2171,32 +2172,34 @@ class ion(_ionTrails):
                 popmat[1, 1] -= self.EDensity*self.RecombRate['rate']
             if rec:
                 #
-                if self.Ndielsplups:
-                    branch = np.zeros(self.Ndielsplups, 'float64')
-                    for isplups in range(0,self.Ndielsplups):
-                        l1 = self.DielSplups["lvl1"][isplups]-1 + nlvls
-                        l2 = self.DielSplups["lvl2"][isplups]-1
-                        auto = rad[l1+ci, l2+ci]
-                        avalue = rad[:, l2+ci]
-                        good = avalue > 0.
-                        avalueTot = avalue[good].sum()
-                        branch[isplups] = (avalueTot-auto)/avalueTot
-#                        print ' l1 %4i l2 %4i auto %10.2e  avalue %10.2e tot %10.3f'%( l1,  l2,  auto,  avalueTot,  branch[isplups])
-                        self.DielUpsilon['branch'] =  branch
+                # if  this were a Dielectronic ion, it would not have the cilvl or reclvl files
+                #
+#                if self.Dielectronic:
+#                    branch = np.zeros(self.Ndielsplups, 'float64')
+#                    for isplups in range(0,self.Ndielsplups):
+#                        l1 = self.DielSplups["lvl1"][isplups]-1 + nlvls
+#                        l2 = self.DielSplups["lvl2"][isplups]-1
+#                        auto = rad[l1+ci, l2+ci]
+#                        avalue = rad[:, l2+ci]
+#                        good = avalue > 0.
+#                        avalueTot = avalue[good].sum()
+#                        branch[isplups] = (avalueTot-auto)/avalueTot
+##                        print ' l1 %4i l2 %4i auto %10.2e  avalue %10.2e tot %10.3f'%( l1,  l2,  auto,  avalueTot,  branch[isplups])
+#                        self.DielUpsilon['branch'] =  branch
                     #
-                    dielTot = 0.
-#                    print ' Ndielsplups > 0 '
-                    for isplups in range(0,self.Ndielsplups):
-                        l1 = self.DielSplups["lvl1"][isplups]-1 + nlvls
-                        l2 = self.DielSplups["lvl2"][isplups]-1
-                         #
-#                        print ' l1, l2, dielexRate = ', l1, l2, dielexRate[isplups]
-                        popmat[l2+ci,l1+ci] += self.EDensity*dielexRate[isplups]
-                        popmat[l1+ci,l1+ci] -= self.EDensity*dielexRate[isplups]
-                        #
-                        dielTot += self.EDensity*dielexRate[isplups]*branch[isplups]
-                else:
-                    dielTot = 0.
+#                    dielTot = 0.
+##                    print ' Ndielsplups > 0 '
+#                    for isplups in range(0,self.Ndielsplups):
+#                        l1 = self.DielSplups["lvl1"][isplups]-1 + nlvls
+#                        l2 = self.DielSplups["lvl2"][isplups]-1
+#                         #
+##                        print ' l1, l2, dielexRate = ', l1, l2, dielexRate[isplups]
+#                        popmat[l2+ci,l1+ci] += self.EDensity*exRate[isplups]
+#                        popmat[l1+ci,l1+ci] -= self.EDensity*dielexRate[isplups]
+#                        #
+#                        dielTot += self.EDensity*dielexRate[isplups]*branch[isplups]
+#                else:
+#                    dielTot = 0.
                 #
 #                print ' rec, dielTot  = ', rec,  dielTot
                 #
@@ -2214,8 +2217,8 @@ class ion(_ionTrails):
                 popmat[-1,  ci] += self.EDensity*self.IonizRate['rate']
                 popmat[ci, ci] -= self.EDensity*self.IonizRate['rate']
                 # next 2 line take care of overbooking
-                popmat[ci, -1] += self.EDensity*(higher.RecombRate['rate']- reclvlRateTot - dielTot)
-                popmat[-1, -1] -= self.EDensity*(higher.RecombRate['rate']- reclvlRateTot - dielTot)
+                popmat[ci, -1] += self.EDensity*(higher.RecombRate['rate']- reclvlRateTot)
+                popmat[-1, -1] -= self.EDensity*(higher.RecombRate['rate']- reclvlRateTot)
 #                print ' higher, rec , dieltot = ',  self.EDensity*higher.RecombRate['rate'], self.EDensity*reclvlRate['rate'].sum(axis=0),  dielTot
             # normalize to unity
             norm=np.ones(nlvls+ci+rec,'float64')
@@ -2259,10 +2262,11 @@ class ion(_ionTrails):
                 for isplups in range(0,nsplups):
                     l1=self.Splups["lvl1"][isplups]-1
                     l2=self.Splups["lvl2"][isplups]-1
-                    popmat[l1+ci,l2+ci] += self.EDensity*dexRate[isplups, itemp]
                     popmat[l2+ci,l1+ci] += self.EDensity*exRate[isplups, itemp]
                     popmat[l1+ci,l1+ci] -= self.EDensity*exRate[isplups, itemp]
-                    popmat[l2+ci,l2+ci] -= self.EDensity*dexRate[isplups, itemp]
+                    if not self.Dielectronic:
+                        popmat[l2+ci,l2+ci] -= self.EDensity*dexRate[isplups, itemp]
+                        popmat[l1+ci,l2+ci] += self.EDensity*dexRate[isplups, itemp]
                 for isplups in range(0,npsplups):
                     l1=self.Psplups["lvl1"][isplups]-1
                     l2=self.Psplups["lvl2"][isplups]-1
@@ -2297,31 +2301,31 @@ class ion(_ionTrails):
                     popmat[1, 1] -= self.EDensity*self.RecombRate['rate'][itemp]
                 if rec:
                 #
-                    if self.Ndielsplups:
-                        branch = np.zeros(self.Ndielsplups, 'float64')
-                        for isplups in range(0,self.Ndielsplups):
-                            l1 = self.DielSplups["lvl1"][isplups]-1 + nlvls
-                            l2 = self.DielSplups["lvl2"][isplups]-1
-                            auto = rad[l1+ci, l2+ci]
-                            avalue = rad[:, l2+ci]
-                            good = avalue > 0.
-                            avalueTot = avalue[good].sum()
-                            branch[isplups] = (avalueTot-auto)/avalueTot
-#                            print ' l1 %4i l2 %4i auto %10.2e  avalue %10.2e tot %10.3f'%( l1,  l2,  auto,  avalueTot,  branch[isplups])
-                            self.DielUpsilon['branch'] =  branch
-                        #
-                        dielTot = 0.
-#                        print ' Ndielsplups > 0 '
-                        for isplups in range(0,self.Ndielsplups):
-                            l1 = self.DielSplups["lvl1"][isplups]-1 + nlvls
-                            l2 = self.DielSplups["lvl2"][isplups]-1
-                             #
-                            popmat[l2+ci,l1+ci] += self.EDensity*dielexRate[isplups, itemp]
-                            popmat[l1+ci,l1+ci] -= self.EDensity*dielexRate[isplups, itemp]
-                            #
-                            dielTot += self.EDensity*dielexRate[isplups, itemp]*branch[isplups]
-                    else:
-                        dielTot = 0.
+#                    if self.Ndielsplups:
+#                        branch = np.zeros(self.Ndielsplups, 'float64')
+#                        for isplups in range(0,self.Ndielsplups):
+#                            l1 = self.DielSplups["lvl1"][isplups]-1 + nlvls
+#                            l2 = self.DielSplups["lvl2"][isplups]-1
+#                            auto = rad[l1+ci, l2+ci]
+#                            avalue = rad[:, l2+ci]
+#                            good = avalue > 0.
+#                            avalueTot = avalue[good].sum()
+#                            branch[isplups] = (avalueTot-auto)/avalueTot
+##                            print ' l1 %4i l2 %4i auto %10.2e  avalue %10.2e tot %10.3f'%( l1,  l2,  auto,  avalueTot,  branch[isplups])
+#                            self.DielUpsilon['branch'] =  branch
+#                        #
+#                        dielTot = 0.
+##                        print ' Ndielsplups > 0 '
+#                        for isplups in range(0,self.Ndielsplups):
+#                            l1 = self.DielSplups["lvl1"][isplups]-1 + nlvls
+#                            l2 = self.DielSplups["lvl2"][isplups]-1
+#                             #
+#                            popmat[l2+ci,l1+ci] += self.EDensity*dielexRate[isplups, itemp]
+#                            popmat[l1+ci,l1+ci] -= self.EDensity*dielexRate[isplups, itemp]
+#                            #
+#                            dielTot += self.EDensity*dielexRate[isplups, itemp]*branch[isplups]
+#                    else:
+#                        dielTot = 0.
                     if self.Nreclvl:
                         recTot = self.ReclvlRate['rate'][:, itemp].sum()
                     else:
@@ -2329,8 +2333,8 @@ class ion(_ionTrails):
                 #
                     popmat[-1,  ci] += self.EDensity*self.IonizRate['rate'][itemp]
                     popmat[ci, ci] -= self.EDensity*self.IonizRate['rate'][itemp]
-                    popmat[ci, -1] += self.EDensity*(higher.RecombRate['rate'][itemp]- recTot - dielTot)
-                    popmat[-1, -1] -= self.EDensity*(higher.RecombRate['rate'][itemp]- recTot - dielTot)
+                    popmat[ci, -1] += self.EDensity*(higher.RecombRate['rate'][itemp]- recTot)
+                    popmat[-1, -1] -= self.EDensity*(higher.RecombRate['rate'][itemp]- recTot)
 #                    popmat[ci, -1] += self.EDensity*(higher.RecombRate['rate'][itemp]- self.ReclvlRate['rate'][:, itemp].sum()) - dielTot
 #                    popmat[-1, -1] -= self.EDensity*(higher.RecombRate['rate'][itemp]- self.ReclvlRate['rate'][:, itemp].sum()) + dielTot
 #                    popmat[ci, -1] += self.EDensity*higher.RecombRate['rate'][itemp]
@@ -2366,22 +2370,12 @@ class ion(_ionTrails):
                 for isplups in range(0,nsplups):
                     l1=self.Splups["lvl1"][isplups]-1
                     l2=self.Splups["lvl2"][isplups]-1
-#                    if self.Dielectronic:
-#                        de=np.abs((self.Elvlc["eryd"][l2]-self.Ip/const.ryd2Ev)-self.Elvlc["eryd"][l1])
-#                    else:
-#                        de=np.abs(self.Elvlc["eryd"][l2]-self.Elvlc["eryd"][l1])
-#                    ekt=(de*1.57888e+5)/temp
-#                    fmult1=float(self.Elvlc["mult"][l1])
-#                    fmult2=float(self.Elvlc["mult"][l2])
-#                    popmat[l1+ci,l2+ci]+=cc[idens]*ups[isplups]/(fmult2*np.sqrt(temp))
-#                    popmat[l2+ci,l1+ci]+=cc[idens]*ups[isplups]*np.exp(-ekt)/(fmult1*np.sqrt(temp))
-#                    popmat[l1+ci,l1+ci]-=cc[idens]*ups[isplups]*np.exp(-ekt)/(fmult1*np.sqrt(temp))
-#                    popmat[l2+ci,l2+ci]-=cc[idens]*ups[isplups]/(fmult2*np.sqrt(temp))
                 #
-                    popmat[l1+ci,l2+ci] += self.EDensity[idens]*dexRate[isplups]
                     popmat[l2+ci,l1+ci] += self.EDensity[idens]*exRate[isplups]
                     popmat[l1+ci,l1+ci] -= self.EDensity[idens]*exRate[isplups]
-                    popmat[l2+ci,l2+ci] -= self.EDensity[idens]*dexRate[isplups]
+                    if not self.Dielectronic:
+                        popmat[l2+ci,l2+ci] -= self.EDensity[idens]*dexRate[isplups]
+                        popmat[l1+ci,l2+ci] += self.EDensity[idens]*dexRate[isplups]
                 #
                 for isplups in range(0,npsplups):
                     l1=self.Psplups["lvl1"][isplups]-1
@@ -2423,31 +2417,31 @@ class ion(_ionTrails):
                     popmat[1, 1] -= self.EDensity[idens]*self.RecombRate['rate']
                 if rec:
 #                    print ' rec = ', rec
-                    if self.Ndielsplups:
-                        branch = np.zeros(self.Ndielsplups, 'float64')
-                        for isplups in range(0,self.Ndielsplups):
-                            l1 = self.DielSplups["lvl1"][isplups]-1 + nlvls
-                            l2 = self.DielSplups["lvl2"][isplups]-1
-                            auto = rad[l1+ci, l2+ci]
-                            avalue = rad[:, l2+ci]
-                            good = avalue > 0.
-                            avalueTot = avalue[good].sum()
-                            branch[isplups] = (avalueTot-auto)/avalueTot
-#                            print ' l1 %4i l2 %4i auto %10.2e  avalue %10.2e tot %10.3f'%( l1,  l2,  auto,  avalueTot,  branch[isplups])
-                            self.DielUpsilon['branch'] =  branch
-                        #
-                        dielTot = 0.
-#                        print ' Ndielsplups > 0 '
-                        for isplups in range(0,self.Ndielsplups):
-                            l1 = self.DielSplups["lvl1"][isplups]-1 + nlvls
-                            l2 = self.DielSplups["lvl2"][isplups]-1
-                             #
-                            popmat[l2+ci,l1+ci] += self.EDensity[idens]*dielexRate[isplups]
-                            popmat[l1+ci,l1+ci] -= self.EDensity[idens]*dielexRate[isplups]
-                            #
-                            dielTot += self.EDensity[idens]*dielexRate[isplups]*branch[isplups]
-                    else:
-                        dielTot = 0.
+#                    if self.Ndielsplups:
+#                        branch = np.zeros(self.Ndielsplups, 'float64')
+#                        for isplups in range(0,self.Ndielsplups):
+#                            l1 = self.DielSplups["lvl1"][isplups]-1 + nlvls
+#                            l2 = self.DielSplups["lvl2"][isplups]-1
+#                            auto = rad[l1+ci, l2+ci]
+#                            avalue = rad[:, l2+ci]
+#                            good = avalue > 0.
+#                            avalueTot = avalue[good].sum()
+#                            branch[isplups] = (avalueTot-auto)/avalueTot
+##                            print ' l1 %4i l2 %4i auto %10.2e  avalue %10.2e tot %10.3f'%( l1,  l2,  auto,  avalueTot,  branch[isplups])
+#                            self.DielUpsilon['branch'] =  branch
+#                        #
+#                        dielTot = 0.
+##                        print ' Ndielsplups > 0 '
+#                        for isplups in range(0,self.Ndielsplups):
+#                            l1 = self.DielSplups["lvl1"][isplups]-1 + nlvls
+#                            l2 = self.DielSplups["lvl2"][isplups]-1
+#                             #
+#                            popmat[l2+ci,l1+ci] += self.EDensity[idens]*dielexRate[isplups]
+#                            popmat[l1+ci,l1+ci] -= self.EDensity[idens]*dielexRate[isplups]
+#                            #
+#                            dielTot += self.EDensity[idens]*dielexRate[isplups]*branch[isplups]
+#                    else:
+#                        dielTot = 0.
                     if self.Nreclvl:
 #                        print ' ReclvlRate.shape = ', self.ReclvlRate['rate'].shape
                         recTot = self.ReclvlRate['rate'].sum()
@@ -2456,10 +2450,8 @@ class ion(_ionTrails):
                     #
                     popmat[-1,  ci] += self.EDensity[idens]*self.IonizRate['rate']
                     popmat[ci, ci] -= self.EDensity[idens]*self.IonizRate['rate']
-                    popmat[ci, -1] += self.EDensity[idens]*(higher.RecombRate['rate']
-                        - recTot - dielTot)
-                    popmat[-1, -1] -= self.EDensity[idens]*(higher.RecombRate['rate']
-                        - recTot - dielTot)
+                    popmat[ci, -1] += self.EDensity[idens]*(higher.RecombRate['rate'] - recTot)
+                    popmat[-1, -1] -= self.EDensity[idens]*(higher.RecombRate['rate'] - recTot)
 #                    popmat[ci, -1] += self.EDensity[idens]*higher.RecombRate['rate']
 #                    popmat[-1, -1] -= self.EDensity[idens]*higher.RecombRate['rate']
                     #
@@ -2500,22 +2492,12 @@ class ion(_ionTrails):
                 for isplups in range(0,nsplups):
                     l1=self.Splups["lvl1"][isplups]-1
                     l2=self.Splups["lvl2"][isplups]-1
-#                    if self.Dielectronic:
-#                        de=np.abs((self.Elvlc["eryd"][l2]-self.Ip/const.ryd2Ev)-self.Elvlc["eryd"][l1])
-#                    else:
-#                        de=np.abs(self.Elvlc["eryd"][l2]-self.Elvlc["eryd"][l1])
-#                    ekt=(de*1.57888e+5)/temp
-#                    fmult1=float(self.Elvlc["mult"][l1])
-#                    fmult2=float(self.Elvlc["mult"][l2])
-#                    popmat[l1+ci,l2+ci]+=cc[itemp]*ups[isplups,itemp]/(fmult2*np.sqrt(temp))
-#                    popmat[l2+ci,l1+ci]+=cc[itemp]*ups[isplups,itemp]*np.exp(-ekt)/(fmult1*np.sqrt(temp))
-#                    popmat[l1+ci,l1+ci]-=cc[itemp]*ups[isplups,itemp]*np.exp(-ekt)/(fmult1*np.sqrt(temp))
-#                    popmat[l2+ci,l2+ci]-=cc[itemp]*ups[isplups,itemp]/(fmult2*np.sqrt(temp))
                     #
-                    popmat[l1+ci,l2+ci] += self.EDensity[itemp]*dexRate[isplups, itemp]
                     popmat[l2+ci,l1+ci] += self.EDensity[itemp]*exRate[isplups, itemp]
                     popmat[l1+ci,l1+ci] -= self.EDensity[itemp]*exRate[isplups, itemp]
-                    popmat[l2+ci,l2+ci] -= self.EDensity[itemp]*dexRate[isplups, itemp]
+                    if not self.Dielectronic:
+                        popmat[l2+ci,l2+ci] -= self.EDensity[itemp]*dexRate[isplups, itemp]
+                        popmat[l1+ci,l2+ci] += self.EDensity[itemp]*dexRate[isplups, itemp]
                 # proton rates
                 for isplups in range(0,npsplups):
                     l1=self.Psplups["lvl1"][isplups]-1
@@ -2556,30 +2538,30 @@ class ion(_ionTrails):
                     popmat[1, 1] -= self.EDensity[itemp]*self.RecombRate['rate'][itemp]
                 if rec:
                 #
-                    if self.Ndielsplups:
-                        branch = np.zeros(self.Ndielsplups, 'float64')
-                        for isplups in range(0,self.Ndielsplups):
-                            l1 = self.DielSplups["lvl1"][isplups]-1 + nlvls
-                            l2 = self.DielSplups["lvl2"][isplups]-1
-                            auto = rad[l1+ci, l2+ci]
-                            avalue = rad[:, l2+ci]
-                            good = avalue > 0.
-                            avalueTot = avalue[good].sum()
-                            branch[isplups] = (avalueTot-auto)/avalueTot
-#                            print ' l1 %4i l2 %4i auto %10.2e  avalue %10.2e tot %10.3f'%( l1,  l2,  auto,  avalueTot,  branch[isplups])
-                            self.DielUpsilon['branch'] =  branch
-                        #
-                        dielTot = 0.
-                        for isplups in range(0,self.Ndielsplups):
-                            l1 = self.DielSplups["lvl1"][isplups]-1 + nlvls
-                            l2 = self.DielSplups["lvl2"][isplups]-1
-                             #
-                            popmat[l2+ci,l1+ci] += self.EDensity[itemp]*dielexRate[isplups, itemp]
-                            popmat[l1+ci,l1+ci] -= self.EDensity[itemp]*dielexRate[isplups, itemp]
-                            #
-                            dielTot += self.EDensity[itemp]*dielexRate[isplups, itemp]*branch[isplups]
-                    else:
-                        dielTot = 0.
+#                    if self.Ndielsplups:
+#                        branch = np.zeros(self.Ndielsplups, 'float64')
+#                        for isplups in range(0,self.Ndielsplups):
+#                            l1 = self.DielSplups["lvl1"][isplups]-1 + nlvls
+#                            l2 = self.DielSplups["lvl2"][isplups]-1
+#                            auto = rad[l1+ci, l2+ci]
+#                            avalue = rad[:, l2+ci]
+#                            good = avalue > 0.
+#                            avalueTot = avalue[good].sum()
+#                            branch[isplups] = (avalueTot-auto)/avalueTot
+##                            print ' l1 %4i l2 %4i auto %10.2e  avalue %10.2e tot %10.3f'%( l1,  l2,  auto,  avalueTot,  branch[isplups])
+#                            self.DielUpsilon['branch'] =  branch
+#                        #
+#                        dielTot = 0.
+#                        for isplups in range(0,self.Ndielsplups):
+#                            l1 = self.DielSplups["lvl1"][isplups]-1 + nlvls
+#                            l2 = self.DielSplups["lvl2"][isplups]-1
+#                             #
+#                            popmat[l2+ci,l1+ci] += self.EDensity[itemp]*dielexRate[isplups, itemp]
+#                            popmat[l1+ci,l1+ci] -= self.EDensity[itemp]*dielexRate[isplups, itemp]
+#                            #
+#                            dielTot += self.EDensity[itemp]*dielexRate[isplups, itemp]*branch[isplups]
+#                    else:
+#                        dielTot = 0.
                     if self.Nreclvl:
                         recTot = self.ReclvlRate['rate'][:, itemp].sum()
                     else:
@@ -2588,10 +2570,8 @@ class ion(_ionTrails):
 #                   print ' rec = ', rec
                     popmat[-1,  ci] += self.EDensity[itemp]*self.IonizRate['rate'][itemp]
                     popmat[ci, ci] -= self.EDensity[itemp]*self.IonizRate['rate'][itemp]
-                    popmat[ci, -1] += self.EDensity[itemp]*(higher.RecombRate['rate'][itemp]
-                        - recTot - dielTot)
-                    popmat[-1, -1] -= self.EDensity[itemp]*(higher.RecombRate['rate'][itemp]
-                        - recTot - dielTot)
+                    popmat[ci, -1] += self.EDensity[itemp]*(higher.RecombRate['rate'][itemp]- recTot)
+                    popmat[-1, -1] -= self.EDensity[itemp]*(higher.RecombRate['rate'][itemp]- recTot)
 #                    popmat[ci, -1] += self.EDensity[itemp]*higher.RecombRate['rate'][itemp]
 #                    popmat[-1, -1] -= self.EDensity[itemp]*higher.RecombRate['rate'][itemp]
                     #
@@ -3353,15 +3333,15 @@ class ion(_ionTrails):
 #                else:
 #                    rec = 0
             #
-        elif self.Dielectronic:
-#            self.Ndielsplups and self.Dielectronic:
-            rec = 0
-            if hasattr(self, 'DielUpsilon'):
-                dielexRate = self.DielUpsilon['exRate']
-            else:
-#                print(' doing upsilonDescale')
-                self.upsilonDescaleSplups(diel=1)
-                dielexRate = self.DielUpsilon['exRate']
+#        elif self.Dielectronic:
+##            self.Ndielsplups and self.Dielectronic:
+#            rec = 0
+#            if hasattr(self, 'DielUpsilon'):
+#                dielexRate = self.DielUpsilon['exRate']
+#            else:
+##                print(' doing upsilonDescale')
+#                self.upsilonDescaleSplups(diel=1)
+#                dielexRate = self.DielUpsilon['exRate']
          #
         if rec:
 #            if self.Ndielsplups:
@@ -3405,7 +3385,7 @@ class ion(_ionTrails):
         #
         #
         if self.Nscups:
-            self.upsilonDescale()
+            self.upsilonDescale(diel=self.Dielectronic)
             ups = self.Upsilon['upsilon']
             exRate = self.Upsilon['exRate']
             dexRate = self.Upsilon['dexRate']
@@ -3436,14 +3416,15 @@ class ion(_ionTrails):
         #  first, for ntemp=ndens=1
         if ndens==1 and ntemp==1:
             popmat=np.copy(rad)
-            for iscups in range(0,nscups):
-                l1=self.Scups["lvl1"][iscups]-1
-                l2=self.Scups["lvl2"][iscups]-1
-                #
-                popmat[l1+ci,l2+ci] += self.EDensity*dexRate[iscups]
-                popmat[l2+ci,l1+ci] += self.EDensity*exRate[iscups]
-                popmat[l1+ci,l1+ci] -= self.EDensity*exRate[iscups]
-                popmat[l2+ci,l2+ci] -= self.EDensity*dexRate[iscups]
+            if not self.Dielectronic:
+                for iscups in range(0,nscups):
+                    l1=self.Scups["lvl1"][iscups]-1
+                    l2=self.Scups["lvl2"][iscups]-1
+                    #
+                    popmat[l1+ci,l2+ci] += self.EDensity*dexRate[iscups]
+                    popmat[l2+ci,l1+ci] += self.EDensity*exRate[iscups]
+                    popmat[l1+ci,l1+ci] -= self.EDensity*exRate[iscups]
+                    popmat[l2+ci,l2+ci] -= self.EDensity*dexRate[iscups]
                 #
             for isplups in range(0,npsplups):
                 l1=self.Psplups["lvl1"][isplups]-1
@@ -3497,6 +3478,13 @@ class ion(_ionTrails):
                 popmat[-1, -1] -= self.EDensity*(higher.RecombRate['rate']- recTot)
                 #
             if self.Dielectronic:
+                dielTot = 0.
+                for iscups in range(0,nscups):
+                    l1=self.Scups["lvl1"][iscups]-1
+                    l2=self.Scups["lvl2"][iscups]-1
+                    #
+                    popmat[l2+ci,-1] += self.EDensity*exRate[iscups]
+                    popmat[-1, -1] -= self.EDensity*exRate[iscups]
                 # for dielectronic ions, l1 = ground level of the ion itself
 #                    branch = np.zeros(self.Ndielsplups, 'float64')
 #                    for isplups in range(0,self.Ndielsplups):
@@ -3512,17 +3500,17 @@ class ion(_ionTrails):
 #                    #
 #                    dielTot = 0.
 #                    print ' Ndielsplups > 0 '
-                for isplups in range(0,self.Ndielsplups):
-                    l1 = self.DielSplups["lvl1"][isplups]-1
-                    l2 = self.DielSplups["lvl2"][isplups]-1
-                     #
-#                        print ' l1, l2, dielexRate = ', l1, l2, dielexRate[isplups]
-                    popmat[l2+ci,l1+ci] += self.EDensity*dielexRate[isplups]
-                    popmat[l1+ci,l1+ci] -= self.EDensity*dielexRate[isplups]
+#                for isplups in range(0,self.Ndielsplups):
+#                    l1 = self.DielSplups["lvl1"][isplups]-1
+#                    l2 = self.DielSplups["lvl2"][isplups]-1
+#                     #
+##                        print ' l1, l2, dielexRate = ', l1, l2, dielexRate[isplups]
+#                    popmat[l2+ci,l1+ci] += self.EDensity*dielexRate[isplups]
+#                    popmat[l1+ci,l1+ci] -= self.EDensity*dielexRate[isplups]
                     #
-#                    dielTot += self.EDensity*dielexRate[isplups]*branch[isplups]
-#                else:
-#                    dielTot = 0.
+                dielTot += self.EDensity*exRate[isplups]*branch[isplups]
+            else:
+                dielTot = 0.
 
 #                print ' higher, rec , dieltot = ',  self.EDensity*higher.RecombRate['rate'], self.EDensity*reclvlRate['rate'].sum(axis=0),  dielTot
             # normalize to unity

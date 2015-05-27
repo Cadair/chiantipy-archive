@@ -2,21 +2,31 @@
  Welcome to ChiantiPy
 ======================
 
+changes from 0.5.3 to 0.6.0
+===========================
 
-Changes from 0.3.1 to 0.4
-=========================
+This is a major release.
 
-added radLoss class to calculate radiative losses and plot the results.
+First, it is necessary to use ChiantiPy 0.6.0 with the recently released CHIANTI database version 8.
 
-ion.popPlot now plots a histogram of level populations if only a single value of temperature and density are specified.
+There are two new multi-ion classes:  **bunch** and **ipymspectrum**.  **bunch** allows the user to calculate line intensities for a specified set of elements or individual ions as a function of temperature or density.  One advantage of **bunch** is the ability to calculate the intensity ratio of lines of two different ions as a function of temperature or density.
 
-Bug fixes.
+**ipymspectrum** is much like the existing **spectrum** and **mspectrum** classes.  **mspectrum** allows the use of the Python **multiprocessing** module to speed up spectral calculations.  The **ipymspectrum** class uses the IPython **parallel** module so that multiprocessing spectral calculations can be performed in the IPython QtConsole and Notebook.
+
+A new method **intensityList** has been developed to allow the user to list the most intense lines within a given wavelength range.  This new methods, together with previously existing **intensityRatio** and **intensityRatioSave** are all now inherited by the **ion** classs and the  multi-ion classes.
+
+The **ion** and multi-ion classes now accept the keyword argument **abundanceName** that allow the user to specify the set of elemental abundances rather than just the default abundance file.
+
+Additional we have replaced the FortranFormat module of Scientific Python by Konrad Hinsen with the **fortranformat** module of Brendan Arnold at http://bitbucket.org/brendanarnold/py-fortranformat.  I have slightly modified fortranformat to make it Python 3 compliant.
+
+For the future, I plan to make ChiantiPy compliant with Python 2.7 and the current version of Python 3 (now 3.4), improve the documentation and move the projec to github, in no particular order.
+
 
 
 What is ChiantiPy
 =================
 
-ChiantiPy is the Python interface to the CHIANTI atomic database for astrophysical spectroscopy
+ChiantiPy is the Python interface to the CHIANTI atomic database for astrophysical spectroscopy.  It provides the capability to calculate the emission line and continuum spectrum of an optically thin plasma based on the data in the CHIANTI database.
 
 Detailed information can be found at http://chiantipy.sourceforge.net
 
@@ -32,7 +42,7 @@ Getting started with ChiantiPy
 Prerequisites
 =============
 
-* Python ( latest 2.X version; not compatible with version 3.X )
+* Python ( latest 2.X version; not yet compatible with version 3)
 
 * Numpy
 
@@ -88,3 +98,4 @@ Keeping track of ChiantiPy
 --------------------------
 
 There is a mailing list that you can subscribe to at https://lists.sourceforge.net/lists/listinfo/chiantipy-users.  In order to subscribe it is first necessary to obtain a user account from sourceforge.net.  This is a straightforward process.
+
