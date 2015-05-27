@@ -1,7 +1,7 @@
 include images/*.png
 include chiantirc
 include LICENSE
-include LICENSE.FortranFormat
+include LICENSE.fortranformat
 include RELEASE_NOTES.txt
 include VERSION
 exclude core/PNe.py
