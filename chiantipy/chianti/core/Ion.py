@@ -1112,24 +1112,24 @@ class ion(_ionTrails):
                 de=elvlc[l2idx]-elvlc[l1idx]
 #                de=self.Psplups['de'][isplups]  # these are generally 0.
                 kte = const.boltzmann*temp/(de*const.ryd2erg)
-            elif diel:
-                #
-                l1 = self.DielSplups["lvl1"][isplups]-1
-                l1idx = self.Elvlc['lvl'].index(self.DielSplups['lvl1'][isplups])
-                l2 = self.DielSplups["lvl2"][isplups]-1
-                l2idx = self.Elvlc['lvl'].index(self.DielSplups['lvl12'][isplups])
-                ttype = self.DielSplups["ttype"][isplups]
-                cups = self.DielSplups["cups"][isplups]
-                nspl = self.DielSplups["nspl"][isplups]
-                ttype = self.DielSplups["ttype"][isplups]
-                dx = 1./(float(nspl)-1.)
-                xs=dx*np.arange(nspl)
-#                splups = self.DielSplups["splups"][isplups,0:nspl]
-                splups = self.DielSplups["splups"][isplups]
-                de=self.DielSplups['de'][isplups]
-                kte = const.boltzmann*temp/(de*const.ryd2erg)
+#            elif diel:
+#                #
+#                l1 = self.Scups["lvl1"][isplups]-1
+#                l1idx = self.Elvlc['lvl'].index(self.Scups['lvl1'][isplups])
+#                l2 = self.Scups["lvl2"][isplups]-1
+#                l2idx = self.Elvlc['lvl'].index(self.Scups['lvl2'][isplups])
+#                ttype = self.Scups["ttype"][isplups]
+#                cups = self.Scups["cups"][isplups]
+#                nspl = self.Scups["nspl"][isplups]
+#                ttype = self.Scups["ttype"][isplups]
+#                dx = 1./(float(nspl)-1.)
+#                xs=dx*np.arange(nspl)
+##                splups = self.Scups["splups"][isplups,0:nspl]
+#                splups = self.Scups["splups"][isplups]
+#                de=self.Scups['de'][isplups]
+#                kte = const.boltzmann*temp/(de*const.ryd2erg)
             else:
-                # electron collisional excitation
+                # electron collisional excitation or dielectronic excitation
                 l1=self.Scups["lvl1"][isplups]-1
                 l1idx = self.Elvlc['lvl'].index(self.Scups['lvl1'][isplups])
                 l2=self.Scups["lvl2"][isplups]-1
@@ -1220,8 +1220,8 @@ class ion(_ionTrails):
         #
         if prot == 1:
             self.PUpsilon = {'upsilon':ups, 'temperature':temperature, 'exRate':exRate, 'dexRate':dexRate}
-        elif diel == 1:
-            self.DielUpsilon = {'upsilon':ups, 'temperature':temperature, 'exRate':exRate}
+#        elif diel == 1:
+#            self.DielUpsilon = {'upsilon':ups, 'temperature':temperature, 'exRate':exRate}
         else:
             self.Upsilon = {'upsilon':ups, 'temperature':temperature, 'exRate':exRate, 'dexRate':dexRate, 'de':deAll}
         #
@@ -1716,6 +1716,7 @@ class ion(_ionTrails):
                 nlvlList =[nlvlWgfa]
     #                print 'fileName = ', fileName
                 scupsfile = fileName + '.scups'
+                # read the splups file
                 if os.path.isfile(scupsfile):
                     # happens the case of fe_3 and prob. a few others
                     self.Scups = io.scupsRead('', filename=scupsfile)
@@ -1883,6 +1884,10 @@ class ion(_ionTrails):
         Note:  scipy.ndimage.filters also includes a range of filters.
         '''
 #        aspectrum = np.zeros_like(wavelength)
+        ylabel = r'erg cm$^{-2}$ s$^{-1}$ sr$^{-1} \AA^{-1}$ ($\int\,$ N$_e\,$N$_H\,$d${\it l}$)$^{-1}$'
+        #
+        xlabel = 'Wavelength ('+self.Defaults['wavelength'] +')'
+        #
         nTemp = self.Temperature.size
         nDens = self.EDensity.size
         useFilter = filter[0]
@@ -1925,12 +1930,12 @@ class ion(_ionTrails):
 #                        aspectrum[itemp] += useFilter(wavelength, wvlCalc, factor=useFactor)*self.Intensity['intensity'][itemp, iwvl]
         if type(label) == type(''):
             if hasattr(self, 'Spectrum'):
-                self.Spectrum[label] = {'intensity':aspectrum,  'wvl':wavelength, 'filter':useFilter.__name__, 'filterWidth':useFactor, 'allLines':allLines, 'em':em}
+                self.Spectrum[label] = {'intensity':aspectrum,  'wvl':wavelength, 'filter':useFilter.__name__, 'filterWidth':useFactor, 'allLines':allLines, 'em':em, 'xlabel':xlabel, 'ylabel':ylabel}
             else:
-                self.Spectrum = {label:{'intensity':aspectrum,  'wvl':wavelength, 'filter':useFilter.__name__, 'filterWidth':useFactor, 'allLines':allLines, 'em':em}}
+                self.Spectrum = {label:{'intensity':aspectrum,  'wvl':wavelength, 'filter':useFilter.__name__, 'filterWidth':useFactor, 'allLines':allLines, 'em':em, 'xlabel':xlabel, 'ylabel':ylabel}}
             
         else:
-            self.Spectrum = {'intensity':aspectrum,  'wvl':wavelength, 'filter':useFilter.__name__, 'filterWidth':useFactor, 'allLines':allLines, 'em':em}
+            self.Spectrum = {'intensity':aspectrum,  'wvl':wavelength, 'filter':useFilter.__name__, 'filterWidth':useFactor, 'allLines':allLines, 'em':em, 'xlabel':xlabel, 'ylabel':ylabel}
         #
         # -------------------------------------------------------------------------------------
         #
@@ -3388,13 +3393,14 @@ class ion(_ionTrails):
             self.upsilonDescale(diel=self.Dielectronic)
             ups = self.Upsilon['upsilon']
             exRate = self.Upsilon['exRate']
-            dexRate = self.Upsilon['dexRate']
+            dexRate = self.Upsilon['dexRate']                
         #
         if npsplups:
             self.upsilonDescale(prot=1)
 #            pups = self.PUpsilon['upsilon']
             pexRate = self.PUpsilon['exRate']
             pdexRate = self.PUpsilon['dexRate']
+            
         #
         temp=temperature
         ntemp=temp.size
@@ -3618,7 +3624,7 @@ class ion(_ionTrails):
                         popmat[lvl2+ci, -1] += self.EDensity*self.ReclvlRate['rate'][itrans, itemp]
                         popmat[-1, -1] -= self.EDensity*self.ReclvlRate['rate'][itrans, itemp]
                     #
-                if self.Dielectronic:
+#                if self.Dielectronic:
 #                    branch = np.zeros(self.Ndielsplups, 'float64')
 #                    for isplups in range(0,self.Ndielsplups):
 #                        l1 = self.DielSplups["lvl1"][isplups]-1 + nlvls
@@ -3633,12 +3639,12 @@ class ion(_ionTrails):
 #                    #
 #                    dielTot = 0.
 #                        print ' Ndielsplups > 0 '
-                    for isplups in range(0,self.Ndielsplups):
-                        l1 = self.DielSplups["lvl1"][isplups]-1
-                        l2 = self.DielSplups["lvl2"][isplups]-1
-                         #
-                        popmat[l2+ci,l1+ci] += self.EDensity*dielexRate[isplups, itemp]
-                        popmat[l1+ci,l1+ci] -= self.EDensity*dielexRate[isplups, itemp]
+#                    for isplups in range(0,self.Ndielsplups):
+#                        l1 = self.DielSplups["lvl1"][isplups]-1
+#                        l2 = self.DielSplups["lvl2"][isplups]-1
+#                         #
+#                        popmat[l2+ci,l1+ci] += self.EDensity*dielexRate[isplups, itemp]
+#                        popmat[l1+ci,l1+ci] -= self.EDensity*dielexRate[isplups, itemp]
                         #
 #                        dielTot += self.EDensity*dielexRate[isplups, itemp]*branch[isplups]
 #                else:
@@ -3746,7 +3752,7 @@ class ion(_ionTrails):
                         popmat[lvl2+ci, -1] += self.EDensity[idens]*self.ReclvlRate['rate'][itrans]
                         popmat[-1, -1] -= self.EDensity[idens]*self.ReclvlRate['rate'][itrans]
                     #
-                if self.Dielectronic:
+#                if self.Dielectronic:
 #                    branch = np.zeros(self.Ndielsplups, 'float64')
 #                    for isplups in range(0,self.Ndielsplups):
 #                        l1 = self.DielSplups["lvl1"][isplups]-1 + nlvls
@@ -3761,12 +3767,12 @@ class ion(_ionTrails):
 #                    #
 #                    dielTot = 0.
 ##                        print ' Ndielsplups > 0 '
-                    for isplups in range(0,self.Ndielsplups):
-                        l1 = self.DielSplups["lvl1"][isplups]-1
-                        l2 = self.DielSplups["lvl2"][isplups]-1
-                         #
-                        popmat[l2+ci,l1+ci] += self.EDensity[idens]*dielexRate[isplups]
-                        popmat[l1+ci,l1+ci] -= self.EDensity[idens]*dielexRate[isplups]
+#                    for isplups in range(0,self.Ndielsplups):
+#                        l1 = self.DielSplups["lvl1"][isplups]-1
+#                        l2 = self.DielSplups["lvl2"][isplups]-1
+#                         #
+#                        popmat[l2+ci,l1+ci] += self.EDensity[idens]*dielexRate[isplups]
+#                        popmat[l1+ci,l1+ci] -= self.EDensity[idens]*dielexRate[isplups]
                         #
 #                        dielTot += self.EDensity[idens]*dielexRate[isplups]*branch[isplups]
 #                else:
@@ -3880,7 +3886,7 @@ class ion(_ionTrails):
                         popmat[lvl2+ci, -1] += self.EDensity[itemp]*self.ReclvlRate['rate'][itrans, itemp]
                         popmat[-1, -1] -= self.EDensity[itemp]*self.ReclvlRate['rate'][itrans, itemp]
                 # normalize to unity
-                if self.Dielectronic:
+#                if self.Dielectronic:
 #                    branch = np.zeros(self.Ndielsplups, 'float64')
 #                    for isplups in range(0,self.Ndielsplups):
 #                        l1 = self.DielSplups["lvl1"][isplups]-1 + nlvls
@@ -3894,12 +3900,12 @@ class ion(_ionTrails):
 #                        self.DielUpsilon['branch'] =  branch
 #                    #
 #                    dielTot = 0.
-                    for isplups in range(0,self.Ndielsplups):
-                        l1 = self.DielSplups["lvl1"][isplups]-1
-                        l2 = self.DielSplups["lvl2"][isplups]-1
-                         #
-                        popmat[l2+ci,l1+ci] += self.EDensity[itemp]*dielexRate[isplups, itemp]
-                        popmat[l1+ci,l1+ci] -= self.EDensity[itemp]*dielexRate[isplups, itemp]
+#                    for isplups in range(0,self.Ndielsplups):
+#                        l1 = self.DielSplups["lvl1"][isplups]-1
+#                        l2 = self.DielSplups["lvl2"][isplups]-1
+#                         #
+#                        popmat[l2+ci,l1+ci] += self.EDensity[itemp]*dielexRate[isplups, itemp]
+#                        popmat[l1+ci,l1+ci] -= self.EDensity[itemp]*dielexRate[isplups, itemp]
                         #
 #                        dielTot += self.EDensity[itemp]*dielexRate[isplups, itemp]*branch[isplups]
 #                else:
@@ -4832,6 +4838,8 @@ class ion(_ionTrails):
             em = np.ones(self.NTempDen, 'float64')
         elif type(em) == float and em > 0.:
             em = np.ones(self.NTempDen, 'float64')*em        
+        elif type(em) == list or type(em) == tuple:
+            em = np.asarray(em, 'float64')
         self.Em = em
         # so we know that it has been applied
         #
