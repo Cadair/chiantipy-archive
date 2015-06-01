@@ -100,6 +100,8 @@ class ipymspectrum(_ionTrails, _specTrails):
             em = np.ones(self.NTempDen, 'float64')
         elif type(em) == float and em > 0.:
             em = np.ones(self.NTempDen, 'float64')*em        
+        elif type(em) == list or type(em) == tuple:
+            em = np.asarray(em, 'float64')
         self.Em = em
         #
         self.AllLines = allLines

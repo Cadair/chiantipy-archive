@@ -1,13 +1,17 @@
-'''A set of physical constants.
+'''
+A set of physical constants.
 
 Copyright 2009, 2010 Kenneth P. Dere
+
+unit system is cgs (mostly)
 
 This software is distributed under the terms of the GNU General Public License
 that is found in the LICENSE file
 
 
 Most are from http://physics.nist.gov/cuu - the NIST Reference on
-Constants, Units and Uncertainty'''
+Constants, Units and Uncertainty
+'''
 
 import numpy as np
 planck = 6.6260693e-27   #erg s
