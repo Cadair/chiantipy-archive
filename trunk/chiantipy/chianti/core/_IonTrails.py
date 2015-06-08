@@ -705,11 +705,13 @@ class _ionTrails():
         # -------------------------------------------------------------------------------------
         #
     def intensityRatioSave(self,outFile=0):
-        '''Save the intensity ratio to a file.
+        '''
+        Save the intensity ratio to a file.
 
         The intensity ratio as a function to temperature and eDensity is saved to an asciii file.
 
-        Descriptive information is included at the top of the file.'''
+        Descriptive information is included at the top of the file.
+        '''
         if not outFile:
             outFile = self.IntensityRatio['filename']
 #            if chInteractive:
@@ -725,7 +727,7 @@ class _ionTrails():
             #
             out.write(outFile+'\n')    #1
             out.write(self.IntensityRatio['desc']+'\n') #2
-            out.write(' created with ChiantiPy version '+ chdata.ChiantiVersion +'\n')   #3
+            out.write(' created with ChiantiPy using CHIANTI version '+ chdata.ChiantiVersion +'\n')   #3
             out.write(' columns are temperature, eDensity, ratio'+'\n')  #5
             tunit = 'K'
             out.write(' temperature in '+tunit+', electron eDensity in cm^(-3)'+'\n')  #6
