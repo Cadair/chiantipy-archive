@@ -3234,7 +3234,7 @@ class ion(_ionTrails):
         nscups=self.Nscups
         npsplups=self.Npsplups
         #
-        if kwargs.has_key('temperature'):
+        if 'temperature' in kwargs.keys():
             self.Temperature = np.asarray(kwargs['temperature'])
             temperature = self.Temperature
         elif hasattr(self, 'Temperature'):
@@ -3243,7 +3243,7 @@ class ion(_ionTrails):
                 print(' no temperature values have been set')
                 return
         #
-        if kwargs.has_key('eDensity'):
+        if 'eDensity' in kwargs.keys():
             self.EDensity = np.asarray(kwargs['eDensity'])
             eDensity = self.EDensity
         elif hasattr(self, 'EDensity'):
@@ -3252,7 +3252,7 @@ class ion(_ionTrails):
             print(' no eDensity values have been set')
             return
         #
-        if kwargs.has_key('pDensity'):
+        if 'pDensity' in kwargs.keys():
             if kwargs['pDensity'] == 'default':
                 self.p2eRatio()
                 protonDensity = self.ProtonDensityRatio*self.EDensity
@@ -4185,9 +4185,9 @@ class ion(_ionTrails):
         l1 = np.asarray(self.Wgfa['lvl1'], 'int64')
         l2 = np.asarray(self.Wgfa["lvl2"], 'int64')
         avalue = np.asarray(self.Wgfa["avalue"], 'float64')
-        if self.Wgfa.has_key('pretty1'):
+        if 'pretty1' in self.Wgfa.keys():
             pretty1 = np.asarray(self.Wgfa['pretty1'])
-        if self.Wgfa.has_key('pretty2'):
+        if 'pretty2' in self.Wgfa.keys():
             pretty2 = np.asarray(self.Wgfa['pretty2'])
         #
         # make sure there are lines in the wavelength range, if specified
@@ -4199,9 +4199,9 @@ class ion(_ionTrails):
             wvl = wvl[realgood]
             avalue = avalue[realgood]
             obs = obs[realgood]
-            if self.Wgfa.has_key('pretty1'):
+            if 'pretty1' in self.Wgfa.keys():
                 pretty1 = pretty1[realgood]
-            if self.Wgfa.has_key('pretty2'):
+            if 'pretty2' in self.Wgfa.keys():
                 pretty2 = pretty2[realgood]
         #
         # two-photon decays have wvl=0 and nonzero avalues

@@ -7,7 +7,7 @@ changes from 0.5.3 to 0.6.0
 
 This is a major release.
 
-First, it is necessary to use ChiantiPy 0.6.0 with the recently released CHIANTI database version 8.
+First, ChiantiPy 0.6.0 is compatible with the most recently released CHIANTI database version 8.0.
 
 There are two new multi-ion classes:  **bunch** and **ipymspectrum**.  **bunch** allows the user to calculate line intensities for a specified set of elements or individual ions as a function of temperature or density.  One advantage of **bunch** is the ability to calculate the intensity ratio of lines of two different ions as a function of temperature or density.
 
@@ -19,7 +19,11 @@ The **ion** and multi-ion classes now accept the keyword argument **abundanceNam
 
 Additional we have replaced the FortranFormat module of Scientific Python by Konrad Hinsen with the **fortranformat** module of Brendan Arnold at http://bitbucket.org/brendanarnold/py-fortranformat.  I have slightly modified fortranformat to make it Python 3 compliant.
 
-For the future, I plan to make ChiantiPy compliant with Python 2.7 and the current version of Python 3 (now 3.4), improve the documentation and move the projec to github, in no particular order.
+For the future, I plan to make ChiantiPy compliant with both Python 2.7 and the current version of Python 3 (now 3.4), improve the documentation and move the projec to github, in no particular order.
+
+ChiantiPy is now released under a new license, the OSI approved ISC license.  From Wikipedia_ *The ISC license is a permissive free software license written by the Internet Software Consortium (ISC). It is functionally equivalent to the simplified BSD and MIT/Expat licenses, ...*
+
+.. _Wikipedia: https://en.wikipedia.org/w/index.php?title=ISC_license&oldid=664696993
 
 
 
@@ -77,6 +81,10 @@ Some sites have the CHIANTI database maintained as part of a SolarSoft distribut
 Installing the ChiantiPy package
 --------------------------------
 
+Fairly detailed directions can be found on the web page ChiantiPy_
+
+.. _ChiantiPy:  http://chiantipy.sourceforge.net/
+
 The ChiantiPy package can be downloaded from the ChiantiPy, untar it, cd to the directory where it was unpacked, and then, as root
 
 > python setup.py install
@@ -91,7 +99,7 @@ The documentation can be found on its web page ChiantiPy_
 
 .. _ChiantiPy:  http://chiantipy.sourceforge.net/
 
-In particular, a quick start guide is included which should get you up and running fairly quickly.
+In particular, a quick start guide is included which should get you up and running fairly quickly.  This has been recently updated to reflect the new features in v0.6.0.
 
 
 Keeping track of ChiantiPy

@@ -1009,17 +1009,18 @@ def masterListInfo(force=0, verbose=0):
     returned for each ion
     wmin, wmax :  the minimum and maximum wavelengths in the wgfa file
     tmin, tmax :  the minimum and maximum temperatures for which the ionization balance is nonzero
+    for pickle compatibility between Python 2 and 3, have used floats
     """
     dir=os.environ["XUVTOP"]
     infoPath = os.path.join(dir, 'masterlist')
     infoName=os.path.join(dir,'masterlist','masterlist_ions.pkl')
-    masterName=os.path.join(dir,'masterlist','masterlist.ions')
+    #masterName=os.path.join(dir,'masterlist','masterlist.ions')
     #
     makeNew = force == 1 or not os.path.isfile(infoName)
 #    if os.path.isfile(infoName):
     if not makeNew:
 #       print ' file exists - ',  infoName
-        pfile = open(infoName, 'r')
+        pfile = open(infoName, 'rb')
         masterListInfo = pickle.load(pfile)
         pfile.close
     elif os.access(infoPath, os.W_OK):
@@ -1048,10 +1049,10 @@ def masterListInfo(force=0, verbose=0):
             thisIoneq = ioneq['ioneqAll'][z- 1, stage - 1 + dielectronic]
             good = thisIoneq > 0.
             goodTemp = ioneq['ioneqTemperature'][good]
-            tmin = goodTemp.min()
-            tmax = goodTemp.max()
+            tmin = float(goodTemp.min())
+            tmax = float(goodTemp.max())
             vgood = thisIoneq == thisIoneq.max()
-            vgoodTemp = ioneq['ioneqTemperature'][vgood][0]
+            vgoodTemp = float(ioneq['ioneqTemperature'][vgood][0])
             wgfa = wgfaRead(one)
             nZeros = wgfa['wvl'].count(0.)
             # two-photon transitions are denoted by a wavelength of zero (0.)
@@ -1060,8 +1061,8 @@ def masterListInfo(force=0, verbose=0):
                 nZeros = wgfa['wvl'].count(0.)
             # unobserved lines are denoted with a negative wavelength
             wvl = np.abs(np.asarray(wgfa['wvl'], 'float64'))
-            wmin = wvl.min()
-            wmax = wvl.max()
+            wmin = float(wvl.min())
+            wmax = float(wvl.max())
             masterListInfo[one] = {'wmin':wmin, 'wmax':wmax, 'tmin':tmin, 'tmax':tmax, 'tIoneqMax':vgoodTemp}
         masterListInfo['haveZ'] = haveZ
         masterListInfo['haveStage'] = haveStage
@@ -1073,12 +1074,12 @@ def masterListInfo(force=0, verbose=0):
             thisIoneq = ioneq['ioneqAll'][iz-1, iz]
             good = thisIoneq > 0.
             goodTemp = ioneq['ioneqTemperature'][good]
-            tmin = goodTemp.min()
-            tmax = goodTemp.max()
+            tmin = float(goodTemp.min())
+            tmax = float(goodTemp.max())
             wmin=0.
             wmax = 1.e+30
             masterListInfo[ions] = {'wmin':wmin, 'wmax':wmax, 'tmin':tmin, 'tmax':tmax}
-        pfile = open(infoName, 'w')
+        pfile = open(infoName, 'wb')
         pickle.dump(masterListInfo, pfile)
         pfile.close
     else:
@@ -1100,7 +1101,7 @@ def masterListInfo(force=0, verbose=0):
             wmin=0.
             wmax = 1.e+30
             masterListInfo[ions] = {'wmin':wmin, 'wmax':wmax, 'tmin':1.e+4, 'tmax':1.e+9}
-        pfile = open(infoName, 'w')
+        pfile = open(infoName, 'wb')
         pickle.dump(masterListInfo, pfile)
         pfile.close
         masterListInfo = {'noInfo':'none'}
@@ -1229,6 +1230,8 @@ def scupsRead(ions, filename=0, verbose=0):
     #status = 1
     #
     if os.path.isfile(scupsFileName):
+        if verbose:
+            print(' scupsFileName = %s'%(scupsFileName))
         inpt = open(scupsFileName)
         lines = inpt.readlines()
         inpt.close()
@@ -1246,7 +1249,7 @@ def scupsRead(ions, filename=0, verbose=0):
         else:
             counter += 1
     ntrans = (counter)/3
-    #print(' counter %i4 ntrans %i4'%(counter, ntrans))
+    #print(' counter %10i ntrans %10i'%(counter, ntrans))
     lvl1 = []
     lvl2 = []
     de = []
@@ -1258,7 +1261,9 @@ def scupsRead(ions, filename=0, verbose=0):
     btemp = []
     bscups = []
     counter = 0
-    for itrans in range(ntrans):
+    #print(' counter %10i ntrans %10i'%(counter, ntrans))
+    # the int seems to be needed for Python3
+    for itrans in range(int(ntrans)):
         if verbose:
             print((lines[counter]))
             print((lines[counter+1]))
