@@ -591,7 +591,7 @@ class _ionTrails():
                 ymax = np.max(intensity[:, tline]/maxAll)
             skip=2
             start=divmod(iline,nxvalues)[1]
-            for ixvalue in range(start,nxvalues,nxvalues/skip):
+            for ixvalue in range(start,nxvalues,nxvalues//skip):
                 if ionNum == 1:
                     text = '%10.4f'%(wvl[tline])
                 else:

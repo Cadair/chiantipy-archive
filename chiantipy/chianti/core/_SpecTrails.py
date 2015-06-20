@@ -52,7 +52,7 @@ class _specTrails():
             self.Wavelength = wavelength
             nWvl = len(wavelength)
         lineSpectrum = np.zeros((self.NTempDen, nWvl), 'float64').squeeze()
-        for akey in self.IonInstances.iterkeys():
+        for akey in sorted(self.IonInstances.keys()):
             if verbose:
                 print( ' trying ion = %s'%(akey))
 #            thisIon = self.IonInstances[akey]
