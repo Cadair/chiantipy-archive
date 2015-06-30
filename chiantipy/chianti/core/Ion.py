@@ -842,10 +842,10 @@ class ion(_ionTrails):
         the ion of interest
         rates are determined from autoionizing A-values
         the dictionary self.DrRateLvl contains
-            rate = the dielectronic rate into an autoionizing level
-            effRate = the dielectronic rate into an autoionizing level mutilplied by the branching
-                ratio for a stabilizing transition
-            totalRate = the sum of all the effRates
+        rate = the dielectronic rate into an autoionizing level
+        effRate = the dielectronic rate into an autoionizing level mutilplied by the branching
+        ratio for a stabilizing transition
+        totalRate = the sum of all the effRates
         '''
         if not hasattr(self, 'Higher'):
             nameStuff = util.convertName(self.IonStr)

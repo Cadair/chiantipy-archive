@@ -25,7 +25,7 @@ class _specTrails():
         '''
         the first application of spectrum calculates the line intensities within the specified wavelength range and for set of ions specified
         
-        wavelength is will not be used if applied to 'spectrum' objects
+        wavelength will not be used if applied to 'spectrum' objects
         
         wavelength IS need for 'bunch' objects - in this case, the wavelength should not extend beyond the limits of the
         wvlRange used for the 'bunch' calculation
