@@ -2103,15 +2103,15 @@ class ion(_ionTrails):
         if self.Nsplups:
             self.upsilonDescaleSplups(diel=self.Dielectronic)
             if self.Dielectronic:
-                ups = self.DielUpsilon['upsilon']
+                #ups = self.DielUpsilon['upsilon']
                 exRate = self.DielUpsilon['exRate']
             else:
-                ups = self.Upsilon['upsilon']
+                #ups = self.Upsilon['upsilon']
                 exRate = self.Upsilon['exRate']
                 dexRate = self.Upsilon['dexRate']
         #
         if npsplups:
-            self.upsilonDescale(prot=1)
+            self.upsilonDescaleSplups(prot=1)
 #            pups = self.PUpsilon['upsilon']
             pexRate = self.PUpsilon['exRate']
             pdexRate = self.PUpsilon['dexRate']
@@ -2787,7 +2787,7 @@ class ion(_ionTrails):
             dexRate = self.Upsilon['dexRate']
         #
         if self.Npsplups:
-            self.upsilonDescale(prot=1)
+            self.upsilonDescaleSplups(prot=1)
 #            pups = self.PUpsilon['upsilon']
             pexRate = self.PUpsilon['exRate']
             pdexRate = self.PUpsilon['dexRate']
@@ -3396,7 +3396,7 @@ class ion(_ionTrails):
             dexRate = self.Upsilon['dexRate']                
         #
         if npsplups:
-            self.upsilonDescale(prot=1)
+            self.upsilonDescaleSplups(prot=1)
 #            pups = self.PUpsilon['upsilon']
             pexRate = self.PUpsilon['exRate']
             pdexRate = self.PUpsilon['dexRate']
