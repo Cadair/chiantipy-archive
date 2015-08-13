@@ -5,7 +5,7 @@ Copyright 2009, 2010 Kenneth P. Dere
 
 unit system is cgs (mostly)
 
-This software is distributed under the terms of the GNU General Public License
+This software is distributed under the terms of the the OSI approved ISC license
 that is found in the LICENSE file
 
 
