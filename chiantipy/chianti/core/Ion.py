@@ -5327,7 +5327,7 @@ class ion(_ionTrails):
             if self.Z == self.Ion:
                 # H seq
                 l1 = 1-1
-                l2 = heseqLvl2[self.Z] -1
+                l2= 2 - 1
                 wvl0 = 1.e+8/(self.Elvlc['ecm'][l2] - self.Elvlc['ecm'][l1])
                 goodWvl = wvl > wvl0
                 y = wvl0/wvl[goodWvl]
@@ -5349,7 +5349,7 @@ class ion(_ionTrails):
             else:
                 # He seq
                 l1 = 1-1
-                l2 = heseqLvl2[self.Z] -1
+                l2 = heseqLvl2[self.Z -1] -1
                 wvl0 = 1.e+8/(self.Elvlc['ecm'][l2] - self.Elvlc['ecm'][l1])
                 goodWvl = wvl > wvl0
                 y = wvl0/wvl[goodWvl]
@@ -5446,7 +5446,7 @@ class ion(_ionTrails):
             else:
                 # He seq
                 l1 = 1-1
-                l2 = heseqLvl2[self.Z] -1
+                l2 = heseqLvl2[self.Z -1] -1
                 wvl0 = 1.e+8/(self.Elvlc['ecm'][l2] - self.Elvlc['ecm'][l1])
                 goodWvl = wvl > wvl0
                 if goodWvl.sum() > 0:
@@ -5523,7 +5523,7 @@ class ion(_ionTrails):
             else:
                 # He seq
                 l1 = 1 - 1
-                l2 = heseqLvl2[self.Z] - 1
+                l2 = heseqLvl2[self.Z -1] -1
                 wvl0 = 1.e+8/(self.Elvlc['ecm'][l2] - self.Elvlc['ecm'][l1])
                 dist = io.twophotonHeRead()
                 avalue = dist['avalue'][self.Z-1]
