@@ -63,7 +63,7 @@ class spectrum(_ionTrails, _specTrails):
     em [for emission measure], can be a float or an array of the same length as the
     temperature/density
     '''
-    def __init__(self, temperature, eDensity, wavelength, filter=(chfilters.gaussianR, 1000.), label=0, elementList = 0, ionList = 0, minAbund=0., doContinuum=1, em=0, keepIons=0,  abundanceName=0, verbose=0, allLines=1):
+    def __init__(self, temperature, eDensity, wavelength, filter=(chfilters.gaussianR, 1000.), label=0, elementList = 0, ionList = 0, minAbund=0, doContinuum=1, em=0, keepIons=0,  abundanceName=0, verbose=0, allLines=1):
         #
         t1 = datetime.now()
         # creates Intensity dict from first ion calculated
@@ -134,7 +134,9 @@ class spectrum(_ionTrails, _specTrails):
         if minAbund:
             if minAbund < minAbundAll:
                 minAbund = minAbundAll
-        self.minAbund = minAbund
+        else:
+            minAbund = minAbundAll
+        self.MinAbund = minAbund
 #        ionInfo = chio.masterListInfo()
         wavelength = np.asarray(wavelength)
         nWvl = wavelength.size
@@ -166,13 +168,13 @@ class spectrum(_ionTrails, _specTrails):
             if 'ff' in self.Todo[akey]:
                 if verbose:
                     print(' calculating ff continuum for :  %s'%(akey))
-                cont = chianti.core.continuum(akey, temperature, abundanceName=self.AbundanceName)
+                cont = chianti.core.continuum(akey, temperature, abundanceName=self.AbundanceName, em=em)
                 cont.freeFree(wavelength)
-                if nTempDen == 1:
-                    freeFree += cont.FreeFree['rate']*em[0]
-                else:
-                    for iTempDen in range(nTempDen):
-                        freeFree[iTempDen] += cont.FreeFree['rate'][iTempDen]*em[iTempDen]
+#                if nTempDen == 1:
+#                    freeFree += cont.FreeFree['rate']*em[0]
+#                else:
+#                    for iTempDen in range(nTempDen):
+#                        freeFree[iTempDen] += cont.FreeFree['rate'][iTempDen]*em[iTempDen]
 #                freeFree += cont.FreeFree['rate']
             if 'fb' in self.Todo[akey]:
                 if verbose:
@@ -185,13 +187,13 @@ class spectrum(_ionTrails, _specTrails):
                 except:
                     cont = chianti.core.continuum(akey, temperature, abundanceName=self.AbundanceName)
                     cont.freeBound(wavelength)
-                if 'errorMessage' not in list(cont.FreeBound.keys()):
-                    #  an fblvl file exists for this ions
-                    if nTempDen == 1:
-                        freeBound += cont.FreeBound['rate']*em[0]
-                    else:
-                        for iTempDen in range(nTempDen):
-                            freeBound[iTempDen] += cont.FreeBound['rate'][iTempDen]*em[iTempDen]
+#                if 'errorMessage' not in list(cont.FreeBound.keys()):
+#                    #  an fblvl file exists for this ions
+#                    if nTempDen == 1:
+#                        freeBound += cont.FreeBound['rate']*em[0]
+#                    else:
+#                        for iTempDen in range(nTempDen):
+#                            freeBound[iTempDen] += cont.FreeBound['rate'][iTempDen]*em[iTempDen]
 #                        freeBound += cont.FreeBound['rate']
             if 'line' in self.Todo[akey]:
                 if verbose:

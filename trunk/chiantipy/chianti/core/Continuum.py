@@ -18,13 +18,21 @@ class continuum:
 
     can specify the abundance file with abund='cosmic_1973_allen', for example (the .ioneq suffix should not be included
     '''
-    def __init__(self, ionStr,  temperature,  density=0, abundance=0, abundanceName=0, em=1):
+    def __init__(self, ionStr,  temperature,  density=0, abundance=0, abundanceName=0, em=0, verbose=0):
         nameDict = util.convertName(ionStr)
         self.Z = nameDict['Z']
         self.Ion = nameDict['Ion']
         self.IonStr = ionStr
         self.Dielectronic = 0
         self.Defaults = chdata.Defaults
+        #
+        self.Temperature = np.array(temperature,'float64')
+        #
+        if type(density) != int:
+#            if type(density) == float:
+#                self.Density = density
+#            elif density.all():
+            self.Density = np.asarray(density,'float64')
         #
         if abundance:
             self.Abundance = abundance
@@ -52,20 +60,26 @@ class continuum:
         self.IoneqName = self.Defaults['ioneqfile']
         #
         #  ip in eV, reading Ip of next lower level, needed for freeBound
-
+        #
+        if type(em) == int and em == 0:
+            if hasattr(self, 'Em'):
+                em = self.Em
+            else:
+                em = np.ones_like(self.Temperature, 'float64')
+                self.Em = em
+        elif type(em) == float and em > 0.:
+            em = np.ones_like(self.Temperature, 'float64')*em        
+            self.Em = em
+        elif type(em) == list or type(em) == tuple or type(em) == np.ndarray:
+            em = np.asarray(em, 'float64')
+            self.Em = em
+        # so we know that it has been applied
+        #
         if self.Ion > 1:
             self.Ip = ip[self.Z-1, self.Ion-2]
         else:
             print(' in continuum, trying to use the neutral ion')
             return
-        #
-        self.Temperature = np.array(temperature,'float64')
-        #
-        if type(density) != int:
-#            if type(density) == float:
-#                self.Density = density
-#            elif density.all():
-            self.Density = np.asarray(density,'float64')
         #
         #----------------------------------------------------------------------------------------
         #
@@ -272,7 +286,7 @@ class continuum:
             #
             # ----------------------------------------------------------------------------
             #
-    def freeBound(self, wvl, verner=1):
+    def freeBound(self, wvl, verner=1, verbose=0, em=0):
         '''
         to calculate the free-bound (radiative recombination) continuum rate coefficient of an ion, where
         the ion is taken to be the recombined ion,
@@ -289,7 +303,8 @@ class continuum:
         if self.Ion > 1 :
             self.Ip=ip[self.Z-1, self.Ion-2]
         else:
-            print(' in freeBound, trying to use the neutral ion as the recombining ion')
+            if verbose:
+                print(' in freeBound, trying to use the neutral ion as the recombining ion')
             self.FreeBound={'errorMessage':' in freeBound, trying to use the neutral ion as the recombining ion'}
             return
         try:
@@ -297,6 +312,21 @@ class continuum:
         except:
             print(' temperature undefined')
             return
+        #
+        if type(em) == int and em == 0:
+            if hasattr(self, 'Em'):
+                em = self.Em
+            else:
+                em = np.ones(self.NTempDen, 'float64')
+                self.Em = em
+        elif type(em) == float and em > 0.:
+            em = np.ones(self.NTempDen, 'float64')*em        
+            self.Em = em
+        elif type(em) == list or type(em) == tuple or type(em) == np.ndarray:
+            em = np.asarray(em, 'float64')
+            self.Em = em
+        # so we know that it has been applied
+        #
         # the recombined ion contains that data for fblvl
         if hasattr(self, 'Fblvl'):
             fblvl = self.Fblvl
@@ -307,8 +337,10 @@ class continuum:
             fblvl = self.Fblvl
             # in case there is no fblvl file
             if 'errorMessage' in sorted(fblvl.keys()):
-                print(' filename = %s'%(fblvlname))
-                print(' for ion %s fblvl file message %s'%(ionS, fblvl['errorMessage']))
+                if verbose:
+                    print(' filename = %s'%(fblvlname))
+                    print(' for ion %s fblvl file message %s'%(ionS, fblvl['errorMessage']))
+                self.FreeBound = {'errorMessage':' fblvl file not present'}
                 return
         #  need data for the current/recombining ion
         if hasattr(self, 'rFblvl'):
@@ -316,15 +348,17 @@ class continuum:
         else:
             if self.Ion == self.Z + 1:
                 # this is a bare ion
-                print(' recombining ion is bare')
+                if verbose:
+                    print(' recombining ion is bare')
                 rFblvl = {'mult':[1., 1.]}
             else:
                 rfblvlname = util.zion2filename(self.Z,self.Ion)+'.fblvl'
                 self.RFblvl = io.fblvlRead(rfblvlname)
                 rFblvl = self.RFblvl
                 if 'errorMessage' in sorted(rFblvl.keys()):
-                    print(' filename = %s'%(rfblvlname))
-                    print(' for ion %s rfblvl file message %s'%(self.IonStr, rFblvl['errorMessage']))
+                    if verbose:
+                        print(' filename = %s'%(rfblvlname))
+                        print(' for ion %s rfblvl file message %s'%(self.IonStr, rFblvl['errorMessage']))
                     self.FreeBound = {'errorMessage':' rfblvl file does not exist'}
                     return
         if hasattr(self, 'IoneqOne'):
@@ -400,7 +434,7 @@ class continuum:
                 for itemp in range(nTemp):
                     mask[0,itemp] = 1.e+8/wvl < (ipcm - ecm[0])
                     expf[0,itemp] = np.exp((ipLvlErg - 1.e+8*const.planck*const.light/wvl)/(const.boltzmann*temperature[itemp]))
-                    fbrate[0,itemp] = (const.planck*const.light/(1.e-8*wvl))**5*const.verner*gIoneq[itemp]*ratg[0]*expf[0,itemp]*vCross/temperature[itemp]**1.5
+                    fbrate[0,itemp] = em[itemp]*(const.planck*const.light/(1.e-8*wvl))**5*const.verner*gIoneq[itemp]*ratg[0]*expf[0,itemp]*vCross/temperature[itemp]**1.5
             for ilvl in range(lvl1,nlvls):
                 ipLvlEv = self.Ip - const.invCm2Ev*ecm[ilvl]
                 ipLvlErg = const.ev2Erg*ipLvlEv
@@ -416,13 +450,13 @@ class continuum:
                     ipLvlErg = const.ev2Erg*ipLvlEv
                     expf[ilvl,itemp] = np.exp((ipLvlErg - 1.e+8*const.planck*const.light/wvl)/(const.boltzmann*temperature[itemp]))
                     mask[ilvl,itemp] = 1.e+8/wvl < (ipcm - ecm[ilvl])
-                    fbrate[ilvl,itemp] = const.freeBound*gIoneq[itemp]*ratg[ilvl]*(ipLvlErg**2/float(pqn[ilvl]))*gf*expf[ilvl,itemp]/(temperature[itemp]**1.5*(wvl)**2)
+                    fbrate[ilvl,itemp] = em[itemp]*const.freeBound*gIoneq[itemp]*ratg[ilvl]*(ipLvlErg**2/float(pqn[ilvl]))*gf*expf[ilvl,itemp]/(temperature[itemp]**1.5*(wvl)**2)
             fbrma = np.ma.array(fbrate)
             fbrma.mask =  mask
             fbrma.fill_value = 0.
             fbRate = (fbrma).sum(axis=0)
             fbRate.fill_value = 0.
-            self.FreeBound = {'rate':abund*fbRate.data, 'temperature':temperature,'wvl':wvl}
+            self.FreeBound = {'rate':abund*fbRate.data, 'temperature':temperature,'wvl':wvl, 'em':em}
             #
         elif (nTemp == 1) and (nWvl > 1):
             mask = np.zeros((nlvls,nWvl),'Bool')
@@ -440,7 +474,7 @@ class continuum:
 #               ipLvlErg = iperg - eerg[0]
 #               print ' verner ipLvlErg = ', ipLvlErg,  ipLvlErg/(const.boltzmann*temperature)
                 expf[0] = np.exp((ipLvlErg - 1.e+8*const.planck*const.light/wvl)/(const.boltzmann*temperature))
-                fbrate[0] = (const.planck*const.light/(1.e-8*wvl))**5*const.verner*ratg[0]*expf[0]*vCross/temperature**1.5
+                fbrate[0] = em*(const.planck*const.light/(1.e-8*wvl))**5*const.verner*ratg[0]*expf[0]*vCross/temperature**1.5
             #
             for ilvl in range(lvl1,nlvls):
             # scaled energy is relative to the ionization potential of each individual level
@@ -455,7 +489,7 @@ class continuum:
 #               ipLvlErg = iperg - eerg[ilvl]
 #               print ' ilvl epLvlErg = ', ipLvlErg,  ipLvlErg/(const.boltzmann*temperature)
                 expf[ilvl] = np.exp((ipLvlErg - 1.e+8*const.planck*const.light/wvl)/(const.boltzmann*temperature))
-                fbrate[ilvl] = const.freeBound*ratg[ilvl]*(ipLvlErg**2/float(pqn[ilvl]))*expf[ilvl]*gf/(temperature**1.5*(wvl)**2)
+                fbrate[ilvl] = em*const.freeBound*ratg[ilvl]*(ipLvlErg**2/float(pqn[ilvl]))*expf[ilvl]*gf/(temperature**1.5*(wvl)**2)
 #               fbrate[ilvl] = const.freeBound*ratg[ilvl]*(eerg[ilvl]**2/float(pqn[ilvl]))*expf[ilvl]*gf/(temperature**1.5*(wvl)**2)
             fbrma = np.ma.array(fbrate)
             fbrma.mask =  mask
@@ -478,7 +512,7 @@ class continuum:
             ipLvlEv = self.Ip - const.invCm2Ev*ecm[0]
             ipLvlErg = const.ev2Erg*ipLvlEv
             expf[0] = np.exp((ipLvlErg - 1.e+8*const.planck*const.light/wvl)/(const.boltzmann*temperature))
-            fbrate[0] = (const.planck*const.light/(1.e-8*wvl))**5*const.verner*ratg[0]*expf[0]*vCross/temperature**1.5
+            fbrate[0] = em*(const.planck*const.light/(1.e-8*wvl))**5*const.verner*ratg[0]*expf[0]*vCross/temperature**1.5
             for ilvl in range(lvl1,nlvls):
                 # scaled energy is relative to the ionization potential of each individual level
                 ipLvlEv = self.Ip - const.invCm2Ev*ecm[ilvl]
@@ -490,19 +524,19 @@ class continuum:
                 ratg[ilvl] = float(mult[ilvl])/float(multr[0]) # ratio of statistical weights
                 ipLvlErg = const.ev2Erg*ipLvlEv
                 expf[ilvl] = np.exp((ipLvlErg - 1.e+8*const.planck*const.light/wvl)/(const.boltzmann*temperature))
-                fbrate[ilvl] = const.freeBound*ratg[ilvl]*(ipLvlErg**2/float(pqn[ilvl]))*expf[ilvl]*gf/(temperature**1.5*(wvl)**2)
+                fbrate[ilvl] = em*const.freeBound*ratg[ilvl]*(ipLvlErg**2/float(pqn[ilvl]))*expf[ilvl]*gf/(temperature**1.5*(wvl)**2)
             fbrma = np.ma.array(fbrate)
             fbrma.mask =  mask
             fbrma.fill_value = 0.
             # factor of 1.e-8 converts to Angstrom^-1, otherwise it would be cm^-1
             fbRate = self.Abundance*gIoneq*(fbrma).sum(axis=0)
             fbRate.fill_value = 0.
-            self.FreeBound = {'rate':fbRate.data, 'temperature':temperature,'wvl':wvl}
+            self.FreeBound = {'rate':fbRate.data, 'temperature':temperature,'wvl':wvl, 'em':em}
         #
         # ----------------------------------------------------------------------------------------
         #
         #
-    def freeBoundLoss(self):
+    def freeBoundLoss(self, em=0):
         '''
         to calculate the free-bound (radiative recombination) energy loss rate coefficient of an ion,
         the ion is taken to be the recombined iion,
@@ -515,6 +549,21 @@ class continuum:
         else:
             print(' temperature undefined')
             return
+        #
+        #
+        if type(em) == int and em == 0:
+            if hasattr(self, 'Em'):
+                em = self.Em
+            else:
+                em = np.ones(self.NTempDen, 'float64')
+                self.Em = em
+        elif type(em) == float and em > 0.:
+            em = np.ones(self.NTempDen, 'float64')*em        
+            self.Em = em
+        elif type(em) == list or type(em) == tuple or type(em) == np.ndarray:
+            em = np.asarray(em, 'float64')
+            self.Em = em
+        # so we know that it has been applied
         #
         if self.Ion > 1:
             self.Ip=ip[self.Z-1, self.Ion-2]
@@ -647,13 +696,28 @@ class continuum:
         #
         # ----------------------------------------------------------------------------------------
         #
-    def freeFree(self, wvl):
+    def freeFree(self, wvl, em=0):
         '''
         Calculates the free-free emission for a single ion.
 
         Includes elemental abundance and ionization equilibrium population.
         Uses Itoh where valid and Sutherland elsewhere
         '''
+        #
+        if type(em) == int and em == 0:
+            if hasattr(self, 'Em'):
+                em = self.Em
+            else:
+                em = np.ones(self.NTempDen, 'float64')
+                self.Em = em
+        elif type(em) == float and em > 0.:
+            em = np.ones(self.NTempDen, 'float64')*em        
+            self.Em = em
+        elif type(em) == list or type(em) == tuple or type(em) == np.ndarray:
+            em = np.asarray(em, 'float64')
+            self.Em = em
+        # so we know that it has been applied
+        #
         if self.Ion == 1:
             self.FreeFree = {'errorMessage':' freefree is not produced by neutrals'}
         else:
@@ -695,8 +759,8 @@ class continuum:
                 #self.Abundance = self.AbundanceAll['abundance'][self.Z-1]
                 #abund = self.Abundance
                 #
-            ffRate = (const.freeFree*(self.Z)**2*self.Abundance*gIoneq*ff).squeeze()
-            self.FreeFree = {'rate':ffRate, 'temperature':self.Temperature,'wvl':wvl}
+            ffRate = (const.freeFree*(self.Z)**2*self.Abundance*gIoneq*ff).squeeze()*em
+            self.FreeFree = {'rate':ffRate, 'temperature':self.Temperature,'wvl':wvl, 'em':em}
         #
         # ----------------------------------------------------------------------------------------
         #
