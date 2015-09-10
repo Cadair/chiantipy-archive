@@ -92,6 +92,7 @@ class ion(_ionTrails):
         #
         if type(temperature) != type(None):
             self.Temperature = np.array(temperature,'float64')
+            self.NTemp = self.Temperature.size
         #
         #
         #
@@ -106,6 +107,7 @@ class ion(_ionTrails):
         #
         if type(eDensity) != type(None):
             self.EDensity = np.asarray(eDensity,'float64')
+            self.NEDens = self.EDensity.size
             ndens = self.EDensity.size
             ntemp = self.Temperature.size
             tst1 = ndens == ntemp
@@ -116,7 +118,13 @@ class ion(_ionTrails):
             if tst1 and ntemp == 1:
                 self.NTempDen = 1
             elif tst1a and (tst2 or tst3) and not tst4:
-                self.NTempDen = ntemp*ndens        
+                self.NTempDen = ntemp*ndens
+                if ntemp == self.NTempDen and ndens != self.NTempDen:
+                    self.EDensity = np.ones_like(self.Temperature)*self.EDensity
+                elif ndens == self.NTempDen and ntemp != self.NTempDen:
+                    self.Temperature = np.ones_like(self.EDensity)*self.Temperature
+            elif tst1 and tst4:
+                self.NTempDen = ntemp
             #
         if pDensity == 'default' and type(eDensity) != type(None):
             if tst1 and tst2 and tst3:
@@ -135,7 +143,20 @@ class ion(_ionTrails):
                 self.setup()
             else:
                 self.setupIonrec()
-        self.Em = em
+        #
+        if type(em) == int and em == 0:
+#            if hasattr(self, 'Em'):
+#                em = self.Em
+#            else:
+#                em = np.ones(self.NTempDen, 'float64')
+#                self.Em = em
+            pass
+        elif type(em) == float and em > 0.:
+            em = np.ones(self.NTempDen, 'float64')*em        
+            self.Em = em
+        elif type(em) == list or type(em) == tuple or type(em) == np.ndarray:
+            em = np.asarray(em, 'float64')
+            self.Em = em
         #
         # ------------------------------------------------------------------------------
         #
@@ -1886,11 +1907,12 @@ class ion(_ionTrails):
             pdexRate = self.PUpsilon['dexRate']
             
         #
-        temp=temperature
-        ntemp=temp.size
-        #
+        temp = temperature
+        ntemp = temp.size
+        dens = self.EDensity
+        ndens = dens.size
         cc=const.collision*self.EDensity
-        ndens=cc.size
+        #
         if npsplups:
             cp=const.collision*protonDensity
         if ntemp > 1 and ndens >1 and ntemp != ndens:
@@ -1903,8 +1925,12 @@ class ion(_ionTrails):
         #
         nscups = self.Nscups
         #
+        #
+        # the way temperature and density are now (9/2015) handled as arrays of the same size
+        # one the ndens == ntemp =1 case and the ndens >1 and ntemp>1 case are really needed
+        #
         #  first, for ntemp=ndens=1
-        if ndens==1 and ntemp==1:
+        if ndens == 1 and ntemp == 1:
             popmat=np.copy(rad)
             if not self.Dielectronic:
                 for iscups in range(0,nscups):
@@ -2042,6 +2068,7 @@ class ion(_ionTrails):
         #   next, in case of a single eDensity value
 #            pop = np.linalg.solve(popmat,b)
         elif ndens == 1:
+#            print(' doing ndens = 1 size of EDensity = %5i'%(self.EDensity.size))
             pop=np.zeros((ntemp, nlvls),"float64")
 #            pop=np.zeros((ntemp,ci + nlvls + rec),"float64")
             for itemp in range(0,ntemp):
@@ -2153,6 +2180,7 @@ class ion(_ionTrails):
             #
         elif ntemp == 1:
 #            pop=np.zeros((ndens,nlvls),"float64")
+#            print(' doing ntemp = 1 size of Temperature = %5i'%(self.Temperature.size))
             pop=np.zeros((ndens,nlvls),"float64")
             for idens in range(0,ndens):
                 popmat=np.copy(rad)
@@ -2287,6 +2315,7 @@ class ion(_ionTrails):
 #                pop[idens] = thispop[ci:ci+nlvls]
                 #
         elif ntemp>1  and ntemp==ndens:
+#            print(' doing ntemp > 1 and ndens > 1')
             pop=np.zeros((ntemp,nlvls),"float64")
 #            pop=np.zeros((ntemp,ci+nlvls+rec),"float64")
             for itemp in range(0,ntemp):
@@ -2344,7 +2373,7 @@ class ion(_ionTrails):
 #                        popmat[lvl1-1, lvl1-1] -= self.EDensity[itemp]*cirate[itemp]
                         popmat[lvl2+ci, lvl1] += self.EDensity[itemp]*self.CilvlRate['rate'][itrans, itemp]
                         popmat[lvl1, lvl1] -= self.EDensity[itemp]*self.CilvlRate['rate'][itrans, itemp]
-                        ciTot += self.EDensity[itemp]*self.CilvlRAte['rate'][itrans, itemp]
+                        ciTot += self.EDensity[itemp]*self.CilvlRate['rate'][itrans, itemp]
                     popmat[1, 0] += (self.EDensity[itemp]*lower.IonizRate['rate'][itemp] - ciTot)
                     popmat[0, 0] -= (self.EDensity[itemp]*lower.IonizRate['rate'][itemp] - ciTot)
                     popmat[0, 1] += self.EDensity[itemp]*self.RecombRate['rate'][itemp]
@@ -2479,9 +2508,20 @@ class ion(_ionTrails):
         toplvl=lvlsort[-top:]
         #
 #        temp=np.asarray(temperature,'Float32')
-        ntemp=temperature.size
+        ntemp = temperature.size
+        if ntemp > 0:
+#            if temperature.all() == temperature[0]:
+            if temperature[0] == temperature[-1]:
+                ntemp = 1
         #
-        ndens=eDensity.size
+        ndens = eDensity.size
+        if ndens > 0:
+#            if eDensity.all() == eDensity[0]:
+            if eDensity[0] == eDensity[-1]:
+                ndens = 1
+        #
+        print(' ndens = %5i ntemp = %5i'%(ndens, ntemp))
+        #
         #
         ylabel='Population'
         title=self.Spectroscopic
@@ -2520,7 +2560,7 @@ class ion(_ionTrails):
             xlabel='Temperature (K)'
             pl.xlabel(xlabel,fontsize=fontsize)
             pl.ylabel(ylabel,fontsize=fontsize)
-            dstr=' -  Density = %10.2e (cm$^{-3}$)' % eDensity
+            dstr=' -  Density = %10.2e (cm$^{-3}$)' % eDensity[0]
             pl.title(title+dstr,fontsize=fontsize)
             pl.xlim(temperature.min(),temperature.max())
 #            nonzero = pop
@@ -2561,7 +2601,7 @@ class ion(_ionTrails):
                         pl.text(eDensity[idens],pop[idens, lvl-1],str(lvl))
             pl.xlabel(xlabel,fontsize=fontsize)
             pl.ylabel(ylabel,fontsize=fontsize)
-            tstr=' -  T = %10.2e (K)' % temperature
+            tstr=' -  T = %10.2e (K)' % temperature[0]
             pl.title(title+tstr,fontsize=fontsize)
             pl.xlim(eDensity[eDensity.nonzero()].min(),eDensity.max())
             yl=pl.ylim()
@@ -3386,11 +3426,11 @@ class ion(_ionTrails):
             if thisIoneq.size == 1:
                 thisIoneq = np.ones(ntempden, 'float64')*thisIoneq            
             for it in range(ntempden):
-                intensity[it] = ab*thisIoneq[it]*emissivity[:, it]*em[it]
+                intensity[it] = ab*thisIoneq[it]*emissivity[:, it]*em[it]/self.EDensity[it]
         else:
             nwvl=len(emissivity)
             ntempden=1
-            intensity = ab*thisIoneq*emissivity*em
+            intensity = ab*thisIoneq*emissivity*em/self.EDensity
         if ntempden == 1:
             integrated = intensity
         else:
@@ -3589,8 +3629,8 @@ class ion(_ionTrails):
         lvl1 = em['lvl1']
         lvl2 = em['lvl2']
         #
-        temperature=self.Temperature
-        eDensity=self.EDensity
+#        temperature=self.Temperature
+#        eDensity=self.EDensity
         plotLabels=em["plotLabels"]
         xLabel=plotLabels["xLabel"]
         yLabel=plotLabels["yLabel"]
@@ -3633,9 +3673,21 @@ class ion(_ionTrails):
         topLines=topLines[wvl[topLines].argsort()]
         #
         #
-        ntemp=self.Temperature.size
+        eDensity = self.EDensity
+        temperature = self.Temperature
         #
-        ndens=self.EDensity.size
+#        temp=np.asarray(temperature,'Float32')
+        ntemp = temperature.size
+        if ntemp > 0:
+            if temperature[0] == temperature[-1]:
+                ntemp = 1
+        #
+        ndens = eDensity.size
+        if ndens > 0:
+            if eDensity[0] == eDensity[-1]:
+                ndens = 1
+        #
+        print(' ndens = %5i ntemp = %5i'%(ndens, ntemp))
         #
         ylabel = 'Emissivity relative to '+maxWvl
         title = self.Spectroscopic
@@ -3649,9 +3701,8 @@ class ion(_ionTrails):
             ngofnt = temperature.size
             xvalues=temperature
             outTemperature=temperature
-            outDensity=np.zeros(ntemp,'Float64')
-            outDensity.fill(eDensity)
-            desc_str=' at Density = %10.2e' % eDensity
+            outDensity = eDensity
+            desc_str=' at Density = %10.2e' % eDensity[0]
         elif ntemp == 1:
             xvalues=eDensity
             ngofnt = eDensity.size
@@ -3659,13 +3710,13 @@ class ion(_ionTrails):
             outTemperature.fill(temperature)
             outDensity=eDensity
             xlabel=r'$\rm{Electron Density (cm}^{-3}\rm{)}$'
-            desc_str=' at Temperature = %10.2e' % temperature
+            desc_str=' at Temperature = %10.2e' % temperature[0]
         else:
             outTemperature=temperature
             outDensity=eDensity
             xlabel='Temperature (K)'
             xvalues=temperature
-            ngofnt = temperature.size
+            ngofnt = ntemp
             desc_str=' for variable Density'
             #
         #

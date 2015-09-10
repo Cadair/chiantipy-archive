@@ -471,7 +471,22 @@ class _ionTrails():
         #
 #        temperature = self.Temperature
         eDensity = self.EDensity
+        temperature = self.Temperature
         intensity = intens['intensity']
+        #
+#        temp=np.asarray(temperature,'Float32')
+        ntemp = temperature.size
+        if ntemp > 0:
+            if temperature[0] == temperature[-1]:
+                ntemp = 1
+        #
+        ndens = eDensity.size
+        if ndens > 0:
+            if eDensity[0] == eDensity[-1]:
+                ndens = 1
+        #
+        print(' ndens = %5i ntemp = %5i'%(ndens, ntemp))
+        
         ionS = intens['ionS']
         #  see if we are dealing with more than a single ion
         ionSet = set(ionS)
@@ -533,9 +548,9 @@ class _ionTrails():
         intensity[bad] = intensMin
         #
         #
-        ntemp=self.Temperature.size
+#        ntemp=self.Temperature.size
         #
-        ndens=self.EDensity.size
+#        ndens=self.EDensity.size
         #
         ylabel='Emissivity relative to '+maxWvl
         if ionNum == 1:
@@ -551,16 +566,18 @@ class _ionTrails():
             xlabel='Temperature (K)'
             xvalues=self.Temperature
             outTemperature=self.Temperature
-            outDensity=np.zeros(ntemp,'Float64')
-            outDensity.fill(self.EDensity)
-            desc_str=' Density = %10.2e (cm)$^{-3}$' % self.EDensity
+#            outDensity=np.zeros(ntemp,'Float64')
+#            outDensity.fill(self.EDensity[0])
+            outDensity = self.EDensity
+            desc_str=' Density = %10.2e (cm)$^{-3}$' % self.EDensity[0]
         elif ntemp == 1:
             xvalues=self.EDensity
-            outTemperature=np.zeros(ndens,'Float64')
-            outTemperature.fill(self.Temperature)
+#            outTemperature=np.zeros(ndens,'Float64')
+#            outTemperature.fill(self.Temperature[0])
+            outTemperature = self.Temperature
             outDensity=self.EDensity
             xlabel=r'$\rm{Electron Density (cm)^{-3}}$'
-            desc_str=' Temp = %10.2e (K)' % self.Temperature
+            desc_str=' Temp = %10.2e (K)' % self.Temperature[0]
         else:
             outTemperature=self.Temperature
             outDensity=self.EDensity
