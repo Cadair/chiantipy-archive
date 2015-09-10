@@ -306,11 +306,33 @@ class bunch(_ionTrails, _specTrails):
         setupIntensity = 0
         #
         self.Defaults=defaults
-        self.Temperature = np.asarray(temperature, 'float64')
-        nTemp = self.Temperature.size
-        self.EDensity = np.asarray(eDensity, 'float64')
-        nDen = self.EDensity.size
-        self.NTempDen = max([nTemp, nDen])
+        temperature = np.asarray(temperature, 'float64')
+        self.Temperature = temperature
+        eDensity = np.asarray(eDensity, 'float64')
+        self.EDensity = eDensity
+
+        #
+        if type(eDensity) != type(None):
+            self.EDensity = np.asarray(eDensity,'float64')
+            self.NEDens = self.EDensity.size
+            ndens = self.EDensity.size
+            ntemp = self.Temperature.size
+            tst1 = ndens == ntemp
+            tst1a = ndens != ntemp
+            tst2 = ntemp > 1
+            tst3 = ndens > 1
+            tst4 = ndens > 1 and ntemp > 1
+            if tst1 and ntemp == 1:
+                self.NTempDen = 1
+            elif tst1a and (tst2 or tst3) and not tst4:
+                self.NTempDen = ntemp*ndens
+                if ntemp == self.NTempDen and ndens != self.NTempDen:
+                    self.EDensity = np.ones_like(self.Temperature)*self.EDensity
+                elif ndens == self.NTempDen and ntemp != self.NTempDen:
+                    self.Temperature = np.ones_like(self.EDensity)*self.Temperature
+            elif tst1 and tst4:
+                self.NTempDen = ntemp
+        #
         if type(em) == int and em == 0:
             em = np.ones(self.NTempDen, 'float64')
         elif type(em) == float and em > 0.:
@@ -318,6 +340,7 @@ class bunch(_ionTrails, _specTrails):
         elif type(em) == list or type(em) == tuple:
             em = np.asarray(em, 'float64')
         self.Em = em
+        #
         #if em != 0:
             #if type(em) == type(float):
                 #if nTempDen > 1:
