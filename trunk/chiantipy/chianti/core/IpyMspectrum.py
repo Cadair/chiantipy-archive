@@ -16,7 +16,8 @@ from ._IonTrails import _ionTrails
 from ._SpecTrails import _specTrails
 
 try:
-    from IPython import parallel
+    #from IPython import parallel
+    from ipyparallel import parallel
 #    from chianti import mputil
     import chianti.ipymputil as mputil
 except:
