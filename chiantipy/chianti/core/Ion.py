@@ -13,11 +13,12 @@ import chianti.io as io
 import chianti.constants as const
 import chianti.Gui as chGui
 from ._IonTrails import _ionTrails
+from ._SpecTrails import _specTrails
 #
 xuvtop = chdata.xuvtop
 heseqLvl2 = [-1,3,-1,-1,-1,5,6,6,-1,6,6,6,5,5,3,5,3,5,3,5,-1,-1,-1,-1,-1,4,-1,4,-1,4]
 #
-class ion(_ionTrails):
+class ion(_ionTrails, _specTrails):
     '''
     The top level class for performing spectral calculations for an ion in the CHIANTI database.
 
@@ -1680,8 +1681,13 @@ class ion(_ionTrails):
             self.Em = em
             useEm = 1
         #
-#        lvl1 = []
-#        lvl2 = []
+        if self.Em.any() > 0.:
+            ylabel = r'erg cm$^{-2}$ s$^{-1}$ sr$^{-1} \AA^{-1}$ $'
+        else:
+            ylabel = r'erg cm$^{-2}$ s$^{-1}$ sr$^{-1} \AA^{-1}$ ($\int\,$ N$_e\,$N$_H\,$d${\it l}$)$^{-1}$'
+        #
+        xlabel = 'Wavelength ('+self.Defaults['wavelength'] +')'
+        #
         if self.NTempDen == 1:
             aspectrum = np.zeros_like(wavelength)
             if not 'errorMessage' in self.Intensity.keys():
@@ -2519,8 +2525,6 @@ class ion(_ionTrails):
 #            if eDensity.all() == eDensity[0]:
             if eDensity[0] == eDensity[-1]:
                 ndens = 1
-        #
-        print(' ndens = %5i ntemp = %5i'%(ndens, ntemp))
         #
         #
         ylabel='Population'
@@ -3459,6 +3463,7 @@ class ion(_ionTrails):
             return
         em = emiss['emiss']
         wvl = emiss['wvl']
+        eDensity = self.EDensity
         if hasattr(self, 'Abundance'):
             ab=self.Abundance
         else:
@@ -3476,17 +3481,17 @@ class ion(_ionTrails):
                 thisIoneq = np.ones(ntempden, 'float64')*thisIoneq
             for it in range(ntempden):
                 if self.Defaults['flux'] != 'energy':
-                    intensity[it] = 4.*const.pi*(const.planck*const.light*1.e+8/wvl)*ab*thisIoneq[it]*em[:, it]
+                    intensity[it] = 4.*const.pi*(const.planck*const.light*1.e+8/wvl)*ab*thisIoneq[it]*em[:, it]/eDensity[it]
                 else:
-                    intensity[it] = 4.*const.pi*ab*thisIoneq[it]*em[:, it]
+                    intensity[it] = 4.*const.pi*ab*thisIoneq[it]*em[:, it]/eDensity[it]
             loss = intensity.sum(axis=1)
         except:
             nwvl=len(em)
             ntempden=1
             if self.Defaults['flux'] != 'energy':
-                intensity = 4.*const.pi*(const.planck*const.light*1.e+8/wvl)*ab*thisIoneq*em
+                intensity = 4.*const.pi*(const.planck*const.light*1.e+8/wvl)*ab*thisIoneq*em/eDensity
             else:
-                intensity = 4.*const.pi*ab*thisIoneq*em
+                intensity = 4.*const.pi*ab*thisIoneq*em/eDensity
             loss = intensity.sum()
         self.BoundBoundLoss = {'rate':loss, 'wvlRange':wvlRange, 'temperature':self.Temperature, 'eDensity':self.EDensity}
         #
@@ -3620,20 +3625,20 @@ class ion(_ionTrails):
         if not hasattr(self, 'Abundance'):
             self.Abundance = io.abundanceRead()
         #
-        fontsize=12
+        fontsize = 12
         #
-        emiss=em["emiss"]
-        wvl=em["wvl"]
+        emiss = em["emiss"]
+        wvl = em["wvl"]
         pretty1 = em['pretty1']
         pretty2 = em['pretty2']
         lvl1 = em['lvl1']
         lvl2 = em['lvl2']
         #
-#        temperature=self.Temperature
-#        eDensity=self.EDensity
-        plotLabels=em["plotLabels"]
-        xLabel=plotLabels["xLabel"]
-        yLabel=plotLabels["yLabel"]
+       #temperature=self.Temperature
+       #eDensity=self.EDensity
+        plotLabels = em["plotLabels"]
+        xLabel = plotLabels["xLabel"]
+        yLabel = plotLabels["yLabel"]
         #
         # find which lines are in the wavelength range if it is set
         #
@@ -3676,7 +3681,6 @@ class ion(_ionTrails):
         eDensity = self.EDensity
         temperature = self.Temperature
         #
-#        temp=np.asarray(temperature,'Float32')
         ntemp = temperature.size
         if ntemp > 0:
             if temperature[0] == temperature[-1]:
@@ -3687,35 +3691,33 @@ class ion(_ionTrails):
             if eDensity[0] == eDensity[-1]:
                 ndens = 1
         #
-        print(' ndens = %5i ntemp = %5i'%(ndens, ntemp))
-        #
         ylabel = 'Emissivity relative to '+maxWvl
         title = self.Spectroscopic
         #
         #
-        if ndens==1 and ntemp==1:
+        if ndens == 1 and ntemp == 1:
             print(' only a single temperature and eDensity')
             return
         elif ndens == 1:
-            xlabel='Temperature (K)'
+            xlabel = 'Temperature (K)'
             ngofnt = temperature.size
-            xvalues=temperature
-            outTemperature=temperature
+            xvalues = temperature
+            outTemperature = temperature
             outDensity = eDensity
-            desc_str=' at Density = %10.2e' % eDensity[0]
+            desc_str = ' at Density = %10.2e' % eDensity[0]
         elif ntemp == 1:
-            xvalues=eDensity
+            xvalues = eDensity
             ngofnt = eDensity.size
-            outTemperature=np.zeros(ndens,'Float64')
+            outTemperature = np.zeros(ndens,'Float64')
             outTemperature.fill(temperature)
-            outDensity=eDensity
-            xlabel=r'$\rm{Electron Density (cm}^{-3}\rm{)}$'
-            desc_str=' at Temperature = %10.2e' % temperature[0]
+            outDensity = eDensity
+            xlabel = r'$\rm{Electron Density (cm}^{-3}\rm{)}$'
+            desc_str = ' at Temperature = %10.2e' % temperature[0]
         else:
-            outTemperature=temperature
-            outDensity=eDensity
-            xlabel='Temperature (K)'
-            xvalues=temperature
+            outTemperature = temperature
+            outDensity = eDensity
+            xlabel = 'Temperature (K)'
+            xvalues = temperature
             ngofnt = ntemp
             desc_str=' for variable Density'
             #
@@ -3865,7 +3867,7 @@ class ion(_ionTrails):
                 eDensity = self.EDensity
             if self.Z == self.Ion:
                 # H seq
-                l1 = 1-1
+                l1 = 1 - 1
                 l2 = 2 - 1
                 wvl0 = 1.e+8/(self.Elvlc['ecm'][l2] - self.Elvlc['ecm'][l1])
                 goodWvl = wvl > wvl0
@@ -3887,7 +3889,7 @@ class ion(_ionTrails):
                 self.TwoPhotonEmiss = {'wvl':wvl, 'emiss':emiss}
             else:
                 # He seq
-                l1 = 1-1
+                l1 = 1 - 1
                 l2 = heseqLvl2[self.Z -1] - 1
                 wvl0 = 1.e+8/(self.Elvlc['ecm'][l2] - self.Elvlc['ecm'][l1])
                 goodWvl = wvl > wvl0
@@ -3974,7 +3976,7 @@ class ion(_ionTrails):
                 temperature = self.Temperature
             if self.Z == self.Ion:
                 # H seq
-                l1 = 1-1
+                l1 = 1 - 1
                 l2 = 2 - 1
                 wvl0 = 1.e+8/(self.Elvlc['ecm'][l2] - self.Elvlc['ecm'][l1])
                 goodWvl = wvl > wvl0
@@ -3999,7 +4001,7 @@ class ion(_ionTrails):
             else:
                 # He seq
                 l1 = 1-1
-                l2 = heseqLvl2[self.Z -1] -1
+                l2 = heseqLvl2[self.Z -1] - 1
                 wvl0 = 1.e+8/(self.Elvlc['ecm'][l2] - self.Elvlc['ecm'][l1])
                 goodWvl = wvl > wvl0
                 if goodWvl.sum() > 0:
