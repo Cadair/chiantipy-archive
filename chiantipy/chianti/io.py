@@ -2,12 +2,12 @@
 a collection of reading and writing functions
 seems to be Python 2.7 and Python 3.4 compatible
 '''
-import os, fnmatch
+import os, fnmatch,sys
 import pickle
-try:
+if sys.version_info[0] == 3:
     # for Python 3 import
     import configparser
-except ImportError:
+elif sys.version_info[0] == 2:
     # for Python 2 import
     import ConfigParser as configparser
 #from ConfigParser import *
