@@ -2551,7 +2551,7 @@ class ion(_ionTrails, _specTrails):
                 skip=3
                 if good.sum() == ntemp:
                     start=divmod(lvl,ntemp)[1]
-                    for itemp in range(start,ntemp,ntemp/skip):
+                    for itemp in range(start,ntemp,ntemp//skip):
                         pl.text(temperature[itemp],pop[itemp,lvl-1],str(lvl))
                 else:
                     newtemp=[]
@@ -2559,7 +2559,7 @@ class ion(_ionTrails, _specTrails):
                         if good[i]:
                             newtemp.append(one)
                     start = divmod(lvl, len(newtemp))[1] + ntemp - good.sum()
-                    for itemp in range(start,ntemp,ntemp/skip):
+                    for itemp in range(start,ntemp,ntemp//skip):
                         pl.text(temperature[itemp],pop[itemp,lvl-1],str(lvl))
             xlabel='Temperature (K)'
             pl.xlabel(xlabel,fontsize=fontsize)
@@ -2593,7 +2593,7 @@ class ion(_ionTrails, _specTrails):
                 skip=3
                 if good.sum() == ndens:
                     start=divmod(lvl,ndens)[1]
-                    for idens in range(start,ndens,ndens/skip):
+                    for idens in range(start,ndens,ndens//skip):
                         pl.text(eDensity[idens],pop[idens,lvl-1],str(lvl))
                 else:
                     newdens=[]
@@ -2601,7 +2601,7 @@ class ion(_ionTrails, _specTrails):
                         if good[i]:
                             newdens.append(one)
                     start = divmod(lvl, len(newdens))[1] + ndens - good.sum()
-                    for idens in range(start,ndens,ndens/skip):
+                    for idens in range(start,ndens,ndens//skip):
                         pl.text(eDensity[idens],pop[idens, lvl-1],str(lvl))
             pl.xlabel(xlabel,fontsize=fontsize)
             pl.ylabel(ylabel,fontsize=fontsize)
@@ -2617,7 +2617,7 @@ class ion(_ionTrails, _specTrails):
 #                pl.loglog(temperature,pop[:,lvl-1])
 #                skip = min(3, ntemp)
 #                start=divmod(lvl,ntemp)[1]
-#                for itemp in range(start,ntemp,ntemp/skip):
+#                for itemp in range(start,ntemp,ntemp//skip):
 #                    pl.text(temperature[itemp],pop[itemp,lvl-1],str(lvl))
             toppops = np.zeros((top, ntemp), 'float64')
             for ilvl in range(top):
@@ -2634,7 +2634,7 @@ class ion(_ionTrails, _specTrails):
                 skip=3
                 if good.sum() == ntemp:
                     start=divmod(lvl,ntemp)[1]
-                    for itemp in range(start,ntemp,ntemp/skip):
+                    for itemp in range(start,ntemp,ntemp//skip):
                         pl.text(temperature[itemp],pop[itemp,lvl-1],str(lvl))
                 else:
                     newtemp=[]
@@ -2642,7 +2642,7 @@ class ion(_ionTrails, _specTrails):
                         if good[i]:
                             newtemp.append(one)
                     start = divmod(lvl, len(newtemp))[1] + ntemp - good.sum()
-                    for itemp in range(start,ntemp,ntemp/skip):
+                    for itemp in range(start,ntemp,ntemp//skip):
                         pl.text(temperature[itemp],pop[itemp,lvl-1],str(lvl))
             xlabel='Temperature (K)'
             pl.xlabel(xlabel,fontsize=fontsize)
@@ -2664,7 +2664,7 @@ class ion(_ionTrails, _specTrails):
 #                pl.loglog(eDensity,pop[:,lvl-1])
 #                skip = min(3, ntemp)
 #                start=divmod(lvl,ndens)[1]
-#                for idens in range(start,ndens,ndens/skip):
+#                for idens in range(start,ndens,ndens//skip):
 #                    pl.text(eDensity[idens],pop[idens,lvl-1],str(lvl))
 #            xlabel=r'Electron Density (cm$^{-3}$)'
 #            pl.xlabel(xlabel,fontsize=fontsize)
@@ -3251,7 +3251,7 @@ class ion(_ionTrails, _specTrails):
                 ymax = np.max(emiss[tline]/maxAll)
             skip=2
             start=divmod(iline,nxvalues)[1]
-            for ixvalue in range(start,nxvalues,nxvalues/skip):
+            for ixvalue in range(start,nxvalues,nxvalues//skip):
                 pl.text(xvalues[ixvalue],emiss[tline,ixvalue]/maxAll[ixvalue],str(wvl[tline]))
         pl.xlim(xvalues.min(),xvalues.max())
 #        pl.ylim(ymin, ymax)
@@ -3747,7 +3747,7 @@ class ion(_ionTrails, _specTrails):
                 ymin = np.min(emiss[tline]/maxAll)
             skip=2
             start=divmod(iline,nxvalues)[1]
-            for ixvalue in range(start,nxvalues,nxvalues/skip):
+            for ixvalue in range(start,nxvalues,nxvalues//skip):
                 pl.text(xvalues[ixvalue],emiss[tline,ixvalue]/maxAll[ixvalue],str(wvl[tline]))
         pl.xlim(xvalues.min(),xvalues.max())
         pl.ylim(ymin, ymax)
@@ -4236,7 +4236,7 @@ class ionWeb(ion):
             pl.loglog(xvalues,emiss[tline]/maxAll)
             skip=2
             start=divmod(iline,nxvalues)[1]
-            for ixvalue in range(start,nxvalues,nxvalues/skip):
+            for ixvalue in range(start,nxvalues,nxvalues//skip):
                 pl.text(xvalues[ixvalue],emiss[tline,ixvalue]/maxAll[ixvalue],str(wvl[tline]))
         pl.xlim(xvalues.min(),xvalues.max())
 #       yl=pl.ylim()
@@ -4387,7 +4387,7 @@ class ionWeb(ion):
 #            pl.loglog(xvalues,emiss[tline]/maxAll)
 #            skip=2
 #            start=divmod(iline,nxvalues)[1]
-#            for ixvalue in range(start,nxvalues,nxvalues/skip):
+#            for ixvalue in range(start,nxvalues,nxvalues//skip):
 #                pl.text(xvalues[ixvalue],emiss[tline,ixvalue]/maxAll[ixvalue],str(wvl[tline]))
 #        pl.xlim(xvalues.min(),xvalues.max())
 ##       yl=pl.ylim()
@@ -4596,7 +4596,7 @@ class ionWeb(ion):
                 ymax = np.max(emiss[tline]/maxAll)
             skip=2
             start=divmod(iline,nxvalues)[1]
-            for ixvalue in range(start,nxvalues,nxvalues/skip):
+            for ixvalue in range(start,nxvalues,nxvalues//skip):
                 pl.text(xvalues[ixvalue],emiss[tline,ixvalue]/maxAll[ixvalue],str(wvl[tline]))
         pl.xlim(xvalues.min(),xvalues.max())
 #        print ' ymin, ymax = ', ymin, ymax

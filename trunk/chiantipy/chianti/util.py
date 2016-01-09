@@ -321,15 +321,18 @@ def diCross(diParams, energy=0, verbose=0):
     ['info', 'ysplom', 'xsplom', 'btf', 'ev1', 'ref', 'eaev']
     Given as a function of the incident electron energy in eV
     returns a dictionary - {'energy':energy, 'cross':cross}
+    
+    *** the class 'ion' contains a version of diCross that it uses
+    
     '''
-    iso=diParams['info']['iz'] - diParams['info']['ion'] + 1
+    iso = diParams['info']['iz'] - diParams['info']['ion'] + 1
     energy = np.array(energy, 'float64')
     if not energy.any():
         btenergy=0.1*np.arange(10)
         btenergy[0]=0.01
         dum=np.ones(len(btenergy))
         [energy, dum] = descale_bti(btenergy, dum, 2., diParams['ev1'][0])
-        energy=np.asarray(energy, 'float64')
+        energy = np.asarray(energy, 'float64')
     #
     if iso == 1 and self.Z >= 6:
         #  hydrogenic sequence
@@ -364,8 +367,8 @@ def diCross(diParams, energy=0, verbose=0):
         qh=bb*a_bohr*qr/ev1ryd**2
         diCross={'energy':energy, 'cross':qh}
     else:
-        cross=np.zeros(len(energy), 'Float64')
-
+        cross = np.zeros(len(energy), 'Float64')
+        partial = np.zeros((diParams['info']['nfac'],len(energy)),'float64')
         for ifac in range(diParams['info']['nfac']):
             # prob. better to do this with masked arrays
             goode=energy > diParams['ev1'][ifac]
@@ -376,15 +379,17 @@ def diCross(diParams, energy=0, verbose=0):
                 y2=interpolate.splrep(diParams['xsplom'][ifac], diParams['ysplom'][ifac], s=0)
                 btcross=interpolate.splev(btenergy, y2, der=0)
                 energy1, cross1 = descale_bti(btenergy, btcross, diParams['btf'][ifac], diParams['ev1'][ifac] )
-                offset=len(energy)-goode.sum()
+                offset = len(energy)-goode.sum()
                 if verbose:
                     pl.plot(diParams['xsplom'][ifac], diParams['ysplom'][ifac])
                     pl.plot(btenergy, btcross)
                 if offset > 0:
                     seq=[np.zeros(offset, 'Float64'), cross1]
-                    cross1=np.hstack(seq)
-                cross+=cross1*1.e-14
-        return {'energy':energy, 'cross':cross}
+                    cross1 = np.hstack(seq)
+                cross += cross1*1.e-14
+                partial[ifac] = cross1*1.e-14
+        diCross = {'energy':energy, 'cross':cross,'partial':partial}
+    return diCross
     #
     # ------------------------------------------------------------------------------
     #
