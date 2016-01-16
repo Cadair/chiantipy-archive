@@ -2686,7 +2686,7 @@ class ion(_ionTrails, _specTrails):
 
         wvlRange can be set to limit the calculation to a particular wavelength range
 
-        units:  ergs cm^-3 s^-1 str^-1
+        units:  ergs cm^3 s^-1 str^-1
 
         Does not include elemental abundance or ionization fraction
 
@@ -2727,6 +2727,7 @@ class ion(_ionTrails, _specTrails):
             wvl = wvl[realgood]
             avalue = avalue[realgood]
             obs = obs[realgood]
+
             if 'pretty1' in self.Wgfa.keys():
                 pretty1 = pretty1[realgood]
             if 'pretty2' in self.Wgfa.keys():
@@ -2742,6 +2743,7 @@ class ion(_ionTrails, _specTrails):
         pretty1 = pretty1[nonzed]
         pretty2 = pretty2[nonzed]
         obs = obs[nonzed]
+        #
         nwvl=len(wvl)
         #
         if nwvl == 0:
@@ -2763,7 +2765,7 @@ class ion(_ionTrails, _specTrails):
         except:
 #            nlvls=len(pop)
             ntempden=1
-            em=np.zeros(nwvl,'Float64')
+            em = np.zeros(nwvl,'Float64')
             eDensity = self.EDensity
 #            temperature = self.Temperature
         #
@@ -2778,10 +2780,10 @@ class ion(_ionTrails, _specTrails):
         #
         if self.Defaults['flux'] == 'energy':
             factor=const.planck*const.light/(4.*const.pi*1.e-8*wvl)
-            plotLabels["yLabel"]="ergs cm^-3 s^-1"
+            plotLabels["yLabel"]="ergs cm^3 s^-1"
         elif self.Defaults['flux'] == 'photon':
             factor=np.ones((nwvl),'Float64')/(4.*const.pi)
-            plotLabels["yLabel"]="photons cm^-3 s^-1"
+            plotLabels["yLabel"]="photons cm^3 s^-1"
         #
         if ntempden > 1:
             for itempden in range(ntempden):
@@ -3354,11 +3356,11 @@ class ion(_ionTrails, _specTrails):
 
         wvlRange, a 2 element tuple, list or array determines the wavelength range
 
-        units:  ergs cm^-3 s^-1 str^-1
+        units:  ergs cm^-2 s^-1 str^-1
 
         includes elemental abundance and ionization fraction.
         
-        the emission measure 'em' is included if specified
+        the emission measure 'em' is included if specified, otherwise, it is assumed to be 1.0
         """
         # emiss ={"wvl":wvl, "emiss":em, "plotLabels":plotLabels}
         #
