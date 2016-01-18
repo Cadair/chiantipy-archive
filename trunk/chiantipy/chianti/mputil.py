@@ -12,9 +12,10 @@ def doFfQ(inQ, outQ):
         temperature = inputs[1]
         wavelength = inputs[2]
         abund = inputs[3]
-        cont = chianti.core.continuum(ionS, temperature, abundance=abund)
-        cont.freeFree(wavelength)
-        outQ.put(cont.FreeFree)
+        em = inputs[4]
+        ff = chianti.core.continuum(ionS, temperature, abundance=abund, em=em)
+        ff.freeFree(wavelength)
+        outQ.put(ff.FreeFree)
     return
     #
     # ----------------------------------------------
@@ -28,9 +29,10 @@ def doFbQ(inQ, outQ):
         temperature = inputs[1]
         wavelength = inputs[2]
         abund = inputs[3]
-        cont = chianti.core.continuum(ionS, temperature, abundance=abund)
-        cont.freeBound(wavelength)
-        outQ.put(cont.FreeBound)
+        em = inputs[4]
+        fb = chianti.core.continuum(ionS, temperature, abundance=abund, em=em)
+        fb.freeBound(wavelength)
+        outQ.put(fb.FreeBound)
     return
     #
     # ----------------------------------------------
