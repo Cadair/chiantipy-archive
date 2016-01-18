@@ -2,7 +2,7 @@
 a collection of reading and writing functions
 seems to be Python 2.7 and Python 3.4 compatible
 '''
-import os, fnmatch,sys
+import os, fnmatch, sys
 import pickle
 if sys.version_info[0] == 3:
     # for Python 3 import
@@ -634,8 +634,8 @@ def elvlcWrite(info, outfile=0, addLvl=0, includeRyd=0, includeEv=0, verbose=0):
             pstring += ' , %15.8f , %15.8f '%(info['eryd'][i], info['erydth'][i])
         if includeEv:
             pstring += ' , %15.4f , %15.4f '%(info['eV'][i], info['eVth'][i])
-        out.write(pstring+'\n')
-    out.write(' -1\n')
+        out.write(pstring + '\n')
+    out.write(' -1 \n')
     out.write('%filename:  ' + os.path.split(elvlcName)[1] + '\n')
 #    info['ref'].append(' produced as a part of the \'CHIANTI\' atomic database for astrophysical spectroscopy')
 #    today = date.today()
