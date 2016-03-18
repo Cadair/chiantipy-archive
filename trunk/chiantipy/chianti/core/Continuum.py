@@ -1,22 +1,22 @@
 import os
-#import types
 import numpy as np
 from scipy import interpolate
 from matplotlib.tri import Triangulation, LinearTriInterpolator
 import chianti.data as chdata
 import chianti.util as util
-import chianti.io as io
+import chianti.io as chio
 import chianti.constants as const
 import chianti.Gui as chgui
 ip = chdata.Ip
 MasterList = chdata.MasterList
 #import chianti
 class continuum:
-    '''The top level class for continuum calculations.
+    '''
+    The top level class for continuum calculations.
 
     includes methods for the calculation of the free-free and free-bound continua.
 
-    can specify the abundance file with abund='cosmic_1973_allen', for example (the .ioneq suffix should not be included
+    can specify the abundance file with abund='cosmic_1973_allen', for example (the .ioneq suffix should not be included)
     '''
     def __init__(self, ionStr,  temperature,  density=0, abundance=0, abundanceName=0, em=0, verbose=0):
         nameDict = util.convertName(ionStr)
@@ -26,12 +26,13 @@ class continuum:
         self.Dielectronic = 0
         self.Defaults = chdata.Defaults
         #
-        self.Temperature = np.array(temperature,'float64')
+        if type(temperature) == float and temperature > 0.:
+            self.Temperature = np.asarray(temperature,'float64')
+        elif type(temperature) == list or type(temperature) == tuple or type(temperature) == np.ndarray:
+            temperature = np.asarray(temperature, 'float64')
+            self.Temperature = temperature
         #
         if type(density) != int:
-#            if type(density) == float:
-#                self.Density = density
-#            elif density.all():
             self.Density = np.asarray(density,'float64')
         #
         if abundance:
@@ -107,7 +108,7 @@ class continuum:
             fblvl = self.Fblvl
         else:
             fblvlname = util.zion2filename(self.Z,self.Ion-1)+'.fblvl'
-            self.Fblvl = io.fblvlRead(fblvlname)
+            self.Fblvl = chio.fblvlRead(fblvlname)
             if 'errorMessage' in sorted(self.Fblvl.keys()):
                 self.FreeBound = {'errorMessage':self.Fblvl['errorMessage']}
                 return
@@ -122,7 +123,7 @@ class continuum:
                 rFblvl = {'mult':[1., 1.]}
             else:
                 rfblvlname = util.zion2filename(self.Z,self.Ion)+'.fblvl'  # previously self.Ion)
-                self.rFblvl = io.fblvlRead(rfblvlname)
+                self.rFblvl = chio.fblvlRead(rfblvlname)
             if 'errorMessage' in sorted(self.rFblvl.keys()):
                 self.FreeBound = {'errorMessage':self.Fblvl['errorMessage']}
                 return
@@ -154,7 +155,7 @@ class continuum:
         try:
             klgfb = self.Klgfb
         except:
-            self.Klgfb = io.klgfbRead()
+            self.Klgfb = chio.klgfbRead()
             klgfb = self.Klgfb
         #
         nWvl = wvl.size
@@ -333,7 +334,7 @@ class continuum:
         else:
             fblvlname = util.zion2filename(self.Z,self.Ion-1)+'.fblvl'
             ionS = util.zion2name(self.Z,self.Ion-1)
-            self.Fblvl = io.fblvlRead(fblvlname)
+            self.Fblvl = chio.fblvlRead(fblvlname)
             fblvl = self.Fblvl
             # in case there is no fblvl file
             if 'errorMessage' in sorted(fblvl.keys()):
@@ -353,7 +354,7 @@ class continuum:
                 rFblvl = {'mult':[1., 1.]}
             else:
                 rfblvlname = util.zion2filename(self.Z,self.Ion)+'.fblvl'
-                self.RFblvl = io.fblvlRead(rfblvlname)
+                self.RFblvl = chio.fblvlRead(rfblvlname)
                 rFblvl = self.RFblvl
                 if 'errorMessage' in sorted(rFblvl.keys()):
                     if verbose:
@@ -373,7 +374,7 @@ class continuum:
         #try:
             #abund = self.Abundance
         #except:
-            #self.AbundanceAll = io.abundanceRead(abundancename = self.AbundanceName)
+            #self.AbundanceAll = chio.abundanceRead(abundancename = self.AbundanceName)
             #self.Abundance = self.AbundanceAll['abundance'][self.Z-1]
 #        abund = chdata.Abundance[self.AbundanceName]['abundance'][self.Z-1]
         abund = self.Abundance
@@ -401,7 +402,7 @@ class continuum:
         try:
             klgfb = self.Klgfb
         except:
-            self.Klgfb = io.klgfbRead()
+            self.Klgfb = chio.klgfbRead()
             klgfb = self.Klgfb
         #
         nWvl = wvl.size
@@ -577,7 +578,7 @@ class continuum:
         else:
             fblvlname = util.zion2filename(self.Z,self.Ion-1)+'.fblvl'
             if os.path.isfile(fblvlname):
-                self.Fblvl = io.fblvlRead(fblvlname)
+                self.Fblvl = chio.fblvlRead(fblvlname)
                 fblvl = self.Fblvl
             else:
 #                print ' cannot find file - ', fblvlname
@@ -593,7 +594,7 @@ class continuum:
             else:
                 rfblvlname = util.zion2filename(self.Z,self.Ion)+'.fblvl'
                 if os.path.isfile(rfblvlname):
-                    self.rFblvl = io.fblvlRead(rfblvlname)
+                    self.rFblvl = chio.fblvlRead(rfblvlname)
                     rFblvl = self.rFblvl
                 else:
 #                    print ' cannot find file - ', rfblvlname
@@ -608,7 +609,7 @@ class continuum:
         #if hasattr(self, 'Abundance'):
             #abund = self.Abundance
         #else:
-            #self.AbundanceAll = io.abundanceRead(abundancename = self.AbundanceName)
+            #self.AbundanceAll = chio.abundanceRead(abundancename = self.AbundanceName)
             #self.Abundance = self.AbundanceAll['abundance'][self.Z-1]
 #        abund = chdata.Abundance[self.AbundanceName]['abundance'][self.Z-1]
         #
@@ -622,7 +623,7 @@ class continuum:
         if hasattr(self, 'Klgfb'):
             klgfb = self.Klgfb
         else:
-            self.Klgfb = io.klgfbRead()
+            self.Klgfb = chio.klgfbRead()
             klgfb = self.Klgfb
         #
         nTemp = temperature.size
@@ -674,7 +675,7 @@ class continuum:
         try:
             vernerDat = self.VernerDat
         except:
-            self.VernerDat = io.vernerRead()
+            self.VernerDat = chio.vernerRead()
             vernerDat = self.VernerDat
         z = self.Z
         stage = self.Ion
@@ -755,7 +756,7 @@ class continuum:
             #try:
                 #abund = self.Abundance
             #except:
-                #self.AbundanceAll = io.abundanceRead(abundancename = self.AbundanceName)
+                #self.AbundanceAll = chio.abundanceRead(abundancename = self.AbundanceName)
                 #self.Abundance = self.AbundanceAll['abundance'][self.Z-1]
                 #abund = self.Abundance
                 #
@@ -808,7 +809,7 @@ class continuum:
                 gffint = self.Gffint['gffint']
                 g2 = self.Gffint['g2']
             else:
-                self.Gffint = io.gffintRead()
+                self.Gffint = chio.gffintRead()
                 gffint = self.Gffint['gffint']
                 g2 = self.Gffint['g2']
             #
@@ -827,7 +828,7 @@ class continuum:
             #if hasattr(self, 'Abundance'):
                 #abund = self.Abundance
             #else:
-                #self.AbundanceAll = io.abundanceRead(abundancename = self.AbundanceName)
+                #self.AbundanceAll = chio.abundanceRead(abundancename = self.AbundanceName)
                 #self.Abundance = self.AbundanceAll['abundance'][self.Z-1]
                 #abund = self.Abundance
                 #
@@ -846,7 +847,7 @@ class continuum:
         try:
             klgfb = self.Klgfb
         except:
-            self.Klgfb = io.klgfbRead()
+            self.Klgfb = chio.klgfbRead()
             klgfb = self.Klgfb
         # get log of photon energy relative to the ionization potential
         sclE = np.log(self.Ip/(wvl*const.ev2ang))
@@ -868,7 +869,7 @@ class continuum:
         try:
             itohCoef = self.ItohCoef
         except:
-            self.ItohCoef = io.itohRead()['itohCoef'][self.Z-1].reshape(11, 11)
+            self.ItohCoef = chio.itohRead()['itohCoef'][self.Z-1].reshape(11, 11)
             itohCoef = self.ItohCoef
 #        try:
 #            t = (np.log10(self.Temperature) -7.25)/1.25
@@ -1007,7 +1008,7 @@ class continuum:
         try:
             gffInterpolator = self.GffInterpolator
         except:
-            self.Gff = io.gffRead()
+            self.Gff = chio.gffRead()
             gff = self.Gff
             iu=(np.log10(gff['u1d']) + 4.)*10.
             ig=(np.log10(gff['g21d']) + 4.)*5.
@@ -1130,7 +1131,7 @@ class continuum:
         try:
             ioneqAll = self.IoneqAll
         except:
-            self.IoneqAll = io.ioneqRead(ioneqname = self.Defaults['ioneqfile'])
+            self.IoneqAll = chio.ioneqRead(ioneqname = self.Defaults['ioneqfile'])
             ioneqAll=self.IoneqAll
         #
         ioneqTemperature = ioneqAll['ioneqTemperature']

@@ -275,7 +275,7 @@ class _specTrails():
         pl.ion()
         #
         if integrated:
-            pl.plot(self.Spectrum['wavelength'], self.Spectrum['integrated'])
+            pl.plot(self.Spectrum['wvl'], self.Spectrum['integrated'])
             pl.xlabel(xlabel)
             pl.ylabel(ylabel)
             pl.title('integrated spectrum')
@@ -283,10 +283,10 @@ class _specTrails():
             nTempDen = self.NTempDen
             if nTempDen == 1:
             #
-                pl.plot(self.Spectrum['wavelength'], self.Spectrum['intensity'])
+                pl.plot(self.Spectrum['wvl'], self.Spectrum['intensity'])
                 pl.title(' Temperature = %10.2e K'%(self.Temperature))
             else:
-                pl.plot(self.Spectrum['wavelength'], self.Spectrum['intensity'][index])
+                pl.plot(self.Spectrum['wvl'], self.Spectrum['intensity'][index])
                 pl.title(' Temperature = %10.2e K for index = %3i'%(self.Temperature[index], index))
             pl.xlabel(xlabel)
             pl.ylabel(ylabel)
